@@ -664,13 +664,18 @@
   .rightSection {
     gap: 0.4rem;
   }
+  .searchWrapper {
+    position: static;
+  }
   .searchBox {
     position: absolute;
     top: 100%;
-    right: 0;
-    width: calc(100vw - 1.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
     margin-top: 0.5rem;
     z-index: 400;
+    justify-content: center;
   }
   .searchInput {
     width: 100%;
@@ -678,7 +683,9 @@
     padding: 0.4rem 0;
   }
   .suggestionsDropdown {
-    width: calc(100vw - 1.5rem);
-    right: 0;
+    width: 280px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
   }
 }
