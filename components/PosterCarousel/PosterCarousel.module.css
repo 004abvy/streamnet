@@ -296,3 +296,9 @@
   font-weight: 500;
   margin: 0;
 }
+
+@media (max-width: 600px) {
+  .controls {
+    display: none !important;
+  }
+}
