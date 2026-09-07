@@ -461,6 +461,10 @@
   display: none !important;
 }
 
+.bottomSheetHeader {
+  display: none;
+}
+
 /* --- Mobile Responsive --- */
 @media (max-width: 768px) {
   .navbar {
