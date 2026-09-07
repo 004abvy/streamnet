@@ -18,7 +18,11 @@
   display: flex;
   gap: 1.2rem;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menuBackdrop {
+  display: none;
 }
 
 .mobileMenuBtn {
@@ -465,6 +469,18 @@
     justify-content: center;
     order: -1;
   }
+  
+  .menuBackdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 240;
+  }
 
   .logo {
     position: absolute;
@@ -475,32 +491,40 @@
   .navLinks {
     position: fixed;
     top: 0;
-    left: -100%;
-    width: 260px;
+    left: 0;
+    width: 280px;
     height: 100vh;
-    background: #0f0f13;
+    background: #0c0c10;
     flex-direction: column;
     align-items: flex-start;
-    padding: 5rem 2rem 2rem;
-    gap: 1.5rem;
-    transform: none;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    padding: 5.5rem 2rem 2rem;
+    gap: 1.8rem;
+    transform: translateX(-100%);
+    box-shadow: 15px 0 40px rgba(0,0,0,0.6);
     z-index: 250;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   [data-theme="light"] .navLinks {
     background: #ffffff;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+    box-shadow: 15px 0 40px rgba(0,0,0,0.1);
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .navLinksOpen {
-    left: 0;
+    transform: translateX(0);
+  }
+
+  .navLink {
+    font-size: 1.1rem;
+    font-weight: 600;
   }
 
   .navLinkDropdown {
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
+    padding: 0;
   }
 
   .dropdownMenu {
@@ -509,21 +533,31 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 0.5rem 0 0 1.5rem;
+    padding: 1rem 0 0 1rem;
     min-width: auto;
     width: 100%;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     display: none;
+    gap: 0.8rem;
+  }
+
+  .dropdownItem {
+    font-size: 0.95rem;
+    padding: 0.4rem 0;
   }
 
   .navLinkDropdown:hover .dropdownMenu {
     display: flex;
   }
+  
+  .rightSection {
+    gap: 0.75rem;
+  }
 
   .searchInput {
-    width: 120px;
+    width: 110px;
   }
 
   .suggestionsDropdown {
@@ -532,18 +566,27 @@
 }
 
 @media (max-width: 480px) {
+  .navbar {
+    padding: 1rem 0.75rem;
+  }
+  .rightSection {
+    gap: 0.4rem;
+  }
   .searchBox {
     position: absolute;
     top: 100%;
-    right: 1rem;
-    width: calc(100vw - 2rem);
+    right: 0;
+    width: calc(100vw - 1.5rem);
     margin-top: 0.5rem;
+    z-index: 400;
   }
   .searchInput {
     width: 100%;
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
   }
   .suggestionsDropdown {
-    width: calc(100vw - 2rem);
-    right: 1rem;
+    width: calc(100vw - 1.5rem);
+    right: 0;
   }
 }
