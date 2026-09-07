@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import styles from './SeasonEpisodeSelector.module.css';
 
 interface Episode {
@@ -46,6 +46,18 @@ export default function SeasonEpisodeSelector({
   );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (currentSeason && currentSeason !== selectedSeason) {
@@ -108,19 +120,34 @@ export default function SeasonEpisodeSelector({
           <h3 className={styles.title}>Episodes</h3>
         </div>
 
-        <div className={styles.seasonDropdownWrapper}>
-          <select
-            id="seasonSelect"
-            className={styles.seasonSelect}
-            value={selectedSeason}
-            onChange={(e) => setSelectedSeason(Number(e.target.value))}
+        <div className={styles.seasonDropdownWrapper} ref={dropdownRef}>
+          <button 
+            className={styles.seasonSelectBtn} 
+            onClick={() => setIsOpen(!isOpen)}
           >
-            {displaySeasons.map((s) => (
-              <option key={s.season_number} value={s.season_number}>
-                {s.name || `Season ${s.season_number}`} ({s.episode_count} Episodes)
-              </option>
-            ))}
-          </select>
+            {displaySeasons.find(s => s.season_number === selectedSeason)?.name || `Season ${selectedSeason}`} 
+            <span className={styles.episodeCountSpan}>({displaySeasons.find(s => s.season_number === selectedSeason)?.episode_count || 0} Episodes)</span>
+            <svg className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+
+          {isOpen && (
+            <div className={styles.dropdownMenuList}>
+              {displaySeasons.map((s) => (
+                <div 
+                  key={s.season_number} 
+                  className={`${styles.dropdownMenuItem} ${selectedSeason === s.season_number ? styles.dropdownMenuItemActive : ''}`}
+                  onClick={() => {
+                    setSelectedSeason(s.season_number);
+                    setIsOpen(false);
+                  }}
+                >
+                  {s.name || `Season ${s.season_number}`} <span className={styles.dropdownEpisodeCount}>({s.episode_count} Episodes)</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

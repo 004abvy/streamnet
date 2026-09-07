@@ -35,51 +35,105 @@
   align-items: center;
 }
 
-.seasonSelect {
+.seasonSelectBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  padding: 0.5rem 2.5rem 0.5rem 1.2rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem 0.5rem 1.2rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   outline: none;
-  appearance: none;
-  -webkit-appearance: none;
   transition: all 0.2s ease;
-  min-width: 160px;
+  min-width: 200px;
   backdrop-filter: blur(8px);
 }
 
-.seasonSelect:hover,
-.seasonSelect:focus {
+.seasonSelectBtn:hover,
+.seasonSelectBtn:focus {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.seasonDropdownWrapper::after {
-  content: '';
+.episodeCountSpan {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.dropdownMenuList {
   position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0; 
-  height: 0; 
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-  transition: border-color 0.2s ease;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  max-height: 350px;
+  overflow-y: auto;
+  background: #141419;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  padding: 0.4rem;
+  z-index: 100;
+  animation: fadeInDown 0.2s ease;
 }
 
-.seasonDropdownWrapper:hover::after {
-  border-top-color: #ffffff;
+.dropdownMenuItem {
+  padding: 0.7rem 1rem;
+  color: #d1d5db;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.seasonSelect option {
-  background: #181824;
+.dropdownMenuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
+}
+
+.dropdownMenuItemActive {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.dropdownMenuItemActive:hover {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.dropdownEpisodeCount {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loading {
@@ -266,7 +320,13 @@
     width: 100%;
   }
 
-  .seasonSelect {
+  .dropdownMenuList {
+    width: 100%;
+    left: 0;
+    right: auto;
+  }
+
+  .seasonSelectBtn {
     width: 100%;
   }
 }
