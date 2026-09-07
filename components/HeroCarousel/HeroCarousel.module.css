@@ -92,6 +92,10 @@
 }
 
 @media (max-width: 600px) {
+  .container {
+    height: 75vh;
+  }
+
   .description {
     -webkit-line-clamp: 3;
     font-size: 0.85rem;
