@@ -387,10 +387,6 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .postersRow> :nth-child(5) {
-    display: none;
-  }
-
   .heroTitle {
     font-size: 1.5rem;
   }
@@ -399,11 +395,6 @@
 @media (max-width: 900px) {
   .postersRow {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .postersRow> :nth-child(4),
-  .postersRow> :nth-child(5) {
-    display: none;
   }
 
   .heroGrid {

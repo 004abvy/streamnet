@@ -23,7 +23,7 @@ interface TrendingSectionProps {
   viewAllLink?: string;
 }
 
-const ITEMS_PER_PAGE = 9; // 5 normal posters (row 1) + 4 mini-hero cards (rows 2 & 3)
+const ITEMS_PER_PAGE = 15; // 3 rows of 5 normal posters
 
 export default function TrendingSection({ title, items, viewAllLink }: TrendingSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,8 +87,8 @@ export default function TrendingSection({ title, items, viewAllLink }: TrendingS
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentBatch = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const featuredPosters = currentBatch.slice(0, 5);
-  const heroGridItems = currentBatch.slice(5, 9);
+  // We render all items as standard posters now
+  const featuredPosters = currentBatch;
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
@@ -238,17 +238,10 @@ export default function TrendingSection({ title, items, viewAllLink }: TrendingS
         </div>
       </div>
 
-      {/* Row 1: 5 Standard Vertical Poster Cards */}
+      {/* Standard Vertical Poster Cards */}
       <div className={styles.postersRow}>
         {featuredPosters.map((item) => renderNormalPoster(item))}
       </div>
-
-      {/* Rows 2 & 3: 2-Column Grid with 4 Mini-Hero Cards */}
-      {heroGridItems.length > 0 && (
-        <div className={styles.heroGrid}>
-          {heroGridItems.map((item) => renderMiniHeroCard(item))}
-        </div>
-      )}
     </section>
   );
 }
