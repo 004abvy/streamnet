@@ -199,6 +199,16 @@ export default function Navbar() {
           Android App
         </Link>
 
+        <Link href="/saved" className={`${styles.navLink} ${styles.showOnMobile}`} onClick={() => setMobileMenuOpen(false)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+          Saved
+        </Link>
+        
+        <div className={`${styles.navLink} ${styles.showOnMobile}`} style={{ cursor: 'pointer' }} onClick={() => setMobileMenuOpen(false)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+          Download
+        </div>
+
         {/* More Dropdown */}
         <div className={`${styles.navLinkDropdown} ${expandedMenu === 'more' ? styles.expanded : ''}`}>
           <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'more' ? null : 'more')}>
@@ -215,7 +225,7 @@ export default function Navbar() {
       </div>
 
       <div className={styles.rightSection} ref={searchContainerRef}>
-        <button className={styles.iconButton} aria-label="Download">
+        <button className={`${styles.iconButton} ${styles.hideOnMobile}`} aria-label="Download">
           <svg className={styles.navActionIcon} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
         </button>
 
@@ -303,7 +313,7 @@ export default function Navbar() {
           </button>
         )}
 
-        <Link href="/saved" className={styles.iconButton} aria-label="Saved" title="Saved">
+        <Link href="/saved" className={`${styles.iconButton} ${styles.hideOnMobile}`} aria-label="Saved" title="Saved">
           <svg className={styles.navActionIcon} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>

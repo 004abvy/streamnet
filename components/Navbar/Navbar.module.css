@@ -457,6 +457,10 @@
   transform: translateY(-2px);
 }
 
+.showOnMobile {
+  display: none !important;
+}
+
 /* --- Mobile Responsive --- */
 @media (max-width: 900px) {
   .navbar {
@@ -610,10 +614,17 @@
     margin-bottom: 1rem;
   }
 
+  .navLinkDropdown:hover .dropdownMenu,
+  .expanded .dropdownMenu {
+    transform: none !important;
+    position: static !important;
+  }
+
   .dropdownItem {
     font-size: 0.95rem;
     padding: 0.8rem 0;
     color: #a1a1aa;
+    white-space: normal;
   }
 
   /* Override hover for mobile since we use click/expanded state */
@@ -624,6 +635,13 @@
     display: flex;
   }
 
+  .hideOnMobile {
+    display: none !important;
+  }
+
+  .showOnMobile {
+    display: flex !important;
+  }
 
   
   .rightSection {
