@@ -14,10 +14,12 @@ export default function ProvidersSection() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchProviders = async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const res = await fetch(`${backendUrl}/api/providers`);
+        const res = await fetch('/api/providers', { signal: controller.signal });
+        if (!res.ok) throw new Error(`Providers request failed with status ${res.status}`);
         const data = await res.json();
         if (data.results) {
           // Filter to top 20 providers based on display_priority, excluding unwanted ones
@@ -34,10 +36,12 @@ export default function ProvidersSection() {
           }
         }
       } catch (err) {
-        console.error("Failed to fetch providers", err);
+        if (!controller.signal.aborted) console.error('Failed to fetch providers', err);
       }
     };
     fetchProviders();
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -46,8 +50,8 @@ export default function ProvidersSection() {
     const fetchContent = async () => {
       setLoading(true);
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const res = await fetch(`${backendUrl}/api/discover/provider/${activeProvider.provider_id}?type=${mediaType}`);
+        const res = await fetch(`/api/discover/provider/${activeProvider.provider_id}?type=${mediaType}`);
+        if (!res.ok) throw new Error(`Provider content request failed with status ${res.status}`);
         const data = await res.json();
         if (data.results) {
           const contentWithMediaType = data.results.map((item: any) => ({
@@ -57,7 +61,7 @@ export default function ProvidersSection() {
           setContent(contentWithMediaType);
         }
       } catch (err) {
-        console.error("Failed to fetch provider content", err);
+        console.error('Failed to fetch provider content', err);
       } finally {
         setLoading(false);
       }

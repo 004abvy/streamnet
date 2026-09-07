@@ -857,6 +857,37 @@ function migrateChannelIds(ids: string[]): string[] {
     .filter((id): id is string => Boolean(id))));
 }
 
+interface HlsErrorData {
+  fatal: boolean;
+  type: string;
+}
+
+interface HlsInstance {
+  loadSource: (source: string) => void;
+  attachMedia: (media: HTMLVideoElement) => void;
+  destroy: () => void;
+  recoverMediaError: () => void;
+  on: (event: string, callback: ((event: unknown, data: HlsErrorData) => void) | (() => void)) => void;
+}
+
+interface HlsConstructor {
+  new (config: Record<string, boolean | number>): HlsInstance;
+  isSupported: () => boolean;
+  Events: {
+    ERROR: string;
+    MANIFEST_PARSED: string;
+  };
+  ErrorTypes: {
+    MEDIA_ERROR: string;
+  };
+}
+
+declare global {
+  interface Window {
+    Hls?: HlsConstructor;
+  }
+}
+
 export default function LiveTvPage() {
   const [channels, setChannels] = useState<Channel[]>(WORKING_CHANNELS);
   const [activeChannel, setActiveChannel] = useState<Channel>(WORKING_CHANNELS[0]);
@@ -870,7 +901,7 @@ export default function LiveTvPage() {
   const [recentIds, setRecentIds] = useState<string[]>([]);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<any>(null);
+  const hlsRef = useRef<HlsInstance | null>(null);
   const prefetchedStreams = useRef(new Set<string>());
 
   const prefetchChannel = (channel: Channel) => {
@@ -905,13 +936,15 @@ export default function LiveTvPage() {
   };
 
   useEffect(() => {
-    const favorites = migrateChannelIds(readStoredIds('live-tv-favorites'));
-    const recent = migrateChannelIds(readStoredIds('live-tv-recent'));
-    setFavoriteIds(favorites);
-    setRecentIds(recent);
-    writeStoredIds('live-tv-favorites', favorites);
-    writeStoredIds('live-tv-recent', recent);
-    setPreferencesLoaded(true);
+    queueMicrotask(() => {
+      const favorites = migrateChannelIds(readStoredIds('live-tv-favorites'));
+      const recent = migrateChannelIds(readStoredIds('live-tv-recent'));
+      setFavoriteIds(favorites);
+      setRecentIds(recent);
+      writeStoredIds('live-tv-favorites', favorites);
+      writeStoredIds('live-tv-recent', recent);
+      setPreferencesLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -987,7 +1020,10 @@ export default function LiveTvPage() {
     if (!video) return;
 
     const startedAt = performance.now();
-    let progressTimer: number | undefined;
+    const progressTimer = window.setInterval(() => {
+      setStreamProgress(progress => Math.min(progress + 3, 92));
+      setStreamLoadTime((performance.now() - startedAt) / 1000);
+    }, 250);
     let finished = false;
     const finishLoading = () => {
       if (finished) return;
@@ -1002,11 +1038,6 @@ export default function LiveTvPage() {
     setStreamProgress(8);
     setStreamLoadTime(0);
     setStreamError('');
-    progressTimer = window.setInterval(() => {
-      setStreamProgress(progress => Math.min(progress + 3, 92));
-      setStreamLoadTime((performance.now() - startedAt) / 1000);
-    }, 250);
-
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     const proxiedStreamUrl = `${backendUrl}/api/stream/proxy?url=${encodeURIComponent(activeChannel.streamUrl)}`;
     let script: HTMLScriptElement | null = null;
@@ -1042,14 +1073,14 @@ export default function LiveTvPage() {
     } else {
       script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-      let usingProxy = true;
       script.onload = () => {
-        if ((window as any).Hls && (window as any).Hls.isSupported()) {
+        const Hls = window.Hls;
+        if (Hls?.isSupported()) {
           if (hlsRef.current) {
             hlsRef.current.destroy();
           }
 
-          const hls = new (window as any).Hls({
+          const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: true,
             startLevel: -1,
@@ -1067,14 +1098,14 @@ export default function LiveTvPage() {
           hls.loadSource(usingProxy ? proxiedStreamUrl : activeChannel.streamUrl);
           hls.attachMedia(video);
 
-          hls.on((window as any).Hls.Events.ERROR, (_: any, data: any) => {
+          hls.on(Hls.Events.ERROR, (_event: unknown, data: HlsErrorData) => {
             if (!data.fatal) return;
 
             if (!usingProxy) {
               usingProxy = true;
               setStreamProgress(progress => Math.max(progress, 55));
               hls.loadSource(proxiedStreamUrl);
-            } else if (data.type === (window as any).Hls.ErrorTypes.MEDIA_ERROR) {
+            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
               hls.recoverMediaError();
             } else {
               setStreamError('This stream is unavailable. Try another channel.');
@@ -1082,7 +1113,7 @@ export default function LiveTvPage() {
             }
           });
 
-          hls.on((window as any).Hls.Events.MANIFEST_PARSED, () => {
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
             finishLoading();
             video.play().catch(() => {});
           });
@@ -1253,7 +1284,7 @@ export default function LiveTvPage() {
                 </div>
               ))
             ) : (
-              <div className={styles.noChannels}>No channels found for "{searchQuery}"</div>
+              <div className={styles.noChannels}>No channels found for &quot;{searchQuery}&quot;</div>
             )}
           </div>
         </div>

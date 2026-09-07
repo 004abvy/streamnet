@@ -25,6 +25,7 @@
   padding-top: 85px;
   font-feature-settings: "tnum" 1;
   isolation: isolate;
+  overflow-x: hidden;
 }
 
 .content {
@@ -41,6 +42,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
 }
 
 /* ---------- header ---------- */
@@ -209,6 +211,7 @@
   max-height: 82vh;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(16px);
+  min-width: 0;
 }
 
 .sidebarHeader {
@@ -249,17 +252,13 @@
   outline-offset: 1px;
 }
 
-/* quick filters read as a segmented control — a different structural
-   device from the category tags below, since they filter differently
-   (state toggle vs. genre selection). */
-
 .quickFilters {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   background: var(--bg);
   border: 1px solid var(--hairline);
   border-radius: 8px;
-  padding: 2px;
+  padding: 3px;
 }
 
 .quickFilter {
@@ -273,6 +272,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  text-align: center;
 }
 
 .quickFilter:hover {
@@ -324,7 +324,7 @@
   font-weight: 700 !important;
 }
 
-/* ---------- channel list — borderless, tint-based hierarchy ---------- */
+/* ---------- channel list ---------- */
 
 .channelList {
   display: grid;
@@ -343,32 +343,32 @@
   border-radius: 2px;
 }
 
+.channelTile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 .channelCard {
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
-  min-height: 80px;
+  min-height: 70px;
   overflow: hidden;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   background: var(--bg);
   border: 1px solid transparent;
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
 }
 
-.channelTile {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 .channelCard:hover {
   background: var(--surface-raised);
   border-color: var(--hairline-strong);
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 .channelCard:focus-visible {
@@ -379,7 +379,7 @@
 .activeChannel {
   background: var(--accent-dim) !important;
   border-color: rgba(255, 138, 0, 0.22);
-  box-shadow: 0 0 0 1px var(--accent), 0 14px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .activeChannel::before {
@@ -387,34 +387,36 @@
   position: absolute;
   left: 0;
   top: 0;
-  bottom: auto;
   width: 100%;
   height: 3px;
   border-radius: 2px;
   background: var(--accent);
+  z-index: 5;
 }
 
 .favoriteButton {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
+  top: 0.4rem;
+  right: 0.4rem;
   z-index: 4;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
+  border-radius: 6px;
   background: rgba(10, 10, 14, 0.65);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  opacity: 1;
   transition: transform 0.15s var(--ease), color 0.15s var(--ease), background 0.15s var(--ease);
 }
 
 .favoriteButton:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
   background: rgba(255, 138, 0, 0.85);
 }
 
@@ -426,19 +428,17 @@
 .logoWrapper {
   position: absolute;
   inset: 0;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   background: #17171d;
-  border-radius: 0;
   overflow: hidden;
-  border: 0;
 }
 
 .channelLogo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  padding: 0.8rem;
+  padding: 0.5rem;
   opacity: 0.9;
 }
 
@@ -446,18 +446,18 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.48) 42%, rgba(0, 0, 0, 0.08) 75%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
 }
 
 .channelInfo {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
   overflow: hidden;
 }
 
 .channelName {
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -467,7 +467,7 @@
 }
 
 .channelTag {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -476,24 +476,23 @@
 
 .qualityPill {
   position: absolute;
-  top: 0.65rem;
-  left: 0.65rem;
+  top: 0.4rem;
+  left: 0.4rem;
   z-index: 3;
-  min-width: 0;
-  padding: 0.25rem 0.4rem;
+  padding: 0.15rem 0.35rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 5px;
+  border-radius: 4px;
   background: rgba(10, 10, 14, 0.65);
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 700;
   color: #ffffff;
 }
 
 .noChannels {
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 2rem 1rem;
   color: var(--text-faint);
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   border: 1px dashed var(--hairline-strong);
   border-radius: 8px;
 }
@@ -501,37 +500,196 @@
 /* ---------- responsive ---------- */
 
 @media (max-width: 1024px) {
-  .content { grid-template-columns: 1fr; }
-  .sidebar { position: static; max-height: none; }
+  .content {
+    grid-template-columns: 1fr;
+    padding: 1.25rem 1rem 2rem;
+  }
+  .sidebar {
+    position: static;
+    max-height: none;
+  }
   .channelList {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    max-height: 60vh;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    max-height: 55vh;
   }
 }
 
 @media (max-width: 640px) {
-  .container { padding-top: 70px; }
-  .content { padding: 1.1rem 0.9rem 2rem; gap: 1.5rem; overflow-x: hidden; }
-  .channelTitle { font-size: 1.2rem; text-align: center; }
-  .header { padding: 0.8rem; justify-content: center; text-align: center; }
-  .titleInfo { width: 100%; justify-content: center; margin-bottom: 0.5rem; }
-  .metaBadges { width: 100%; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
-  .sidebar { padding: 1rem; width: 100%; border: none; background: transparent; box-shadow: none; }
-  
-  .channelList { 
-    grid-template-columns: 1fr; 
-    max-height: none; 
-    overflow-y: visible;
-    gap: 1.25rem;
+  .container {
+    padding-top: 65px;
   }
 
-  .channelCard {
-    aspect-ratio: 16 / 9;
-    min-height: auto;
+  .content {
+    padding: 0.75rem 0.75rem 1.75rem;
+    gap: 1rem;
     width: 100%;
+    box-sizing: border-box;
+  }
+
+  .playerSection {
+    gap: 0.75rem;
+  }
+
+  /* Compact single-line player header */
+  .header {
+    padding: 0.6rem 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    border-radius: 8px;
+  }
+
+  .titleInfo {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .channelTitle {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  .liveBadge {
+    font-size: 0.65rem;
+    flex-shrink: 0;
+  }
+
+  .metaBadges {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .metaBadges::-webkit-scrollbar {
+    display: none;
+  }
+
+  .badgeItem, .badgeQuality {
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .badgeItem::before {
+    margin-right: 0.35rem;
+  }
+
+  .videoWrapper {
+    border-radius: 8px;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Compact Sidebar */
+  .sidebar {
+    padding: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background: rgba(19, 19, 24, 0.6);
+    gap: 0.75rem;
+  }
+
+  .sidebarHeader {
+    gap: 0.5rem;
+  }
+
+  .sidebarTitle {
+    font-size: 0.88rem;
+  }
+
+  .searchInput {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.75rem;
   }
 
   .quickFilters {
+    gap: 2px;
+  }
+
+  .quickFilter {
+    padding: 0.35rem 0.3rem;
+    font-size: 0.68rem;
+  }
+
+  .catBtn {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  /* 2-Column or Horizontal Fit for Mobile List */
+  .channelList {
+    display: flex;
     flex-direction: column;
+    gap: 0.5rem;
+    max-height: 48vh;
+    overflow-y: auto;
+    padding-right: 0.1rem;
+  }
+
+  /* Horizontal card row on mobile: thumbnail on left, metadata on right */
+  .channelTile {
+    display: grid;
+    grid-template-columns: 85px 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    background: rgba(10, 10, 14, 0.45);
+    padding: 0.35rem;
+    border-radius: 8px;
+    border: 1px solid var(--hairline);
+  }
+
+  .channelCard {
+    width: 85px;
+    height: 48px;
+    min-height: unset;
+    aspect-ratio: unset;
+    border-radius: 6px;
+    margin: 0;
+  }
+
+  .channelLogo {
+    padding: 0.25rem;
+    object-fit: contain;
+  }
+
+  .channelInfo {
+    justify-content: center;
+    gap: 0.1rem;
+  }
+
+  .channelName {
+    font-size: 0.78rem;
+  }
+
+  .channelTag {
+    font-size: 0.62rem;
+  }
+
+  .qualityPill {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.25rem;
+    top: 0.25rem;
+    left: 0.25rem;
+  }
+
+  .favoriteButton {
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+    top: 0.25rem;
+    right: 0.25rem;
+  }
+
+  .activeChannel::before {
+    width: 3px;
+    height: 100%;
+    left: 0;
+    top: 0;
   }
 }
