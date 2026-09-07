@@ -19,7 +19,6 @@
   gap: 1.2rem;
   align-items: center;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
 }
 
 .menuBackdrop {
@@ -253,14 +252,11 @@
 .searchBox {
   display: flex;
   align-items: center;
-  justify-content: center;
   background: rgba(20, 20, 20, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 25px;
-  padding: 0.6rem 1.2rem;
-  margin: 0 0.5rem;
-  gap: 0.75rem;
-  height: 44px;
+  border-radius: 20px;
+  padding: 0.3rem 0.8rem;
+  gap: 0.5rem;
   animation: fadeIn 0.2s ease;
   backdrop-filter: blur(8px);
 }
@@ -274,14 +270,9 @@
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   outline: none;
-  width: 220px;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: center;
+  width: 180px;
 }
 
 [data-theme="light"] .searchInput {
@@ -468,16 +459,6 @@
 
 .showOnMobile {
   display: none !important;
-}
-
-@media (max-width: 1300px) {
-  .navLinks {
-    position: static;
-    transform: none;
-    flex: 1;
-    justify-content: center;
-    margin: 0 1rem;
-  }
 }
 
 /* --- Mobile Responsive --- */
