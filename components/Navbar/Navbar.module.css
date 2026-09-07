@@ -533,13 +533,14 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 1rem 0 0 1rem;
+    padding: 0.5rem 0 0 1rem;
     min-width: auto;
     width: 100%;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    display: none;
+    display: flex;
+    flex-direction: column;
     gap: 0.8rem;
   }
 
