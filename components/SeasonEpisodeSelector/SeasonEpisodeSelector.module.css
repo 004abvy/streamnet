@@ -1,0 +1,239 @@
+.container {
+  width: 100%;
+  background-color: #0b0b0f;
+  border: 1px solid #1f1f25;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  color: #fff;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.headerTitleGroup {
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.seasonDropdownWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.selectLabel {
+  font-size: 0.88rem;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.seasonSelect {
+  min-width: 160px;
+  background: #0b0b0f;
+  color: #ffffff;
+  border: 1px solid #2c2c35;
+  border-radius: 6px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.seasonSelect:hover {
+  border-color: #f59e0b;
+}
+
+.seasonSelect option {
+  background: #181824;
+  color: #ffffff;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.episodeGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 620px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.episodeCard {
+  min-height: 80px;
+  background: #29292f;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  display: grid;
+  grid-template-columns: 144px minmax(0, 1fr) 32px;
+  align-items: center;
+}
+
+.episodeCard:hover {
+  border-color: #f59e0b;
+  background: #323239;
+}
+
+.episodeCard:hover .playOverlay {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.activeEpisodeCard {
+  border: 2px solid #f59e0b;
+  background: #241c10;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.thumbnailWrapper {
+  position: relative;
+  width: 144px;
+  height: 80px;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.episodeCard:hover .thumbnail {
+  transform: scale(1.05);
+}
+
+.thumbnailGradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%);
+}
+
+.epBadge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: none;
+}
+
+.nowPlayingBadge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: #f59e0b;
+  color: #000000;
+  font-weight: 800;
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.playOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s ease;
+}
+
+.episodeInfo {
+  min-width: 0;
+  padding: 0.55rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-grow: 1;
+}
+
+.episodeTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.episodeTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.episodeOverview {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.downloadIcon {
+  justify-self: center;
+  color: #ffffff;
+  opacity: 0.95;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0.8rem;
+  }
+
+  .episodeCard {
+    grid-template-columns: 112px minmax(0, 1fr) 28px;
+  }
+
+  .thumbnailWrapper {
+    width: 112px;
+    height: 68px;
+  }
+
+  .episodeOverview {
+    -webkit-line-clamp: 1;
+  }
+}

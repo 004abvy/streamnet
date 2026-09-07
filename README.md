@@ -1,56 +1,36 @@
-# 🎬 StreamNet - Modern Movie & TV Streaming Platform
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A complete full-stack movie and TV streaming web application built with Next.js 16, React 19, Tailwind CSS, Firebase Auth, and integrated TMDB / Stream Proxy API routes designed for **100% 1-Click Vercel Deployment**.
+## Getting Started
 
----
+First, run the development server:
 
-## ⚡ 100% Vercel Deployment (All-in-One: Frontend + Backend)
-
-Everything (the user interface, TMDB endpoints, search, live stream proxy, subtitles, and Firebase auth) is unified in Next.js, meaning **you do NOT need any separate backend hosting service like Render or Railway**.
-
-### Step 1: Import on Vercel
-1. Go to [Vercel.com](https://vercel.com) and log in.
-2. Click **Add New...** -> **Project**.
-3. Import your GitHub repository: `004abvy/streamnet`.
-
-### Step 2: Configure Project Settings
-- **Root Directory**: Click **Edit** and choose `frontend`.
-- **Framework Preset**: `Next.js` (detected automatically).
-
-### Step 3: Add Environment Variables in Vercel
-In the **Environment Variables** section, add the following:
-
-| Name | Example Value | Description |
-| :--- | :--- | :--- |
-| `TMDB_API_KEY` | `a4e8c9bd39aadd7d67d8f0736c7a882a` | Your TMDB API Key |
-| `TMDB_READ_TOKEN` | *(Your TMDB Read Token)* | Optional |
-| `NEXT_PUBLIC_TMDB_IMAGE_URL` | `https://image.tmdb.org/t/p/w500` | TMDB Poster URL |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyC7K4isz_DrL8_yZnn90YZcDjd0LwNm8fk` | Firebase Web API Key |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `livestream-d76b3.firebaseapp.com` | Firebase Auth Domain |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `livestream-d76b3` | Firebase Project ID |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `livestream-d76b3.firebasestorage.app` | Firebase Storage Bucket |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `323939252460` | Firebase Sender ID |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:323939252460:web:9296cfb72a80a377c0cdc9` | Firebase App ID |
-
-> Note: `NEXT_PUBLIC_BACKEND_URL` is **not required** on Vercel because the API runs natively on the exact same domain!
-
-### Step 4: Click Deploy!
-Vercel will build and deploy your entire streaming platform in ~1 minute.
-
----
-
-## 🔐 Firebase Authorized Domain
-Once your Vercel URL is live (e.g. `streamnet.vercel.app`):
-1. Go to [Firebase Console](https://console.firebase.google.com/) -> `livestream-d76b3`.
-2. Go to **Authentication** -> **Settings** -> **Authorized domains**.
-3. Add your Vercel domain (`your-app.vercel.app`).
-
----
-
-## 💻 Local Development
 ```bash
-cd frontend
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-Open [http://localhost:3000](http://localhost:3000). Both the frontend and API routes will run together smoothly.
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
