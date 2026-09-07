@@ -511,11 +511,27 @@
 
 @media (max-width: 640px) {
   .container { padding-top: 70px; }
-  .content { padding: 1.1rem 0.9rem 2rem; gap: 1rem; }
-  .channelTitle { font-size: 1.2rem; }
-  .header { padding: 0.8rem; }
-  .titleInfo { width: 100%; }
-  .metaBadges { width: 100%; flex-wrap: wrap; gap: 0.45rem; }
-  .sidebar { padding: 0.85rem; }
-  .channelList { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .content { padding: 1.1rem 0.9rem 2rem; gap: 1.5rem; overflow-x: hidden; }
+  .channelTitle { font-size: 1.2rem; text-align: center; }
+  .header { padding: 0.8rem; justify-content: center; text-align: center; }
+  .titleInfo { width: 100%; justify-content: center; margin-bottom: 0.5rem; }
+  .metaBadges { width: 100%; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+  .sidebar { padding: 1rem; width: 100%; border: none; background: transparent; box-shadow: none; }
+  
+  .channelList { 
+    grid-template-columns: 1fr; 
+    max-height: none; 
+    overflow-y: visible;
+    gap: 1.25rem;
+  }
+
+  .channelCard {
+    aspect-ratio: 16 / 9;
+    min-height: auto;
+    width: 100%;
+  }
+
+  .quickFilters {
+    flex-direction: column;
+  }
 }
