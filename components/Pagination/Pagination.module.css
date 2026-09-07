@@ -66,3 +66,20 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 600px) {
+  .container {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .pageBtn {
+    width: 38px;
+    height: 38px;
+    font-size: 0.9rem;
+  }
+  
+  .nextBtn, .ellipsis {
+    font-size: 0.9rem;
+  }
+}

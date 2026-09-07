@@ -61,7 +61,7 @@
 }
 
 .title {
-  font-size: 2.2rem;
+  font-size: clamp(1.5rem, 5vw, 2.8rem);
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 0.8rem;
@@ -89,6 +89,28 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+}
+
+@media (max-width: 600px) {
+  .description {
+    -webkit-line-clamp: 3;
+    font-size: 0.85rem;
+  }
+  
+  .content {
+    top: 60%;
+    width: 95%;
+  }
+
+  .buttons {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+  
+  .playBtn, .detailsBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
 }
 
 .buttons {

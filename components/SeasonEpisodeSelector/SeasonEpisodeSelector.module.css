@@ -237,3 +237,18 @@
     -webkit-line-clamp: 1;
   }
 }
+
+@media (max-width: 400px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .seasonDropdownWrapper {
+    width: 100%;
+  }
+
+  .seasonSelect {
+    width: 100%;
+  }
+}

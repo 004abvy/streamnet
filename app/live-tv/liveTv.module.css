@@ -504,7 +504,7 @@
   .content { grid-template-columns: 1fr; }
   .sidebar { position: static; max-height: none; }
   .channelList {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     max-height: 60vh;
   }
 }
@@ -517,5 +517,5 @@
   .titleInfo { width: 100%; }
   .metaBadges { width: 100%; flex-wrap: wrap; gap: 0.45rem; }
   .sidebar { padding: 0.85rem; }
-  .channelList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .channelList { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 }

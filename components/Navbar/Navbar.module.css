@@ -18,6 +18,21 @@
   display: flex;
   gap: 1.2rem;
   align-items: center;
+  transition: all 0.3s ease;
+}
+
+.mobileMenuBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 300;
+}
+
+[data-theme="light"] .mobileMenuBtn {
+  color: #111827;
 }
 
 .logo {
@@ -436,4 +451,99 @@
 .loginBtn:hover {
   background: #f40612;
   transform: translateY(-2px);
+}
+
+/* --- Mobile Responsive --- */
+@media (max-width: 900px) {
+  .navbar {
+    padding: 1rem;
+  }
+  
+  .mobileMenuBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    order: -1;
+  }
+
+  .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .navLinks {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 260px;
+    height: 100vh;
+    background: #0f0f13;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 5rem 2rem 2rem;
+    gap: 1.5rem;
+    transform: none;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    z-index: 250;
+  }
+
+  [data-theme="light"] .navLinks {
+    background: #ffffff;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+  }
+
+  .navLinksOpen {
+    left: 0;
+  }
+
+  .navLinkDropdown {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dropdownMenu {
+    position: static;
+    transform: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0.5rem 0 0 1.5rem;
+    min-width: auto;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    display: none;
+  }
+
+  .navLinkDropdown:hover .dropdownMenu {
+    display: flex;
+  }
+
+  .searchInput {
+    width: 120px;
+  }
+
+  .suggestionsDropdown {
+    width: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .searchBox {
+    position: absolute;
+    top: 100%;
+    right: 1rem;
+    width: calc(100vw - 2rem);
+    margin-top: 0.5rem;
+  }
+  .searchInput {
+    width: 100%;
+  }
+  .suggestionsDropdown {
+    width: calc(100vw - 2rem);
+    right: 1rem;
+  }
 }

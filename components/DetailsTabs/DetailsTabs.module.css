@@ -76,3 +76,22 @@
   font-style: italic;
   padding: 2rem 0;
 }
+
+@media (max-width: 600px) {
+  .infoRow {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+  }
+  
+  .infoLabel {
+    width: 100%;
+    padding: 0 0 0.25rem 0;
+    font-size: 0.8rem;
+  }
+  
+  .infoValue {
+    padding: 0;
+    width: 100%;
+  }
+}
