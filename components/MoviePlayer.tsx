@@ -30,7 +30,7 @@ export default function MoviePlayer({ movieId }: { movieId: string }) {
   useEffect(() => {
     if (!movieId) return;
     
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     fetch(`${backendUrl}/api/movies/${movieId}`)
       .then((res) => {

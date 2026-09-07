@@ -43,7 +43,7 @@ export default function Navbar() {
 
     const timer = setTimeout(() => {
       setLoadingSuggestions(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
       fetch(`${backendUrl}/api/search?q=${encodeURIComponent(query.trim())}`)
         .then((res) => (res.ok ? res.json() : null))

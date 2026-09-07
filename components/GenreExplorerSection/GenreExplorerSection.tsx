@@ -33,7 +33,7 @@ export default function GenreExplorerSection() {
   useEffect(() => {
     const fetchGenreContent = () => {
       setLoading(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const genreId = contentType === 'tv' ? (selectedGenre.tvId || selectedGenre.id) : selectedGenre.id;
 
       fetch(`${backendUrl}/api/discover?type=${contentType}&genreId=${genreId}&page=${page}`)

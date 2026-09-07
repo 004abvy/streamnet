@@ -877,7 +877,7 @@ export default function LiveTvPage() {
     if (prefetchedStreams.current.has(channel.streamUrl)) return;
 
     prefetchedStreams.current.add(channel.streamUrl);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     const proxiedStreamUrl = `${backendUrl}/api/stream/proxy?url=${encodeURIComponent(channel.streamUrl)}`;
 
     fetch(proxiedStreamUrl, { cache: 'force-cache' }).catch(() => {
@@ -1007,7 +1007,7 @@ export default function LiveTvPage() {
       setStreamLoadTime((performance.now() - startedAt) / 1000);
     }, 250);
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     const proxiedStreamUrl = `${backendUrl}/api/stream/proxy?url=${encodeURIComponent(activeChannel.streamUrl)}`;
     let script: HTMLScriptElement | null = null;
 

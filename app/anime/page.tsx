@@ -20,7 +20,7 @@ function AnimeContent() {
 
   useEffect(() => {
     setLoading(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     fetch(`${backendUrl}/api/anime?page=${pageParam}`)
       .then((res) => (res.ok ? res.json() : null))

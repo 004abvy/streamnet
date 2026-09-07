@@ -59,7 +59,7 @@ export default function SeasonEpisodeSelector({
     let isMounted = true;
     setLoading(true);
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     fetch(`${backendUrl}/api/tv/${tvId}/season/${selectedSeason}`)
       .then(res => res.ok ? res.json() : null)

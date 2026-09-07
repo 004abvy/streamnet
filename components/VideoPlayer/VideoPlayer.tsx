@@ -51,7 +51,7 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     if (!showSubModal) return;
 
     setLoadingSubs(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     const queryId = imdbId || tmdbId;
 
     let subUrl = `${backendUrl}/api/subtitles?id=${queryId}`;

@@ -36,7 +36,7 @@ function MoviesContent() {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     let url = `${backendUrl}/api/movies/discover?page=${pageParam}&filter=${filterParam}`;
     if (genreParam) {
