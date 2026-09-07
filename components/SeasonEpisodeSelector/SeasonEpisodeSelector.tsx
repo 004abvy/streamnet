@@ -109,7 +109,6 @@ export default function SeasonEpisodeSelector({
         </div>
 
         <div className={styles.seasonDropdownWrapper}>
-          <label htmlFor="seasonSelect" className={styles.selectLabel}>Season:</label>
           <select
             id="seasonSelect"
             className={styles.seasonSelect}

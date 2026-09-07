@@ -30,33 +30,51 @@
 }
 
 .seasonDropdownWrapper {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-}
-
-.selectLabel {
-  font-size: 0.88rem;
-  color: #9ca3af;
-  font-weight: 600;
 }
 
 .seasonSelect {
-  min-width: 160px;
-  background: #0b0b0f;
+  background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
-  border: 1px solid #2c2c35;
-  border-radius: 6px;
-  padding: 0.55rem 0.8rem;
-  font-size: 0.88rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 0.5rem 2.5rem 0.5rem 1.2rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   outline: none;
+  appearance: none;
+  -webkit-appearance: none;
   transition: all 0.2s ease;
+  min-width: 160px;
+  backdrop-filter: blur(8px);
 }
 
-.seasonSelect:hover {
-  border-color: #f59e0b;
+.seasonSelect:hover,
+.seasonSelect:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.seasonDropdownWrapper::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0; 
+  height: 0; 
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  transition: border-color 0.2s ease;
+}
+
+.seasonDropdownWrapper:hover::after {
+  border-top-color: #ffffff;
 }
 
 .seasonSelect option {
