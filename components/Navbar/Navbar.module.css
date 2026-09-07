@@ -663,6 +663,7 @@
   }
   .rightSection {
     gap: 0.4rem;
+    position: static;
   }
   .searchWrapper {
     position: static;
