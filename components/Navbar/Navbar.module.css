@@ -462,7 +462,7 @@
 }
 
 /* --- Mobile Responsive --- */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .navbar {
     padding: 1rem;
   }

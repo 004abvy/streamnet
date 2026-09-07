@@ -189,11 +189,6 @@ export default function Navbar() {
           Live TV
         </Link>
 
-        <Link href="/live-sports" className={`${styles.navLink} ${pathname === '/live-sports' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8M12 17v4M7 4h10M5 4h14a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M4 9a8 8 0 0 0 16 0" /></svg>
-          Live Sports
-        </Link>
-        
         <Link href="/android-app" className={`${styles.navLink} ${pathname === '/android-app' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18h12v-6a6 6 0 0 0-12 0v6z" /><path d="M6 12h-2v6h2" /><path d="M18 12h2v6h-2" /><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><path d="M8 5l-2-2" /><path d="M16 5l2-2" /></svg>
           Android App
