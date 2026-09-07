@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar/Navbar';
 import HeroCarousel from '../components/HeroCarousel/HeroCarousel';
 import PosterCarousel from '../components/PosterCarousel/PosterCarousel';
+import TrendingSection from '../components/TrendingSection/TrendingSection';
 import ProvidersSection from '../components/ProvidersSection/ProvidersSection';
 import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplorerSection';
 import Footer from '../components/Footer/Footer';
@@ -118,8 +119,8 @@ export default function Home() {
 
         <GenreExplorerSection />
 
-        <PosterCarousel title="Trending Movies" movies={trendingMovies} viewAllLink="/movies" />
-        <PosterCarousel title="Trending Series" movies={trendingTv} viewAllLink="/tv" />
+        <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" />
+        <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" />
       </div>
 
       <Footer />
