@@ -671,10 +671,10 @@
   .searchBox {
     position: absolute;
     top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0.5rem auto 0;
     width: 280px;
-    margin-top: 0.5rem;
     z-index: 400;
     justify-content: center;
   }
@@ -685,8 +685,8 @@
   }
   .suggestionsDropdown {
     width: 280px;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 8px;
+    left: 0;
+    right: 0;
+    margin: 8px auto 0;
   }
 }
