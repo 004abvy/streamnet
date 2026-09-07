@@ -1,101 +1,56 @@
-# 🎬 CinePulse - Modern Movie & TV Streaming Platform
+# 🎬 StreamNet - Modern Movie & TV Streaming Platform
 
-A full-stack, responsive movie and TV series streaming web application built with Next.js 16, React 19, Tailwind CSS, Firebase Auth, and Node.js/Express with TMDB integration.
-
----
-
-## 📁 Repository Structure
-
-```
-movie-streaming-platform/
-├── backend/               # Node.js + Express API Server
-│   ├── server.js          # TMDB API routes, caching, and stream proxy endpoints
-│   ├── package.json
-│   └── .env.example
-├── frontend/              # Next.js 16 Frontend App (React 19, Tailwind CSS)
-│   ├── app/               # Next.js App Router (Movies, TV, Anime, Live TV, Watch, Auth)
-│   ├── components/        # Reusable UI components & video players
-│   ├── context/           # Auth and global state
-│   ├── package.json
-│   └── .env.example
-├── .gitignore             # Root gitignore protecting API keys and credentials
-└── README.md
-```
+A complete full-stack movie and TV streaming web application built with Next.js 16, React 19, Tailwind CSS, Firebase Auth, and integrated TMDB / Stream Proxy API routes designed for **100% 1-Click Vercel Deployment**.
 
 ---
 
-## 🚀 Step-by-Step Deployment Guide
+## ⚡ 100% Vercel Deployment (All-in-One: Frontend + Backend)
 
-### Step 1: Upload to GitHub
+Everything (the user interface, TMDB endpoints, search, live stream proxy, subtitles, and Firebase auth) is unified in Next.js, meaning **you do NOT need any separate backend hosting service like Render or Railway**.
 
-1. Create a new empty repository on [GitHub](https://github.com/new) (e.g. `movie-streaming-platform`). Do not initialize with README or license.
-2. In your local terminal at the project root:
-   ```bash
-   git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPO_NAME>.git
-   git branch -M main
-   git push -u origin main
-   ```
-
----
-
-### Step 2: Deploy the Backend (e.g., Render / Railway)
-
-The backend needs to run on a Node.js hosting platform (like **[Render.com](https://render.com)** or **Railway.app**).
-
-#### On Render.com (Free & Simple):
-1. Sign up / Log in to [Render](https://render.com).
-2. Click **New +** -> **Web Service**.
-3. Connect your GitHub repository.
-4. Set the following settings:
-   - **Name**: `cinepulse-backend` (or your choice)
-   - **Root Directory**: `backend`
-   - **Environment**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node server.js`
-5. Under **Environment Variables**, add:
-   - `PORT`: `5000`
-   - `TMDB_API_KEY`: *(Your TMDB API Key)*
-   - `TMDB_READ_TOKEN`: *(Your TMDB Read Access Token)*
-6. Click **Deploy Web Service**.
-7. Copy your deployed backend URL (e.g. `https://cinepulse-backend.onrender.com`).
-
----
-
-### Step 3: Deploy the Frontend to Vercel
-
-1. Log in to [Vercel](https://vercel.com).
+### Step 1: Import on Vercel
+1. Go to [Vercel.com](https://vercel.com) and log in.
 2. Click **Add New...** -> **Project**.
-3. Import your GitHub repository (`movie-streaming-platform`).
-4. In the project configuration:
-   - **Root Directory**: Click *Edit* and select `frontend`.
-   - **Framework Preset**: `Next.js` (detected automatically).
-5. In the **Environment Variables** section, add the following variables:
-   - `NEXT_PUBLIC_BACKEND_URL`: `https://cinepulse-backend.onrender.com` *(use your actual backend URL from Step 2, without trailing slash)*
-   - `NEXT_PUBLIC_TMDB_IMAGE_URL`: `https://image.tmdb.org/t/p/w500`
-   - `NEXT_PUBLIC_FIREBASE_API_KEY`: *(Your Firebase API Key)*
-   - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: *(Your Firebase Auth Domain)*
-   - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`: *(Your Firebase Project ID)*
-   - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: *(Your Firebase Storage Bucket)*
-   - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: *(Your Firebase Sender ID)*
-   - `NEXT_PUBLIC_FIREBASE_APP_ID`: *(Your Firebase App ID)*
-6. Click **Deploy**.
+3. Import your GitHub repository: `004abvy/streamnet`.
+
+### Step 2: Configure Project Settings
+- **Root Directory**: Click **Edit** and choose `frontend`.
+- **Framework Preset**: `Next.js` (detected automatically).
+
+### Step 3: Add Environment Variables in Vercel
+In the **Environment Variables** section, add the following:
+
+| Name | Example Value | Description |
+| :--- | :--- | :--- |
+| `TMDB_API_KEY` | `a4e8c9bd39aadd7d67d8f0736c7a882a` | Your TMDB API Key |
+| `TMDB_READ_TOKEN` | *(Your TMDB Read Token)* | Optional |
+| `NEXT_PUBLIC_TMDB_IMAGE_URL` | `https://image.tmdb.org/t/p/w500` | TMDB Poster URL |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyC7K4isz_DrL8_yZnn90YZcDjd0LwNm8fk` | Firebase Web API Key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `livestream-d76b3.firebaseapp.com` | Firebase Auth Domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `livestream-d76b3` | Firebase Project ID |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `livestream-d76b3.firebasestorage.app` | Firebase Storage Bucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | `323939252460` | Firebase Sender ID |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:323939252460:web:9296cfb72a80a377c0cdc9` | Firebase App ID |
+
+> Note: `NEXT_PUBLIC_BACKEND_URL` is **not required** on Vercel because the API runs natively on the exact same domain!
+
+### Step 4: Click Deploy!
+Vercel will build and deploy your entire streaming platform in ~1 minute.
+
+---
+
+## 🔐 Firebase Authorized Domain
+Once your Vercel URL is live (e.g. `streamnet.vercel.app`):
+1. Go to [Firebase Console](https://console.firebase.google.com/) -> `livestream-d76b3`.
+2. Go to **Authentication** -> **Settings** -> **Authorized domains**.
+3. Add your Vercel domain (`your-app.vercel.app`).
 
 ---
 
 ## 💻 Local Development
-
-1. **Backend**:
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-   Runs on `http://localhost:5000`.
-
-2. **Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   Open `http://localhost:3000`.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000). Both the frontend and API routes will run together smoothly.
