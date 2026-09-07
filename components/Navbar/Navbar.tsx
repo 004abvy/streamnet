@@ -15,6 +15,7 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -128,52 +129,54 @@ export default function Navbar() {
       </button>
 
       <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>
+        
+        {/* Bottom Sheet Header */}
+        <div className={styles.bottomSheetHeader}>
+          <div className={styles.dragHandle}></div>
+          <h3 className={styles.menuTitle}>Menu</h3>
+        </div>
+
         <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
           Home
         </Link>
 
         {/* Movies Dropdown */}
-        <div className={styles.navLinkDropdown}>
-          <Link href="/movies" className={`${styles.navLink} ${pathname === '/movies' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
+        <div className={`${styles.navLinkDropdown} ${expandedMenu === 'movies' ? styles.expanded : ''}`}>
+          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'movies' ? null : 'movies')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
             Movies
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
-          </Link>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
+          </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/movies" className={styles.dropdownItem}>Popular</Link>
-            <Link href="/movies?filter=top_rated" className={styles.dropdownItem}>Top Rated</Link>
-            <Link href="/movies?filter=4k" className={styles.dropdownItem}>
+            <Link href="/movies" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular</Link>
+            <Link href="/movies?filter=top_rated" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
+            <Link href="/movies?filter=4k" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>
               <span className={styles.badge4k}>4K</span> 4K Ultra HD
             </Link>
-            <Link href="/movies?filter=upcoming" className={styles.dropdownItem}>Upcoming</Link>
-            <Link href="/movies?filter=now_playing" className={styles.dropdownItem}>Now Playing</Link>
+            <Link href="/movies?filter=upcoming" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Upcoming</Link>
+            <Link href="/movies?filter=now_playing" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Now Playing</Link>
           </div>
         </div>
 
         {/* TV Shows Dropdown */}
-        <div className={styles.navLinkDropdown}>
-          <Link href="/tv" className={`${styles.navLink} ${pathname === '/tv' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+        <div className={`${styles.navLinkDropdown} ${expandedMenu === 'tv' ? styles.expanded : ''}`}>
+          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'tv' ? null : 'tv')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
             TV Shows
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
-          </Link>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
+          </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/tv" className={styles.dropdownItem}>Popular Shows</Link>
-            <Link href="/tv?filter=top_rated" className={styles.dropdownItem}>Top Rated</Link>
-            <Link href="/tv?filter=on_the_air" className={styles.dropdownItem}>On The Air</Link>
-            <Link href="/tv?filter=airing_today" className={styles.dropdownItem}>Airing Today</Link>
+            <Link href="/tv" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular Shows</Link>
+            <Link href="/tv?filter=top_rated" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
+            <Link href="/tv?filter=on_the_air" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>On The Air</Link>
+            <Link href="/tv?filter=airing_today" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Airing Today</Link>
           </div>
         </div>
 
         <Link href="/anime" className={`${styles.navLink} ${pathname === '/anime' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 17.5L3 6l4-4 11.5 11.5L21 16l-1 4-4 1-2.5-3.5z" /></svg>
           Anime
-        </Link>
-
-        <Link href="/live-tv" className={`${styles.navLink} ${pathname === '/live-tv' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h4l2-9 4 18 2-9h4" /></svg>
-          Live TV
         </Link>
 
         <Link href="/movies?filter=4k" className={`${styles.navLink} ${pathname === '/movies' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
@@ -181,17 +184,32 @@ export default function Navbar() {
           Movies
         </Link>
 
+        <Link href="/live-tv" className={`${styles.navLink} ${pathname === '/live-tv' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h4l2-9 4 18 2-9h4" /></svg>
+          Live TV
+        </Link>
+
+        <Link href="/live-sports" className={`${styles.navLink} ${pathname === '/live-sports' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 21h8M12 17v4M7 4h10M5 4h14a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M4 9a8 8 0 0 0 16 0" /></svg>
+          Live Sports
+        </Link>
+        
+        <Link href="/android-app" className={`${styles.navLink} ${pathname === '/android-app' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18h12v-6a6 6 0 0 0-12 0v6z" /><path d="M6 12h-2v6h2" /><path d="M18 12h2v6h-2" /><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><path d="M8 5l-2-2" /><path d="M16 5l2-2" /></svg>
+          Android App
+        </Link>
+
         {/* More Dropdown */}
-        <div className={styles.navLinkDropdown}>
-          <div className={styles.navLink} style={{ cursor: 'pointer' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+        <div className={`${styles.navLinkDropdown} ${expandedMenu === 'more' ? styles.expanded : ''}`}>
+          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'more' ? null : 'more')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
             More
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/anime" className={styles.dropdownItem}>Anime</Link>
-            <Link href="/live-tv" className={styles.dropdownItem}>Live TV</Link>
-            <Link href="/movies?filter=now_playing" className={styles.dropdownItem}>In Theaters</Link>
+            <Link href="/anime" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Anime</Link>
+            <Link href="/live-tv" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Live TV</Link>
+            <Link href="/movies?filter=now_playing" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>In Theaters</Link>
           </div>
         </div>
       </div>
