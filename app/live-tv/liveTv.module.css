@@ -346,8 +346,8 @@
 .channelCard {
   position: relative;
   display: block;
-  aspect-ratio: 2 / 3;
-  min-height: 170px;
+  aspect-ratio: 16 / 9;
+  min-height: 80px;
   overflow: hidden;
   padding: 0;
   border-radius: 10px;
@@ -517,5 +517,5 @@
   .titleInfo { width: 100%; }
   .metaBadges { width: 100%; flex-wrap: wrap; gap: 0.45rem; }
   .sidebar { padding: 0.85rem; }
-  .channelList { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .channelList { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
