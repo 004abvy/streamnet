@@ -47,6 +47,8 @@ export default function SeasonEpisodeSelector({
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,6 +115,26 @@ export default function SeasonEpisodeSelector({
     };
   }, [tvId, selectedSeason]);
 
+  useEffect(() => {
+    setSearchQuery('');
+  }, [selectedSeason]);
+
+  const filteredAndSortedEpisodes = useMemo(() => {
+    let result = [...episodes];
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(ep => 
+        ep.name.toLowerCase().includes(q) || 
+        ep.episode_number.toString().includes(q)
+      );
+    }
+    result.sort((a, b) => {
+      if (sortOrder === 'asc') return a.episode_number - b.episode_number;
+      return b.episode_number - a.episode_number;
+    });
+    return result;
+  }, [episodes, searchQuery, sortOrder]);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -151,12 +173,40 @@ export default function SeasonEpisodeSelector({
         </div>
       </div>
 
+      <div className={styles.filtersRow}>
+        <div className={styles.searchBox}>
+          <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input 
+            type="text" 
+            placeholder="Search episodes..." 
+            className={styles.searchInput}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <button 
+          className={styles.sortBtn}
+          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/>
+          </svg>
+          {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+        </button>
+      </div>
+
       {loading ? (
         <div className={styles.loading}>Loading episodes...</div>
       ) : (
         <div className={styles.episodeGrid}>
-          {episodes.map((ep) => {
-            const isCurrent = selectedSeason === currentSeason && ep.episode_number === currentEpisode;
+          {filteredAndSortedEpisodes.length === 0 ? (
+            <div className={styles.noEpisodesFound}>No episodes found matching "{searchQuery}"</div>
+          ) : (
+            filteredAndSortedEpisodes.map((ep) => {
+              const isCurrent = selectedSeason === currentSeason && ep.episode_number === currentEpisode;
             const description = ep.overview?.trim() || 'No episode description available.';
             const stillUrl = ep.still_path
               ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
@@ -209,7 +259,7 @@ export default function SeasonEpisodeSelector({
                 </svg>
               </div>
             );
-          })}
+          }))}
         </div>
       )}
     </div>

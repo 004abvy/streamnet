@@ -143,6 +143,82 @@
   font-size: 0.9rem;
 }
 
+.filtersRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  flex: 1;
+  min-width: 200px;
+  max-width: 350px;
+  transition: all 0.2s ease;
+}
+
+.searchBox:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.searchIcon {
+  color: #9ca3af;
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.searchInput::placeholder {
+  color: #6b7280;
+}
+
+.sortBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sortBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.noEpisodesFound {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+}
+
 .episodeGrid {
   display: flex;
   flex-direction: column;
@@ -307,6 +383,22 @@
 
   .episodeOverview {
     -webkit-line-clamp: 1;
+  }
+
+  .filtersRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+  
+  .searchBox {
+    max-width: none;
+    width: 100%;
+  }
+
+  .sortBtn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
