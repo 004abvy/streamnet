@@ -17,7 +17,7 @@ import {
 } from '../../utils/serverHealth';
 import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
-import { installAdblockProtection } from '../../utils/adblockFramework';
+import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -59,6 +59,9 @@ export default function VideoPlayer({
 
   const playbackManagerRef = useRef<PlaybackManager | null>(null);
   const toastTimeoutRef = useRef<any>(null);
+  const popupTimeoutRef = useRef<any>(null);
+
+  const [pending1DmPopup, setPending1DmPopup] = useState<InterceptedPopupInfo | null>(null);
 
   // Initialize preferences and initial best server
   useEffect(() => {
@@ -93,6 +96,7 @@ export default function VideoPlayer({
     return () => {
       manager.destroy();
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
     };
   }, [activeProvider]);
 
@@ -102,9 +106,21 @@ export default function VideoPlayer({
     if (typeof window !== 'undefined' && (window as any).__STREAMNET_BLOCKED_COUNT__) {
       setBlockedCount((c) => Math.max(c, (window as any).__STREAMNET_BLOCKED_COUNT__));
     }
-    return installAdblockProtection(true, (_type, _target) => {
-      setBlockedCount((c) => c + 1);
-    });
+    return installAdblockProtection(
+      true,
+      (_type, _target) => {
+        setBlockedCount((c) => c + 1);
+      },
+      (popupInfo) => {
+        setBlockedCount((c) => c + 1);
+        setPending1DmPopup(popupInfo);
+        if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+        // Auto-dismiss 1DM prompt after 7 seconds (keeping it blocked by default)
+        popupTimeoutRef.current = setTimeout(() => {
+          setPending1DmPopup(null);
+        }, 7000);
+      }
+    );
   }, [isPlaying]);
 
   // Documented cross-frame message listener (CineSrc, VidLink)
@@ -185,6 +201,59 @@ export default function VideoPlayer({
           <div className={styles.failoverToast}>
             <span>⚡</span>
             <span>{failoverToast}</span>
+          </div>
+        )}
+
+        {/* 1DM-Style Popup Interceptor Prompt Banner */}
+        {pending1DmPopup && (
+          <div className={styles.oneDmBanner}>
+            <div className={styles.oneDmLeft}>
+              <div className={styles.oneDmShieldPulse}>
+                <span className={styles.oneDmShieldDot} />
+                <span className={styles.oneDmShieldRing} />
+              </div>
+              <div className={styles.oneDmTextCol}>
+                <div className={styles.oneDmHeader}>
+                  <span>🛡️ 1DM Popup Interceptor</span>
+                  <span className={styles.oneDmBadge}>Blocked</span>
+                </div>
+                <div className={styles.oneDmSubText}>
+                  Embed requested popup:{' '}
+                  <span className={styles.oneDmUrlHost}>
+                    {(() => {
+                      try {
+                        return new URL(pending1DmPopup.url).hostname;
+                      } catch (e) {
+                        return pending1DmPopup.url.substring(0, 25);
+                      }
+                    })()}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className={styles.oneDmActionGroup}>
+              <button
+                type="button"
+                className={styles.oneDmBlockBtn}
+                onClick={() => {
+                  setPending1DmPopup(null);
+                  if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+                }}
+              >
+                🛑 Block & Stay
+              </button>
+              <button
+                type="button"
+                className={styles.oneDmAllowBtn}
+                onClick={() => {
+                  pending1DmPopup.proceed();
+                  setPending1DmPopup(null);
+                  if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
+                }}
+              >
+                ↗️ Open Link
+              </button>
+            </div>
           </div>
         )}
 

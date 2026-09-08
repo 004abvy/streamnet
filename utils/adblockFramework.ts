@@ -311,13 +311,20 @@ import { JavaScriptInjector } from './javascriptInjector';
 
 export { JavaScriptInjector };
 
+export interface InterceptedPopupInfo {
+  url: string;
+  target?: string;
+  proceed: () => void;
+}
+
 /**
  * Comprehensive uBlock Origin Protection Suite (`gorhill/uBlock`)
  * Installs all scriptlets, listeners, and defusers into the runtime environment.
  */
 export function installAdblockProtection(
   isActive: boolean,
-  onBlockedAction?: (type: string, target?: string) => void
+  onBlockedAction?: (type: string, target?: string) => void,
+  onPopupIntercepted?: (popupInfo: InterceptedPopupInfo) => void
 ): () => void {
   if (typeof window === 'undefined' || !isActive) {
     return () => {};
@@ -458,6 +465,17 @@ export function installAdblockProtection(
         target,
       });
       onBlockedAction?.('popup_blocked', url || 'about:blank');
+      if (onPopupIntercepted && url && url !== 'about:blank') {
+        onPopupIntercepted({
+          url,
+          target,
+          proceed: () => {
+            try {
+              origOpen.call(window, url, target || '_blank');
+            } catch (e) {}
+          },
+        });
+      }
       return createDummyWindow() as any;
     }
 
@@ -523,6 +541,17 @@ export function installAdblockProtection(
             ev.stopPropagation();
             ev.preventDefault();
             onBlockedAction?.('newtab_link_disabled', href);
+            if (onPopupIntercepted && href && href !== 'about:blank') {
+              onPopupIntercepted({
+                url: href,
+                target: '_blank',
+                proceed: () => {
+                  try {
+                    origOpen.call(window, href, '_blank');
+                  } catch (e) {}
+                },
+              });
+            }
             break;
           }
         }
@@ -548,6 +577,17 @@ export function installAdblockProtection(
       if (targetAttr === '_blank' || isExternal || isKnownAdUrl(href)) {
         console.warn('[uBlock Origin / StreamNet] Defused synthetic anchor click:', href);
         onBlockedAction?.('synthetic_click_prevented', href);
+        if (onPopupIntercepted && href && href !== 'about:blank') {
+          onPopupIntercepted({
+            url: href,
+            target: targetAttr || '_blank',
+            proceed: () => {
+              try {
+                origOpen.call(window, href, targetAttr || '_blank');
+              } catch (e) {}
+            },
+          });
+        }
         return;
       }
       return origAnchorClick.apply(this);
