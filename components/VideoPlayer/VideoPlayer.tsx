@@ -50,6 +50,7 @@ export const AUDIO_LANGUAGES: AudioLanguageOption[] = [
 export default function VideoPlayer({
   tmdbId,
   type,
+  title,
   backdropPath,
   season,
   episode,
