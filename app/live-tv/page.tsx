@@ -1239,17 +1239,21 @@ export default function LiveTvPage() {
               filteredChannels.map(ch => (
                 <div
                   key={ch.id}
-                  className={styles.channelTile}
+                  className={`${styles.channelTile} ${activeChannel.id === ch.id ? styles.activeChannelTile : ''}`}
+                  onClick={() => handleChannelSelect(ch)}
+                  onMouseEnter={() => prefetchChannel(ch)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleChannelSelect(ch);
+                    }
+                  }}
+                  aria-label={`Play ${ch.name}`}
                 >
                   <div
                     className={`${styles.channelCard} ${activeChannel.id === ch.id ? styles.activeChannel : ''}`}
-                    onClick={() => handleChannelSelect(ch)}
-                    onMouseEnter={() => prefetchChannel(ch)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') handleChannelSelect(ch);
-                    }}
                   >
                     <div className={styles.logoWrapper}>
                       <img
