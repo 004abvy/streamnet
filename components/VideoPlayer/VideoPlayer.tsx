@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './VideoPlayer.module.css';
 import { SERVERS, getLastUsedServerId, setLastUsedServerId } from '../../utils/serverManager';
 
 interface VideoPlayerProps {
   tmdbId: string;
   type: 'movie' | 'tv';
-  title: string;
+  title?: string;
   backdropPath?: string;
   season?: number;
   episode?: number;
@@ -18,7 +18,6 @@ interface VideoPlayerProps {
 export default function VideoPlayer({
   tmdbId,
   type,
-  title,
   backdropPath,
   season,
   episode,
@@ -28,83 +27,6 @@ export default function VideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
-  const [showServerNotice, setShowServerNotice] = useState(true);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const playerWrapperRef = useRef<HTMLDivElement>(null);
-
-  const AUTO_HIDE_MS = 7000; // 7 seconds time before auto-fading menu
-
-  const clearControlsTimer = () => {
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-      controlsTimeoutRef.current = null;
-    }
-  };
-
-  const startControlsTimer = (duration = AUTO_HIDE_MS) => {
-    clearControlsTimer();
-    // Do not auto-fade menu while user is choosing server
-    if (showServerModal) return;
-
-    controlsTimeoutRef.current = setTimeout(() => {
-      setControlsVisible(false);
-    }, duration);
-  };
-
-  const showControls = () => {
-    setControlsVisible(true);
-    startControlsTimer(AUTO_HIDE_MS);
-  };
-
-  const hideControls = () => {
-    clearControlsTimer();
-    setControlsVisible(false);
-  };
-
-  // Start 7-second countdown when video begins playing or server changes
-  useEffect(() => {
-    if (isPlaying) {
-      showControls();
-    }
-    return () => clearControlsTimer();
-  }, [isPlaying, activeServerId]);
-
-  // Keep menu visible while server modal is open; restart 7s timer on modal close
-  useEffect(() => {
-    if (showServerModal) {
-      setControlsVisible(true);
-      clearControlsTimer();
-    } else if (isPlaying) {
-      startControlsTimer(AUTO_HIDE_MS);
-    }
-  }, [showServerModal, isPlaying]);
-
-  // Detect user clicks/taps inside cross-origin video iframe to toggle controls
-  useEffect(() => {
-    const handleWindowBlur = () => {
-      setTimeout(() => {
-        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-          // User pressed in the video!
-          setControlsVisible((prev) => {
-            if (prev) {
-              clearControlsTimer();
-              return false;
-            } else {
-              clearControlsTimer();
-              controlsTimeoutRef.current = setTimeout(() => {
-                setControlsVisible(false);
-              }, AUTO_HIDE_MS);
-              return true;
-            }
-          });
-        }
-      }, 60);
-    };
-
-    window.addEventListener('blur', handleWindowBlur);
-    return () => window.removeEventListener('blur', handleWindowBlur);
-  }, []);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
@@ -138,67 +60,7 @@ export default function VideoPlayer({
 
   return (
     <div className={styles.container}>
-      <div className={styles.headerBar}>
-        <h2 className={styles.title}>Now Watching: {title}</h2>
-      </div>
-
-      {/* Dismissible Notice Box Above Player */}
-      {showServerNotice && (
-        <div className={styles.serverNoticeBox}>
-          <div className={styles.serverNoticeContent}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className={styles.serverNoticeIcon}
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span className={styles.serverNoticeText}>
-              If the current server does not work,{' '}
-              <button
-                className={styles.noticeServerLink}
-                onClick={() => setShowServerModal(true)}
-                title="Choose another server"
-              >
-                choose another server
-              </button>
-            </span>
-          </div>
-          <button
-            className={styles.closeServerNoticeBtn}
-            onClick={() => setShowServerNotice(false)}
-            aria-label="Close notice"
-            title="Dismiss notice"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <div
-        className={styles.playerWrapper}
-        ref={playerWrapperRef}
-        onMouseMove={() => {
-          if (!controlsVisible) {
-            showControls();
-          } else {
-            startControlsTimer(AUTO_HIDE_MS);
-          }
-        }}
-        onTouchStart={() => {
-          if (!controlsVisible) {
-            showControls();
-          } else {
-            startControlsTimer(AUTO_HIDE_MS);
-          }
-        }}
-      >
+      <div className={styles.playerWrapper}>
         {!isPlaying ? (
           <div
             className={styles.posterOverlay}
@@ -225,93 +87,7 @@ export default function VideoPlayer({
           </div>
         )}
 
-        {/* In-Player Floating Controls Overlay (7s auto-fade & tap-to-toggle) - Server ONLY */}
-        {isPlaying && (
-          <div
-            className={`${styles.playerOverlayControls} ${
-              controlsVisible ? styles.controlsVisible : styles.controlsHidden
-            }`}
-          >
-            {/* Top Bar */}
-            <div className={styles.playerOverlayTop}>
-              <div className={styles.playerOverlayTitleGroup}>
-                <span className={styles.playerOverlayBadge}>
-                  {type === 'tv' && season && episode
-                    ? `S${season}:E${episode}`
-                    : activeServer.quality || '4K'}
-                </span>
-                <h3 className={styles.playerOverlayTitle} title={title}>
-                  {title}
-                </h3>
-              </div>
-
-              <button
-                className={styles.playerOverlayCloseBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  hideControls();
-                }}
-                title="Hide Menu (Tap video anytime to re-open)"
-              >
-                <span>Hide</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Center Tap Area (clicking/pressing in video immediately fades away controls) */}
-            <div
-              className={styles.playerOverlayCenterTap}
-              onClick={(e) => {
-                e.stopPropagation();
-                hideControls();
-              }}
-            >
-              <span className={styles.tapHintText}>Tap video to hide menu</span>
-            </div>
-
-            {/* Bottom Bar Controls - ONLY Server Switcher */}
-            <div className={styles.playerOverlayBottom}>
-              <button
-                className={`${styles.overlayBtn} ${showServerModal ? styles.overlayBtnActive : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowServerModal(true);
-                }}
-                title="Switch Video Streaming Server"
-              >
-                <span>
-                  {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name}
-                </span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Floating Menu Trigger Button (shown when controls are hidden) */}
-        {!controlsVisible && isPlaying && (
-          <button
-            className={styles.floatingMenuTrigger}
-            onClick={(e) => {
-              e.stopPropagation();
-              showControls();
-            }}
-            title="Open Server Menu"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-            <span>{activeServer.name}</span>
-          </button>
-        )}
-
-        {/* Minimal Server Popup Modal */}
+        {/* Server Selection Modal */}
         {showServerModal && (
           <div className={styles.serverModalOverlay} onClick={() => setShowServerModal(false)}>
             <div className={styles.serverModalContent} onClick={(e) => e.stopPropagation()}>
@@ -320,6 +96,7 @@ export default function VideoPlayer({
                 <button
                   className={styles.closeModalBtn}
                   onClick={() => setShowServerModal(false)}
+                  aria-label="Close server selection"
                 >
                   ✕
                 </button>
@@ -352,14 +129,26 @@ export default function VideoPlayer({
         )}
       </div>
 
-      {/* Toolbar Below Player - ONLY Server Switcher */}
+      {/* Toolbar Below Player - ONLY Change Server */}
       <div className={styles.toolbar}>
         <button
           className={styles.toolbarBtn}
           onClick={() => setShowServerModal(true)}
           title="Change Streaming Server"
         >
-          {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name} ▾
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+            <line x1="6" y1="6" x2="6.01" y2="6" />
+            <line x1="6" y1="18" x2="6.01" y2="18" />
+          </svg>
+          <span>Change Server:</span>
+          <span className={styles.activeServerBadge}>
+            {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}{activeServer.name}
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
         </button>
       </div>
     </div>
