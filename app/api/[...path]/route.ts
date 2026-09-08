@@ -212,12 +212,27 @@ export async function GET(
     // 11. /api/anime
     if (pathStr === 'anime') {
       const page = searchParams.get('page') || '1';
-      const data = await fetchFromTMDB('/discover/tv', {
-        with_genres: 16,
+      const filter = searchParams.get('filter');
+      const genre = searchParams.get('genre');
+
+      const params: Record<string, any> = {
+        with_genres: genre ? `16,${genre}` : 16,
         with_original_language: 'ja',
-        sort_by: 'popularity.desc',
         page
-      });
+      };
+
+      if (filter === 'top_rated') {
+        params.sort_by = 'vote_average.desc';
+        params['vote_count.gte'] = 100;
+      } else if (filter === 'on_the_air') {
+        params.sort_by = 'popularity.desc';
+      } else if (filter === 'upcoming') {
+        params.sort_by = 'first_air_date.desc';
+      } else {
+        params.sort_by = 'popularity.desc';
+      }
+
+      const data = await fetchFromTMDB('/discover/tv', params);
       return NextResponse.json(data);
     }
 
