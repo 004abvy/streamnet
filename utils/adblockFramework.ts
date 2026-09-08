@@ -60,18 +60,18 @@ const STANDARD_ALLOW_FEATURES = [
 ];
 
 export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
-  nxsha: {
-    serverId: 'nxsha',
-    name: 'Nxsha 4K',
+  vidlink: {
+    serverId: 'vidlink',
+    name: 'VidLink Ultra',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Clean stream. Sandboxed against popups while preserving CDN streams.',
+    notes: 'Premium VIP player. Zero popups, multi-language audio and subtitles.',
   },
   cinesrc: {
     serverId: 'cinesrc',
-    name: 'CineSrc',
+    name: 'CineSrc 4K',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
@@ -85,18 +85,36 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
     },
     notes: 'Premium embed. Sandboxed with auto-next and ad-skip parameters.',
   },
+  nxsha: {
+    serverId: 'nxsha',
+    name: 'Nxsha Cinema',
+    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Clean stream. Sandboxed against popups while preserving CDN streams.',
+  },
   vidrock: {
     serverId: 'vidrock',
-    name: 'VidRock',
+    name: 'VidRock 4K',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
     notes: 'Fast stream. Sandboxed against popups on click.',
   },
+  'vidsrc-me': {
+    serverId: 'vidsrc-me',
+    name: 'VidSrc Global',
+    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Strict sandbox drops all popunder attempts.',
+  },
   'vidsrc-in': {
     serverId: 'vidsrc-in',
-    name: 'VidSrc.in',
+    name: 'VidSrc India',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
@@ -105,34 +123,16 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   },
   vidcore: {
     serverId: 'vidcore',
-    name: 'VidCore',
+    name: 'VidCore Direct',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
     notes: 'Fast stream with hardened playback permissions.',
   },
-  vsembed: {
-    serverId: 'vsembed',
-    name: 'VSEmbed',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer-when-downgrade',
-    allowFeatures: [...STANDARD_ALLOW_FEATURES],
-    protectionLevel: 'maximum',
-    notes: 'Heavy ad network. Disallowing popups drops touch-triggered tabs.',
-  },
-  'vidsrc-me': {
-    serverId: 'vidsrc-me',
-    name: 'VidSrc',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer-when-downgrade',
-    allowFeatures: [...STANDARD_ALLOW_FEATURES],
-    protectionLevel: 'maximum',
-    notes: 'Strict sandbox drops all popunder attempts.',
-  },
   vidfast: {
     serverId: 'vidfast',
-    name: 'VidFast',
+    name: 'VidFast Backup',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
@@ -141,30 +141,12 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   },
   'vidsrc-io': {
     serverId: 'vidsrc-io',
-    name: 'VidSrc.io',
+    name: 'VidSrc.io Backup',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
     notes: 'Pause/seek popup traps neutralized.',
-  },
-  superembed: {
-    serverId: 'superembed',
-    name: 'SuperEmbed',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer-when-downgrade',
-    allowFeatures: [...STANDARD_ALLOW_FEATURES],
-    protectionLevel: 'maximum',
-    notes: 'multiembed network. Sandbox drops popup script triggers.',
-  },
-  twoembed: {
-    serverId: 'twoembed',
-    name: '2Embed',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer-when-downgrade',
-    allowFeatures: [...STANDARD_ALLOW_FEATURES],
-    protectionLevel: 'maximum',
-    notes: '2embed network. Popup stripping completely defuses click popups.',
   },
 };
 
@@ -311,7 +293,65 @@ export function installAdblockProtection(
     });
   }
 
-  // 4. Z-Axis Defuser: Intercept and force rogue in-page popups/overlays to z-index: -99999
+  // 4. Block scam notification permission popups
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    const origNotification = window.Notification.requestPermission;
+    window.Notification.requestPermission = () => {
+      console.warn('[StreamNet Shield] Suppressed rogue notification request');
+      onBlockedAction?.('notification_suppressed');
+      return Promise.resolve('denied' as NotificationPermission);
+    };
+    cleanups.push(() => {
+      window.Notification.requestPermission = origNotification;
+    });
+  }
+
+  // 5. Intercept transparent click-jacking overlays
+  if (typeof window !== 'undefined') {
+    const handleClickCapture = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest('[class*="VideoPlayer"]') ||
+        target.closest('[class*="Navbar"]') ||
+        target.closest('[class*="Selector"]') ||
+        target.closest('button') ||
+        target.closest('a')
+      ) {
+        return;
+      }
+      try {
+        const style = window.getComputedStyle(target);
+        if (
+          (style.position === 'fixed' || style.position === 'absolute') &&
+          parseInt(style.zIndex, 10) > 100
+        ) {
+          const isTransparent =
+            style.opacity === '0' ||
+            style.backgroundColor === 'transparent' ||
+            style.backgroundColor === 'rgba(0, 0, 0, 0)';
+          if (isTransparent) {
+            e.stopPropagation();
+            e.preventDefault();
+            target.style.setProperty('display', 'none', 'important');
+            target.style.setProperty('pointer-events', 'none', 'important');
+            try {
+              target.remove();
+            } catch (err) {}
+            console.warn('[StreamNet Shield] Neutralized clickjack overlay');
+            onBlockedAction?.('clickjack_neutralized');
+          }
+        }
+      } catch (err) {}
+    };
+
+    window.addEventListener('click', handleClickCapture, true);
+    cleanups.push(() => {
+      window.removeEventListener('click', handleClickCapture, true);
+    });
+  }
+
+  // 6. Z-Axis Defuser: Intercept and force rogue in-page popups/overlays to z-index: -99999
   if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
     const defuseElement = (node: Node) => {
       if (!(node instanceof HTMLElement)) return;
@@ -359,6 +399,12 @@ export function installAdblockProtection(
         onBlockedAction?.('z_axis_defused', tag);
       }
     };
+
+    // Initial sweep of existing DOM elements
+    try {
+      const allSuspicious = document.querySelectorAll('[class*="popup"], [id*="popup"], [class*="popunder"], [id*="popunder"], [class*="ad-"]');
+      allSuspicious.forEach((el) => defuseElement(el));
+    } catch (e) {}
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((m) => {

@@ -3,27 +3,33 @@ export interface StreamingServer {
   name: string;
   quality?: string;
   flag?: string;
+  badge?: string;
+  description?: string;
   getUrl: (tmdbId: string, type: 'movie' | 'tv', season?: number, episode?: number, imdbId?: string) => string;
 }
 
 export const SERVERS: StreamingServer[] = [
   {
-    id: 'nxsha',
-    name: 'Nxsha 4K',
-    quality: '4K',
-    flag: '⚡',
+    id: 'vidlink',
+    name: 'VidLink Ultra',
+    quality: '4K UHD',
+    flag: '✨',
+    badge: 'Recommended',
+    description: 'Ad-Free VIP • Multi-Audio & Subtitles',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
-        return `https://web.nxsha.app/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
+        return `https://vidlink.pro/tv/${tmdbId}/${season || 1}/${episode || 1}?primaryColor=f59e0b&secondaryColor=0e0e14&iconColor=f59e0b&autoplay=false&nextbutton=true`;
       }
-      return `https://web.nxsha.app/embed/movie/${tmdbId}`;
+      return `https://vidlink.pro/movie/${tmdbId}?primaryColor=f59e0b&secondaryColor=0e0e14&iconColor=f59e0b&autoplay=false`;
     }
   },
   {
     id: 'cinesrc',
-    name: 'CineSrc',
-    quality: '4K',
+    name: 'CineSrc 4K',
+    quality: '4K UHD',
     flag: '⚡',
+    badge: 'Auto-Skip',
+    description: 'Fast CDN • Auto-Next Episodes',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
         return `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b&autonext=true&autoskip=true`;
@@ -32,10 +38,26 @@ export const SERVERS: StreamingServer[] = [
     }
   },
   {
-    id: 'vidrock',
-    name: 'VidRock',
+    id: 'nxsha',
+    name: 'Nxsha Cinema',
     quality: '4K',
-    flag: '⚡',
+    flag: '🚀',
+    badge: 'High Bitrate',
+    description: 'Direct 4K Cinema Stream',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'tv') {
+        return `https://web.nxsha.app/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
+      }
+      return `https://web.nxsha.app/embed/movie/${tmdbId}`;
+    }
+  },
+  {
+    id: 'vidrock',
+    name: 'VidRock 4K',
+    quality: '4K',
+    flag: '💎',
+    badge: 'Fast',
+    description: 'Ultra HD Direct Stream',
     getUrl: (tmdbId, type, season, episode, imdbId) => {
       const id = imdbId || tmdbId;
       if (type === 'tv') {
@@ -45,10 +67,26 @@ export const SERVERS: StreamingServer[] = [
     }
   },
   {
+    id: 'vidsrc-me',
+    name: 'VidSrc Global',
+    quality: '1080p',
+    flag: '🌐',
+    badge: 'Stable',
+    description: 'Global Cloud Network',
+    getUrl: (tmdbId, type, season, episode) => {
+      if (type === 'tv') {
+        return `https://vidsrcme.ru/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`;
+      }
+      return `https://vidsrcme.ru/embed/movie?tmdb=${tmdbId}`;
+    }
+  },
+  {
     id: 'vidsrc-in',
-    name: 'VidSrc.in',
-    quality: 'HD',
+    name: 'VidSrc India',
+    quality: '1080p',
     flag: '🇮🇳',
+    badge: 'Fast Route',
+    description: 'Low-latency Regional CDN',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
         return `https://vidsrc.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
@@ -58,9 +96,11 @@ export const SERVERS: StreamingServer[] = [
   },
   {
     id: 'vidcore',
-    name: 'VidCore',
+    name: 'VidCore Direct',
     quality: 'HD',
     flag: '⚡',
+    badge: 'Fast',
+    description: 'High-speed buffer pipeline',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
         return `https://vidcore.org/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
@@ -69,34 +109,12 @@ export const SERVERS: StreamingServer[] = [
     }
   },
   {
-    id: 'vsembed',
-    name: 'VSEmbed',
-    quality: 'HD',
-    flag: '🇮🇳',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'tv') {
-        return `https://vsembed.ru/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
-      }
-      return `https://vsembed.ru/embed/movie/${tmdbId}`;
-    }
-  },
-  {
-    id: 'vidsrc-me',
-    name: 'VidSrc',
-    quality: 'HD',
-    flag: '🌐',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'tv') {
-        return `https://vidsrcme.ru/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}`;
-      }
-      return `https://vidsrcme.ru/embed/movie?tmdb=${tmdbId}`;
-    }
-  },
-  {
     id: 'vidfast',
-    name: 'VidFast',
+    name: 'VidFast Backup',
     quality: 'HD',
     flag: '⚡',
+    badge: 'Mirror',
+    description: 'Quick loading alternative',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
         return `https://vidfast.vc/tv/${tmdbId}/${season || 1}/${episode || 1}`;
@@ -106,38 +124,16 @@ export const SERVERS: StreamingServer[] = [
   },
   {
     id: 'vidsrc-io',
-    name: 'VidSrc.io',
+    name: 'VidSrc.io Backup',
     quality: 'HD',
     flag: '🌐',
+    badge: 'Backup',
+    description: 'Alternative global mirror',
     getUrl: (tmdbId, type, season, episode) => {
       if (type === 'tv') {
         return `https://vidsrc.io/embed/tv/${tmdbId}/${season || 1}/${episode || 1}`;
       }
       return `https://vidsrc.io/embed/movie/${tmdbId}`;
-    }
-  },
-  {
-    id: 'superembed',
-    name: 'SuperEmbed',
-    quality: 'HD',
-    flag: '🌐',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'tv') {
-        return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season || 1}&e=${episode || 1}`;
-      }
-      return `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`;
-    }
-  },
-  {
-    id: 'twoembed',
-    name: '2Embed',
-    quality: 'HD',
-    flag: '🌐',
-    getUrl: (tmdbId, type, season, episode) => {
-      if (type === 'tv') {
-        return `https://www.2embed.cc/embedtv/${tmdbId}&s=${season || 1}&e=${episode || 1}`;
-      }
-      return `https://www.2embed.cc/embed/${tmdbId}`;
     }
   }
 ];
@@ -147,8 +143,14 @@ const STORAGE_KEY = 'lastUsedServerId';
 export const getLastUsedServerId = (): string => {
   if (typeof window === 'undefined') return SERVERS[0].id;
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored && SERVERS.find(s => s.id === stored)) {
-    return stored;
+  if (stored) {
+    // If the stored server was an older ad-heavy or deprecated server, automatically upgrade to default
+    if (stored === 'twoembed' || stored === 'superembed' || stored === 'vsembed') {
+      localStorage.setItem(STORAGE_KEY, SERVERS[0].id);
+      return SERVERS[0].id;
+    }
+    const match = SERVERS.find((s) => s.id === stored);
+    if (match) return match.id;
   }
   return SERVERS[0].id;
 };

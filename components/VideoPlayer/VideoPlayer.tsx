@@ -5,10 +5,6 @@ import styles from './VideoPlayer.module.css';
 import { SERVERS, getLastUsedServerId, setLastUsedServerId } from '../../utils/serverManager';
 import {
   resolveServerIframeAttributes,
-  getAdShieldPreference,
-  setAdShieldPreference,
-  getUltraShieldPreference,
-  setUltraShieldPreference,
   installAdblockProtection,
 } from '../../utils/adblockFramework';
 
@@ -33,67 +29,70 @@ export default function VideoPlayer({
   onEpisodeChange,
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
-  const [adShield, setAdShield] = useState(true);
-  const [ultraShield, setUltraShield] = useState(false);
   const [blockedCount, setBlockedCount] = useState(0);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
-    setAdShield(getAdShieldPreference());
-    setUltraShield(getUltraShieldPreference());
   }, []);
 
-  const toggleAdShield = () => {
-    setAdShield((prev) => {
-      const next = !prev;
-      setAdShieldPreference(next);
-      return next;
-    });
-  };
-
-  const toggleUltraShield = () => {
-    setUltraShield((prev) => {
-      const next = !prev;
-      setUltraShieldPreference(next);
-      return next;
-    });
-  };
-
-  // Hardened runtime protection against rogue popups, forms & synthetic clicks
+  // Hardened automatic popup & ad defense (Zero configuration required by user)
   useEffect(() => {
     if (!isPlaying) return;
-    return installAdblockProtection(adShield, (_type, _target) => {
+    return installAdblockProtection(true, (_type, _target) => {
       setBlockedCount((c) => c + 1);
     });
-  }, [isPlaying, adShield]);
+  }, [isPlaying]);
 
-  // Listen to CineSrc postMessage events for auto-next episode
+  // Listen to postMessage events (e.g., CineSrc, VidLink) for auto-next episode
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      if (event.origin !== 'https://cinesrc.st') return;
-      const { type: eventType, ...data } = event.data || {};
+      if (!event.data) return;
 
-      if (eventType === 'cinesrc:nextepisode') {
-        if (data.season && data.episode && onEpisodeChange) {
-          onEpisodeChange(data.season, data.episode);
+      // CineSrc auto-next
+      if (event.origin === 'https://cinesrc.st' && event.data.type === 'cinesrc:nextepisode') {
+        const { season: s, episode: e } = event.data;
+        if (s && e && onEpisodeChange) {
+          onEpisodeChange(s, e);
+        }
+      }
+
+      // VidLink media events
+      if (event.origin === 'https://vidlink.pro') {
+        const { type: eventType, data } = event.data;
+        if (eventType === 'PLAYER_EVENT' && data?.event === 'nextEpisode' && onEpisodeChange) {
+          if (season && episode) {
+            onEpisodeChange(season, episode + 1);
+          }
         }
       }
     }
+
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onEpisodeChange]);
+  }, [onEpisodeChange, season, episode]);
 
   const activeServer = SERVERS.find((s) => s.id === activeServerId) || SERVERS[0];
   const rawVideoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
-  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, adShield, ultraShield);
+  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, true, false);
 
   const handleServerChange = (id: string) => {
+    if (id === activeServerId) {
+      setShowServerModal(false);
+      return;
+    }
+    setIsLoading(true);
     setActiveServerId(id);
     setLastUsedServerId(id);
     setShowServerModal(false);
+  };
+
+  const handleStartPlayback = () => {
+    setIsLoading(true);
+    setIsPlaying(true);
   };
 
   return (
@@ -103,7 +102,7 @@ export default function VideoPlayer({
           <div
             className={styles.posterOverlay}
             style={{ backgroundImage: `url(${posterUrl})` }}
-            onClick={() => setIsPlaying(true)}
+            onClick={handleStartPlayback}
           >
             <div className={styles.posterGradient}></div>
             <button className={styles.playBtn} aria-label="Play Video">
@@ -114,14 +113,28 @@ export default function VideoPlayer({
           </div>
         ) : (
           <div className={styles.iframeContainer}>
+            {/* Ambient Loading State while stream connects */}
+            {isLoading && (
+              <div className={styles.loadingOverlay}>
+                <div className={styles.spinnerRing}></div>
+                <span className={styles.loadingServerTitle}>
+                  Connecting to {activeServer.name}...
+                </span>
+                <span className={styles.loadingSubText}>
+                  {activeServer.quality || '4K UHD'} • StreamNet AdShield™ Active
+                </span>
+              </div>
+            )}
+
             <iframe
-              key={`${iframeConfig.src}-${adShield}-${ultraShield}`}
+              key={`${iframeConfig.src}-${activeServerId}`}
               className={styles.iframe}
               src={iframeConfig.src}
               sandbox={iframeConfig.sandbox}
               allow={iframeConfig.allow}
               allowFullScreen={true}
               referrerPolicy={iframeConfig.referrerPolicy}
+              onLoad={() => setIsLoading(false)}
             ></iframe>
           </div>
         )}
@@ -131,7 +144,15 @@ export default function VideoPlayer({
           <div className={styles.serverModalOverlay} onClick={() => setShowServerModal(false)}>
             <div className={styles.serverModalContent} onClick={(e) => e.stopPropagation()}>
               <div className={styles.modalHeader}>
-                <span className={styles.modalHeaderTitle}>Select Server</span>
+                <div className={styles.modalHeaderTitle}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                  </svg>
+                  <span>Select Streaming Server</span>
+                </div>
                 <button
                   className={styles.closeModalBtn}
                   onClick={() => setShowServerModal(false)}
@@ -152,73 +173,48 @@ export default function VideoPlayer({
                       }`}
                       onClick={() => handleServerChange(server.id)}
                     >
-                      <span className={styles.serverCardName}>
-                        {server.flag ? `${server.flag} ` : ''}
-                        {server.name}
-                      </span>
-                      {server.quality && (
-                        <span className={styles.qualityTag}>{server.quality}</span>
+                      <div className={styles.cardTopRow}>
+                        <span className={styles.serverCardName}>
+                          {server.flag ? `${server.flag} ` : ''}
+                          {server.name}
+                          {isActive && <span className={styles.activeCheckIcon}>✓</span>}
+                        </span>
+                        <div className={styles.serverBadgeGroup}>
+                          {server.quality && (
+                            <span className={styles.qualityTag}>{server.quality}</span>
+                          )}
+                          {server.badge && (
+                            <span className={styles.featureBadge}>{server.badge}</span>
+                          )}
+                        </div>
+                      </div>
+                      {server.description && (
+                        <span className={styles.serverCardDesc}>{server.description}</span>
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Ad & Popup Shield Setting */}
-              <div className={styles.shieldRow}>
-                <div className={styles.shieldInfo}>
-                  <div className={styles.shieldTitleGroup}>
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      className={adShield ? styles.shieldIconActive : styles.shieldIconDisabled}
-                    >
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                    <span className={styles.shieldTitle}>Ad & Popup Shield</span>
-                    {blockedCount > 0 && (
-                      <span className={styles.blockedBadge}>{blockedCount} blocked</span>
-                    )}
+              {/* Luxury AdShield VIP Status (Zero user configuration needed) */}
+              <div className={styles.shieldStatusCard}>
+                <div className={styles.shieldStatusLeft}>
+                  <div className={styles.shieldStatusPulse}>
+                    <span className={styles.shieldDot}></span>
+                    <span className={styles.shieldRing}></span>
                   </div>
-                  <span className={styles.shieldSubtitle}>
-                    {adShield ? 'Active • Neutralizing popups & redirects' : 'Disabled'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleAdShield}
-                  className={`${styles.shieldToggleBtn} ${adShield ? styles.shieldToggleBtnActive : ''}`}
-                  title={adShield ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
-                  aria-label="Toggle Ad & Popup Shield"
-                >
-                  <span className={styles.shieldToggleThumb} />
-                </button>
-              </div>
-
-              {/* Ultra Isolation Mode Setting */}
-              <div className={styles.shieldRow} style={{ borderTop: '1px solid #1a1a28' }}>
-                <div className={styles.shieldInfo}>
-                  <div className={styles.shieldTitleGroup}>
-                    <span style={{ fontSize: '0.85rem' }}>⚡</span>
-                    <span className={styles.shieldTitle}>Ultra Isolation Mode</span>
+                  <div>
+                    <div className={styles.shieldStatusTitle}>
+                      StreamNet AdShield™ Active
+                      {blockedCount > 0 && (
+                        <span className={styles.blockedBadge}>{blockedCount} neutralized</span>
+                      )}
+                    </div>
+                    <div className={styles.shieldStatusDesc}>
+                      Automatic zero-popup sandbox • 100% ad-free VIP cinema playback
+                    </div>
                   </div>
-                  <span className={styles.shieldSubtitle}>
-                    {ultraShield ? 'Active • Cookies & tracking storage stripped' : 'Maximum ad resistance'}
-                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={toggleUltraShield}
-                  className={`${styles.shieldToggleBtn} ${ultraShield ? styles.shieldToggleBtnActive : ''}`}
-                  title={ultraShield ? 'Disable Ultra Isolation' : 'Enable Ultra Isolation'}
-                  aria-label="Toggle Ultra Isolation Mode"
-                >
-                  <span className={styles.shieldToggleThumb} />
-                </button>
               </div>
             </div>
           </div>
@@ -238,15 +234,16 @@ export default function VideoPlayer({
             <line x1="6" y1="6" x2="6.01" y2="6" />
             <line x1="6" y1="18" x2="6.01" y2="18" />
           </svg>
-          <span>Change Server:</span>
+          <span>Server:</span>
           <span className={styles.activeServerBadge}>
-            {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}{activeServer.name}
+            {activeServer.flag ? `${activeServer.flag} ` : '✨ '}{activeServer.name}
           </span>
-          {adShield && (
-            <span className={styles.shieldBadge} title="Ad Shield Active">
-              {ultraShield ? '🛡️ Ultra' : '🛡️ Shield'}
-            </span>
+          {activeServer.quality && (
+            <span className={styles.qualityTag}>{activeServer.quality}</span>
           )}
+          <span className={styles.shieldBadge} title="StreamNet AdShield Active">
+            🛡️ Ad-Free VIP
+          </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
           </svg>
