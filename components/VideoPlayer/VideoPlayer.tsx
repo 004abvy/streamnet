@@ -33,7 +33,90 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<'fit' | 'zoom' | 'stretch'>('fit');
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playerWrapperRef = useRef<HTMLDivElement>(null);
+
+  const AUTO_HIDE_MS = 7000; // 7 seconds time before auto-fading menu
+
+  const clearControlsTimer = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = null;
+    }
+  };
+
+  const startControlsTimer = (duration = AUTO_HIDE_MS) => {
+    clearControlsTimer();
+    // Do not auto-fade menu while user is choosing server or subtitles
+    if (showServerModal || showSubModal) return;
+
+    controlsTimeoutRef.current = setTimeout(() => {
+      setControlsVisible(false);
+    }, duration);
+  };
+
+  const showControls = () => {
+    setControlsVisible(true);
+    startControlsTimer(AUTO_HIDE_MS);
+  };
+
+  const hideControls = () => {
+    clearControlsTimer();
+    setControlsVisible(false);
+  };
+
+  const toggleControls = () => {
+    if (controlsVisible) {
+      hideControls();
+    } else {
+      showControls();
+    }
+  };
+
+  // Start 7-second countdown when video begins playing or server changes
+  useEffect(() => {
+    if (isPlaying) {
+      showControls();
+    }
+    return () => clearControlsTimer();
+  }, [isPlaying, activeServerId]);
+
+  // Keep menu visible while any modal is open; restart 7s timer on modal close
+  useEffect(() => {
+    if (showServerModal || showSubModal) {
+      setControlsVisible(true);
+      clearControlsTimer();
+    } else if (isPlaying) {
+      startControlsTimer(AUTO_HIDE_MS);
+    }
+  }, [showServerModal, showSubModal, isPlaying]);
+
+  // Detect user clicks/taps inside cross-origin video iframe to toggle controls
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      setTimeout(() => {
+        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+          // User pressed in the video!
+          setControlsVisible((prev) => {
+            if (prev) {
+              clearControlsTimer();
+              return false;
+            } else {
+              clearControlsTimer();
+              controlsTimeoutRef.current = setTimeout(() => {
+                setControlsVisible(false);
+              }, AUTO_HIDE_MS);
+              return true;
+            }
+          });
+        }
+      }, 60);
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    return () => window.removeEventListener('blur', handleWindowBlur);
+  }, []);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
@@ -138,6 +221,20 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
       <div 
         className={styles.playerWrapper} 
         ref={playerWrapperRef}
+        onMouseMove={() => {
+          if (!controlsVisible) {
+            showControls();
+          } else {
+            startControlsTimer(AUTO_HIDE_MS);
+          }
+        }}
+        onTouchStart={() => {
+          if (!controlsVisible) {
+            showControls();
+          } else {
+            startControlsTimer(AUTO_HIDE_MS);
+          }
+        }}
       >
         {!isPlaying ? (
           <div 
@@ -168,6 +265,166 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
+        )}
+
+        {/* In-Player Floating Controls Overlay (7s auto-fade & tap-to-toggle) */}
+        {isPlaying && (
+          <div
+            className={`${styles.playerOverlayControls} ${controlsVisible ? styles.controlsVisible : styles.controlsHidden}`}
+          >
+            {/* Top Bar */}
+            <div className={styles.playerOverlayTop}>
+              <div className={styles.playerOverlayTitleGroup}>
+                <span className={styles.playerOverlayBadge}>
+                  {type === 'tv' && season && episode ? `S${season}:E${episode}` : (activeServer.quality || '4K')}
+                </span>
+                <h3 className={styles.playerOverlayTitle} title={title}>
+                  {title}
+                </h3>
+              </div>
+
+              <button
+                className={styles.playerOverlayCloseBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  hideControls();
+                }}
+                title="Hide Menu (Tap video anytime to re-open)"
+              >
+                <span>Hide</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Center Tap Area (clicking/pressing in video immediately fades away controls) */}
+            <div
+              className={styles.playerOverlayCenterTap}
+              onClick={(e) => {
+                e.stopPropagation();
+                hideControls();
+              }}
+            >
+              <span className={styles.tapHintText}>Tap video to hide menu</span>
+            </div>
+
+            {/* Bottom Bar Controls */}
+            <div className={styles.playerOverlayBottom}>
+              <div className={styles.overlayButtonGroup}>
+                {/* Server Switcher */}
+                <button
+                  className={`${styles.overlayBtn} ${showServerModal ? styles.overlayBtnActive : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowServerModal(true);
+                  }}
+                  title="Switch Video Streaming Server"
+                >
+                  <span>{activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+
+                {/* Subtitles */}
+                <button
+                  className={`${styles.overlayBtn} ${selectedSub ? styles.overlayBtnActive : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSubModal(true);
+                  }}
+                  title="Subtitles & Closed Captions"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>{selectedSub ? (selectedSub.display || selectedSub.language) : 'CC / Subs'}</span>
+                </button>
+
+                {/* Aspect Ratio */}
+                <button
+                  className={styles.overlayBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cycleAspect();
+                    startControlsTimer(AUTO_HIDE_MS);
+                  }}
+                  title="Cycle Aspect Ratio (Fit 16:9 / Zoom 1.2x / Stretch)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                  <span>{aspectRatio === 'fit' ? 'Fit 16:9' : aspectRatio === 'zoom' ? 'Zoom 1.2x' : 'Stretch'}</span>
+                </button>
+
+                {/* Series Next Episode */}
+                {type === 'tv' && onEpisodeChange && (
+                  <button
+                    className={styles.overlayBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEpisodeChange(season || 1, (episode || 1) + 1);
+                    }}
+                    title="Play Next Episode"
+                  >
+                    <span>Next Ep</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M5 4v16l11-8zm11 0v16h2V4z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Fullscreen Button */}
+              <button
+                className={styles.overlayBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleFullscreen();
+                  startControlsTimer(AUTO_HIDE_MS);
+                }}
+                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                    </svg>
+                    <span>Exit</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                    </svg>
+                    <span>Fullscreen</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Menu Trigger Button (shown when controls are hidden so user can also summon menu anytime) */}
+        {!controlsVisible && isPlaying && (
+          <button
+            className={styles.floatingMenuTrigger}
+            onClick={(e) => {
+              e.stopPropagation();
+              showControls();
+            }}
+            title="Open Player Menu"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+            <span>{activeServer.name}</span>
+          </button>
         )}
 
         {/* Minimal Server Popup Modal */}
@@ -263,15 +520,49 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
       </div>
 
       <div className={styles.toolbar}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             className={styles.toolbarBtn}
             onClick={() => setShowServerModal(true)}
             title="Change Streaming Server"
           >
-            Server: {activeServer.name} ▾
+            {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name} ▾
           </button>
+
+          <button
+            className={styles.toolbarBtn}
+            onClick={() => setShowSubModal(true)}
+            title="Subtitles & Closed Captions"
+          >
+            💬 CC {selectedSub ? `(${selectedSub.display || selectedSub.language})` : ''}
+          </button>
+
+          <button
+            className={styles.toolbarBtn}
+            onClick={cycleAspect}
+            title="Cycle Aspect Ratio (Fit / Zoom / Stretch)"
+          >
+            📐 Ratio: {aspectRatio.toUpperCase()}
+          </button>
+
+          {type === 'tv' && onEpisodeChange && (
+            <button
+              className={styles.toolbarBtn}
+              onClick={() => onEpisodeChange(season || 1, (episode || 1) + 1)}
+              title="Play Next Episode"
+            >
+              ⏭ Next Episode
+            </button>
+          )}
         </div>
+
+        <button
+          className={styles.toolbarBtn}
+          onClick={handleToggleFullscreen}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        </button>
       </div>
     </div>
   );

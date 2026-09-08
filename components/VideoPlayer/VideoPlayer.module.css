@@ -257,3 +257,226 @@
   font-weight: 700;
 }
 
+/* ===================================================================
+   Player Floating Controls & Menu Overlay (7s auto-fade & tap-to-toggle)
+   =================================================================== */
+.playerOverlayControls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s ease;
+  user-select: none;
+}
+
+.controlsVisible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.controlsHidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Top bar in overlay */
+.playerOverlayTop {
+  padding: 1rem 1.25rem 2rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.65) 60%, transparent 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  pointer-events: auto;
+}
+
+.playerOverlayTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.playerOverlayTitle {
+  font-size: clamp(0.9rem, 1.1vw, 1.25rem);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playerOverlayBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.playerOverlayCloseBtn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #e5e7eb;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+.playerOverlayCloseBtn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+/* Center Tap Area covering video */
+.playerOverlayCenterTap {
+  flex: 1;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.tapHintText {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.playerOverlayControls:hover .tapHintText {
+  opacity: 1;
+}
+
+/* Bottom bar in overlay */
+.playerOverlayBottom {
+  padding: 2.2rem 1.25rem 1rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.65) 60%, transparent 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.overlayButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.overlayBtn {
+  background: rgba(18, 18, 26, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f3f4f6;
+  font-size: clamp(0.75rem, 0.82vw, 0.9rem);
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.overlayBtn:hover {
+  background: rgba(34, 34, 50, 0.95);
+  border-color: #f59e0b;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.25);
+}
+
+.overlayBtnActive {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* Floating Menu Trigger when controls are hidden */
+.floatingMenuTrigger {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 22;
+  background: rgba(12, 12, 18, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e5e7eb;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+  opacity: 0.75;
+  transition: all 0.25s ease;
+  pointer-events: auto;
+}
+
+.floatingMenuTrigger:hover {
+  opacity: 1;
+  background: rgba(26, 26, 38, 0.95);
+  border-color: #f59e0b;
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .playerOverlayTop {
+    padding: 0.75rem 0.85rem 1.5rem;
+  }
+  .playerOverlayBottom {
+    padding: 1.5rem 0.85rem 0.75rem;
+    gap: 0.4rem;
+  }
+  .overlayBtn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+    gap: 0.3rem;
+  }
+}
+

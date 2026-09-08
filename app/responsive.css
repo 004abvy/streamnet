@@ -502,7 +502,41 @@ a, button {
 }
 
 /* -------------------------------------------------------------------
-   I. ANDROID APP DOWNLOAD PAGE
+   I. VIDEO PLAYER & OVERLAY CONTROLS
+   ------------------------------------------------------------------- */
+[class*="VideoPlayer_container"] {
+  width: 100% !important;
+  max-width: min(1050px, 100%) !important;
+  border-radius: clamp(8px, 1vw, 16px) !important;
+}
+
+[class*="VideoPlayer_headerBar"] {
+  padding: clamp(0.5rem, 0.8vw, 1rem) clamp(0.75rem, 1.2vw, 1.5rem) !important;
+}
+
+[class*="VideoPlayer_title"] {
+  font-size: clamp(0.95rem, 1.1vw, 1.4rem) !important;
+}
+
+[class*="VideoPlayer_overlayBtn"] {
+  font-size: clamp(0.7rem, 0.8vw, 0.9rem) !important;
+  padding: clamp(0.32rem, 0.5vw, 0.5rem) clamp(0.55rem, 0.8vw, 0.95rem) !important;
+  border-radius: clamp(6px, 0.6vw, 10px) !important;
+}
+
+[class*="VideoPlayer_playerOverlayTop"],
+[class*="VideoPlayer_playerOverlayBottom"] {
+  padding-left: clamp(0.65rem, 1.2vw, 1.5rem) !important;
+  padding-right: clamp(0.65rem, 1.2vw, 1.5rem) !important;
+}
+
+[class*="VideoPlayer_floatingMenuTrigger"] {
+  font-size: clamp(0.7rem, 0.78vw, 0.85rem) !important;
+  padding: clamp(0.3rem, 0.45vw, 0.45rem) clamp(0.6rem, 0.8vw, 0.9rem) !important;
+}
+
+/* -------------------------------------------------------------------
+   J. ANDROID APP DOWNLOAD PAGE
    ------------------------------------------------------------------- */
 [class*="android_container"] {
   width: 100%;
