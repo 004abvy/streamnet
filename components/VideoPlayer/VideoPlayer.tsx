@@ -594,22 +594,22 @@ export default function VideoPlayer({
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
-                          {isEmbedUrl ? (
+                          {(media.type === 'audio' || media.url.includes('lang=') || media.url.includes('proxy')) && (
                             <button
                               type="button"
                               className={styles.oneDmAllowBtn}
-                              style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#059669', borderColor: '#10b981', color: '#fff' }}
+                              style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#d97706', borderColor: '#f59e0b', color: '#fff' }}
                               onClick={() => {
-                                const nxshaProv = getProviderById('nxsha');
-                                handleServerChange(nxshaProv);
-                                handleLanguageChange('hi');
+                                setCustomAudioUrl(media.url);
                                 setShowSnifferModal(false);
-                                setFailoverToast('🚀 Switched Player to Nxsha Hindi Stream!');
+                                setFailoverToast('🎧 Nxsha Audio Track Synced on Clean Player!');
                               }}
                             >
-                              🚀 Play Stream in Player
+                              🎧 Sync Audio on Clean Player
                             </button>
-                          ) : (
+                          )}
+
+                          {!isEmbedUrl && (
                             <button
                               type="button"
                               className={styles.oneDmBlockBtn}

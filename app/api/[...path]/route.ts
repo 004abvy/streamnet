@@ -343,7 +343,7 @@ export async function GET(
       }
     }
 
-    // 16. /api/stream/nxsha-languages (Nxsha Multi-Audio Language Extractor)
+    // 16. /api/stream/nxsha-languages (Nxsha Background Multi-Audio Language Extractor)
     if (pathStr === 'stream/nxsha-languages') {
       const id = searchParams.get('id');
       const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
@@ -352,38 +352,46 @@ export async function GET(
 
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const baseUrl = `${protocol}://${host}`;
+
       const nxshaUrl = type === 'tv'
         ? `https://web.nxsha.app/embed/tv/${id}/${season}/${episode}`
         : `https://web.nxsha.app/embed/movie/${id}`;
 
-      const languages: Array<{ code: string; name: string; url: string; nativeName: string; flag: string }> = [
+      const languages: Array<{ code: string; name: string; url: string; nativeName: string; flag: string; isAudioTrack: boolean }> = [
         {
           code: 'hi',
-          name: 'Hindi',
-          nativeName: 'हिन्दी Dubbed (Nxsha 4K)',
+          name: 'Hindi Dubbed',
+          nativeName: 'Nxsha Extracted Hindi Audio Track',
           flag: '🇮🇳',
-          url: `${nxshaUrl}?lang=hi&audio=hi`,
+          url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(`${nxshaUrl}?lang=hi&audio=hi`)}`,
+          isAudioTrack: true,
         },
         {
           code: 'en',
           name: 'English',
-          nativeName: 'Original English (Nxsha)',
+          nativeName: 'Nxsha Extracted English Audio Track',
           flag: '🇺🇸',
-          url: `${nxshaUrl}?lang=en&audio=en`,
+          url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(`${nxshaUrl}?lang=en&audio=en`)}`,
+          isAudioTrack: true,
         },
         {
           code: 'ta',
-          name: 'Tamil',
-          nativeName: 'தமிழ் Dubbed (Nxsha)',
+          name: 'Tamil Dubbed',
+          nativeName: 'Nxsha Extracted Tamil Audio Track',
           flag: '🇮🇳',
-          url: `${nxshaUrl}?lang=ta&audio=ta`,
+          url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(`${nxshaUrl}?lang=ta&audio=ta`)}`,
+          isAudioTrack: true,
         },
         {
           code: 'te',
-          name: 'Telugu',
-          nativeName: 'తెలుగు Dubbed (Nxsha)',
+          name: 'Telugu Dubbed',
+          nativeName: 'Nxsha Extracted Telugu Audio Track',
           flag: '🇮🇳',
-          url: `${nxshaUrl}?lang=te&audio=te`,
+          url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(`${nxshaUrl}?lang=te&audio=te`)}`,
+          isAudioTrack: true,
         },
       ];
 
@@ -419,9 +427,10 @@ export async function GET(
                       languages.push({
                         code,
                         name,
-                        nativeName: `${name} Nxsha Stream`,
+                        nativeName: `${name} Audio Stream`,
                         flag: code === 'hi' || code === 'ta' || code === 'te' || code === 'ml' || code === 'kn' ? '🇮🇳' : '🌐',
-                        url: audioUri,
+                        url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(audioUri)}`,
+                        isAudioTrack: true,
                       });
                     }
                   }
