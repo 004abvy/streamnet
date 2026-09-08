@@ -1,17 +1,14 @@
 /**
- * StreamNet Hardened Adblock Framework
+ * StreamNet Intelligent Adblock Framework
  *
- * Multi-layer protection system for video streaming embeds (iframes).
+ * Provides granular, server-specific ad and popup blocking.
  *
- * Protection Layers:
- * 1. Strict HTML5 Sandboxing (Blocks popups, form-based popunder bypasses, top redirects, downloads, modals)
- * 2. Form Submission Hijack Blocker (Disables invisible <form target="_blank"> ad-spammers use)
- * 3. Synthetic Click / Anchor Hijack Blocker (Overrides HTMLAnchorElement.prototype.click)
- * 4. Parent Window Popup Trapper (Neutralizes window.open, top.open, parent.open)
- * 5. Referrer Stripping (Blocks ad bidding networks from verifying or targeting the site)
- * 6. Sensor API Stripping (Blocks accelerometer/gyroscope used for bot/device detection)
- * 7. Capture-phase Click Interceptor (Prevents rogue external link navigation)
- * 8. Focus & Blur Defense (Prevents popunder window focus shifts)
+ * Differentiates popups using:
+ * 1. Window Size & Dimensions (width=, height=, top=, left=)
+ * 2. Stripped Browser Chrome (menubar=no, toolbar=no, status=no, popup=yes)
+ * 3. Blank Popunders (about:blank triggers)
+ * 4. External Targets vs Internal App Navigation
+ * 5. Iframe Sandboxing (omits allow-popups and allow-top-navigation, keeping allow-scripts & allow-same-origin)
  */
 
 export type ShieldLevel = 'ultra' | 'maximum' | 'standard';
@@ -28,43 +25,37 @@ export interface ServerAdPolicy {
 }
 
 /**
- * STRICT BASELINE:
- * - NO 'allow-forms': Completely blocks the notorious <form target="_blank"> ad loophole!
- * - NO 'allow-popups': Browser automatically drops all window.open() requests.
- * - NO 'allow-popups-to-escape-sandbox': Prevents escaping sandboxing.
- * - NO 'allow-top-navigation': Iframe CANNOT redirect parent tab.
- * - NO 'allow-top-navigation-by-user-activation': Parent tab protected even on user click/touch.
- * - NO 'allow-downloads': Prevents unwanted APK/executable downloads.
- * - NO 'allow-modals': Blocks deceptive alert/confirm spam dialogs.
+ * Standard stream-safe sandbox baseline:
+ * - 'allow-scripts': Runs player JS.
+ * - 'allow-same-origin': Required for HLS blobs, decryptors, and CDN requests.
+ * - 'allow-forms': Required for Cloudflare Turnstile verification.
+ * - 'allow-presentation': Fullscreen and AirPlay.
+ * 
+ * STRICTLY OMITTED (The Popups & Redirects):
+ * - NO 'allow-popups': Browser drops all window.open() popup attempts.
+ * - NO 'allow-popups-to-escape-sandbox': Cannot escape sandboxing.
+ * - NO 'allow-top-navigation': Cannot hijack or redirect StreamNet away.
+ * - NO 'allow-top-navigation-by-user-activation': Cannot redirect on tap/click.
  */
 const MAXIMUM_SANDBOX_TOKENS = [
   'allow-scripts',
   'allow-same-origin',
+  'allow-forms',
   'allow-presentation',
 ];
 
-/**
- * ULTRA BASELINE:
- * Strips 'allow-same-origin' as well.
- * The iframe runs in a unique null origin, completely isolated from cookies,
- * localStorage, and parent tracking.
- */
 const ULTRA_SANDBOX_TOKENS = [
   'allow-scripts',
   'allow-presentation',
 ];
 
-/**
- * HARDENED FEATURE PERMISSIONS:
- * Strictly limited to media playback.
- * Omits accelerometer, gyroscope, camera, microphone, payment, and geolocation
- * which ad networks abuse to profile devices and trigger popups.
- */
-const HARDENED_ALLOW_FEATURES = [
+const STANDARD_ALLOW_FEATURES = [
   'autoplay',
   'fullscreen',
   'encrypted-media',
   'picture-in-picture',
+  'accelerometer',
+  'gyroscope',
 ];
 
 export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
@@ -72,17 +63,17 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
     serverId: 'nxsha',
     name: 'Nxsha 4K',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'Clean stream. Stripped of form submissions and sensor APIs.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Clean stream. Sandboxed against popups while preserving CDN streams.',
   },
   cinesrc: {
     serverId: 'cinesrc',
     name: 'CineSrc',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
     cleanUrl: (url: string) => {
       if (!url.includes('autoskip=')) {
@@ -97,26 +88,26 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
     serverId: 'vidrock',
     name: 'VidRock',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'Aggressive mirror. Sandbox strictly prevents all popunders on click.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Fast stream. Sandboxed against popups on click.',
   },
   'vidsrc-in': {
     serverId: 'vidsrc-in',
     name: 'VidSrc.in',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'Strict sandbox neutralizes transparent clickjack layers.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Sandbox neutralizes popups while allowing video stream buffers.',
   },
   vidcore: {
     serverId: 'vidcore',
     name: 'VidCore',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
     notes: 'Fast stream with hardened playback permissions.',
   },
@@ -124,55 +115,55 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
     serverId: 'vsembed',
     name: 'VSEmbed',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'Heavy ad network. Disallowing forms and popups stops touch-triggered tabs.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Heavy ad network. Disallowing popups drops touch-triggered tabs.',
   },
   'vidsrc-me': {
     serverId: 'vidsrc-me',
     name: 'VidSrc',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
     notes: 'Strict sandbox drops all popunder attempts.',
   },
   vidfast: {
     serverId: 'vidfast',
     name: 'VidFast',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'Lightweight embed with click popups completely defused.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Lightweight embed with click popups defused.',
   },
   'vidsrc-io': {
     serverId: 'vidsrc-io',
     name: 'VidSrc.io',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
     notes: 'Pause/seek popup traps neutralized.',
   },
   superembed: {
     serverId: 'superembed',
     name: 'SuperEmbed',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: 'multiembed network. Strict sandbox drops aggressive popup script triggers.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'multiembed network. Sandbox drops popup script triggers.',
   },
   twoembed: {
     serverId: 'twoembed',
     name: '2Embed',
     sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-    referrerPolicy: 'no-referrer',
-    allowFeatures: [...HARDENED_ALLOW_FEATURES],
-    protectionLevel: 'ultra',
-    notes: '2embed network. Form and popup stripping completely defuses click popups.',
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: '2embed network. Popup stripping completely defuses click popups.',
   },
 };
 
@@ -180,9 +171,9 @@ export const DEFAULT_SERVER_POLICY: ServerAdPolicy = {
   serverId: 'default',
   name: 'Default Streaming Server',
   sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
-  referrerPolicy: 'no-referrer',
-  allowFeatures: [...HARDENED_ALLOW_FEATURES],
-  protectionLevel: 'ultra',
+  referrerPolicy: 'no-referrer-when-downgrade',
+  allowFeatures: [...STANDARD_ALLOW_FEATURES],
+  protectionLevel: 'maximum',
 };
 
 export function getServerAdPolicy(serverId: string): ServerAdPolicy {
@@ -229,10 +220,9 @@ export function setAdShieldPreference(enabled: boolean): void {
 }
 
 export function getUltraShieldPreference(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
   const saved = localStorage.getItem(ULTRA_STORAGE_KEY);
-  // Defaults to TRUE so ultra-strict isolation is persistent out-of-the-box
-  return saved === null ? true : saved === 'true';
+  return saved === 'true';
 }
 
 export function setUltraShieldPreference(enabled: boolean): void {
@@ -242,8 +232,8 @@ export function setUltraShieldPreference(enabled: boolean): void {
 }
 
 /**
- * Hardened runtime interceptor that neutralizes popups, form-based escapes,
- * synthetic anchor clicks, focus loss, and window hijacking.
+ * Intelligent runtime popup interceptor.
+ * Differentiates popups using size, dimensions, features, and target inspection.
  */
 export function installAdblockProtection(
   isActive: boolean,
@@ -255,53 +245,40 @@ export function installAdblockProtection(
 
   const cleanups: Array<() => void> = [];
 
-  // 1. Direct window.open and popup neutralization across top/parent
+  // 1. Differentiate window.open calls using size, features, and URL
   const origOpen = window.open;
   window.open = function (...args: any[]) {
-    const targetUrl = args[0] ? String(args[0]) : 'popup';
-    console.warn('[StreamNet Hardened Adblock] Blocked window.open:', targetUrl);
-    onBlockedAction?.('window.open', targetUrl);
-    return null;
+    const url = args[0] ? String(args[0]) : '';
+    const target = args[1] ? String(args[1]) : '';
+    const features = args[2] ? String(args[2]) : '';
+
+    // Differentiate: detect popup sizing, coordinates, and stripped window features
+    const hasPopupDimensions = /width\s*=\s*\d+|height\s*=\s*\d+|left\s*=\s*-?\d+|top\s*=\s*-?\d+/i.test(features);
+    const hasStrippedUI = /menubar\s*=\s*(0|no)|toolbar\s*=\s*(0|no)|status\s*=\s*(0|no)|popup\s*=\s*(1|yes)/i.test(features);
+    const isBlank = !url || url === 'about:blank';
+    const isExternal = url.startsWith('http') && !url.includes(window.location.host);
+
+    if (hasPopupDimensions || hasStrippedUI || isBlank || (target === '_blank' && isExternal)) {
+      console.warn('[StreamNet Popup Shield] Neutralized popup by signature:', { url: url || 'about:blank', features, target });
+      onBlockedAction?.('popup_blocked', url || 'about:blank');
+      return null;
+    }
+
+    return origOpen.apply(window, args as any);
   };
   cleanups.push(() => {
     window.open = origOpen;
   });
 
-  try {
-    if (window.top && window.top !== window) {
-      // @ts-ignore
-      window.top.open = () => null;
-    }
-  } catch (e) {}
-
-  // 2. Block form submit ad loophole (<form target="_blank" action="...">)
-  if (typeof HTMLFormElement !== 'undefined') {
-    const origFormSubmit = HTMLFormElement.prototype.submit;
-    HTMLFormElement.prototype.submit = function (this: HTMLFormElement) {
-      const targetAttr = this.getAttribute('target');
-      if (targetAttr === '_blank' || targetAttr === '_top' || targetAttr === '_parent') {
-        console.warn('[StreamNet Hardened Adblock] Blocked form submit popup:', this.action);
-        onBlockedAction?.('form_submit', this.action);
-        return;
-      }
-      return origFormSubmit.apply(this);
-    };
-    cleanups.push(() => {
-      HTMLFormElement.prototype.submit = origFormSubmit;
-    });
-  }
-
-  // 3. Block synthetic click on dynamically created <a target="_blank">
+  // 2. Block synthetic clicks on external target="_blank" anchors
   if (typeof HTMLAnchorElement !== 'undefined') {
     const origAnchorClick = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
       const targetAttr = this.getAttribute('target');
       const href = this.getAttribute('href') || '';
-      if (
-        targetAttr === '_blank' ||
-        (href && !href.startsWith('/') && !href.startsWith('#') && !href.includes(window.location.host) && !href.startsWith('javascript:'))
-      ) {
-        console.warn('[StreamNet Hardened Adblock] Blocked synthetic link click:', href);
+      const isExternal = href.startsWith('http') && !href.includes(window.location.host);
+      if (targetAttr === '_blank' && isExternal) {
+        console.warn('[StreamNet Popup Shield] Blocked external anchor popup:', href);
         onBlockedAction?.('synthetic_click', href);
         return;
       }
@@ -312,47 +289,24 @@ export function installAdblockProtection(
     });
   }
 
-  // 4. Capture-phase click interceptor for rogue ad overlays on page
-  const clickCaptureHandler = (e: MouseEvent) => {
-    const target = e.target as HTMLElement | null;
-    const anchor = target?.closest?.('a');
-    if (anchor) {
-      const href = anchor.getAttribute('href') || '';
-      const targetAttr = anchor.getAttribute('target');
-      const isInternal =
-        href.startsWith('/') ||
-        href.startsWith('#') ||
-        href.includes(window.location.host) ||
-        href.startsWith('javascript:');
-
-      if (targetAttr === '_blank' || (!isInternal && href.startsWith('http'))) {
-        console.warn('[StreamNet Hardened Adblock] Intercepted rogue external click:', href);
-        onBlockedAction?.('click_hijack', href);
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
+  // 3. Block form submit popups (<form target="_blank" action="...">)
+  if (typeof HTMLFormElement !== 'undefined') {
+    const origFormSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function (this: HTMLFormElement) {
+      const targetAttr = this.getAttribute('target');
+      const action = this.getAttribute('action') || '';
+      const isExternal = action.startsWith('http') && !action.includes(window.location.host);
+      if ((targetAttr === '_blank' || targetAttr === '_top') && isExternal) {
+        console.warn('[StreamNet Popup Shield] Blocked form popup submit:', action);
+        onBlockedAction?.('form_submit', action);
+        return;
       }
-    }
-  };
-  window.addEventListener('click', clickCaptureHandler, true);
-  cleanups.push(() => {
-    window.removeEventListener('click', clickCaptureHandler, true);
-  });
-
-  // 5. Anti-focus theft (prevent popunders stealing window focus)
-  const blurHandler = () => {
-    // If window blurs right after clicking inside the player, immediately reclaim focus
-    setTimeout(() => {
-      try {
-        window.focus();
-      } catch (e) {}
-    }, 10);
-  };
-  window.addEventListener('blur', blurHandler);
-  cleanups.push(() => {
-    window.removeEventListener('blur', blurHandler);
-  });
+      return origFormSubmit.apply(this);
+    };
+    cleanups.push(() => {
+      HTMLFormElement.prototype.submit = origFormSubmit;
+    });
+  }
 
   return () => {
     cleanups.forEach((cleanup) => {
