@@ -378,3 +378,26 @@
 @media (max-width: 520px) {
   .card, .cardSkeleton { flex: 0 0 calc((100% - 1.1rem) / 2); }
 }
+
+@media (max-width: 600px) {
+  .section {
+    padding: 1.5rem 1rem;
+  }
+
+  .headerRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cardGrid, .loadingGrid {
+    scroll-snap-type: x mandatory;
+    gap: 0.85rem;
+    width: 100%;
+  }
+
+  .card, .cardSkeleton {
+    flex: 0 0 45%;
+    scroll-snap-align: center;
+  }
+}

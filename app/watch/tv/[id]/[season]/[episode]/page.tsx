@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../../../components/Navbar/Navbar';
-import DetailsTabs from '../../../../../../components/DetailsTabs/DetailsTabs';
 import VideoPlayer from '../../../../../../components/VideoPlayer/VideoPlayer';
 import SeasonEpisodeSelector from '../../../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
+import PosterCarousel from '../../../../../../components/PosterCarousel/PosterCarousel';
 
 export default function WatchTvPage() {
   const params = useParams();
@@ -51,6 +51,7 @@ export default function WatchTvPage() {
   };
 
   const imdbId = show?.external_ids?.imdb_id || show?.imdb_id;
+  const similarShows = show?.similar?.results || show?.recommendations?.results || [];
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-4 md:p-8 pt-20 md:pt-24">
@@ -64,7 +65,7 @@ export default function WatchTvPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <span>Back to Details</span>
+          <span>Back</span>
         </Link>
 
         <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
@@ -101,7 +102,11 @@ export default function WatchTvPage() {
               onEpisodeSelect={handleEpisodeChange}
             />
 
-            <DetailsTabs movie={show} />
+            {similarShows.length > 0 && (
+              <div className="w-full mt-8">
+                <PosterCarousel title="You May Also Like" movies={similarShows} />
+              </div>
+            )}
           </>
         ) : (
           <div className="w-full aspect-video flex items-center justify-center text-neutral-500 bg-neutral-900 rounded-xl border border-neutral-800">

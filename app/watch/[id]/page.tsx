@@ -4,7 +4,7 @@ import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../../../components/Navbar/Navbar';
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
-import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
+import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
 
 export default function WatchPage({
   params,
@@ -36,6 +36,7 @@ export default function WatchPage({
   }, [id]);
 
   const imdbId = movie?.external_ids?.imdb_id || movie?.imdb_id;
+  const similarMovies = movie?.similar?.results || movie?.recommendations?.results || [];
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-4 md:p-8 pt-20 md:pt-24">
@@ -49,7 +50,7 @@ export default function WatchPage({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <span>Back to Movie Details</span>
+          <span>Back</span>
         </Link>
 
         {movie && (
@@ -79,7 +80,11 @@ export default function WatchPage({
               imdbId={imdbId}
             />
 
-            <DetailsTabs movie={movie} />
+            {similarMovies.length > 0 && (
+              <div className="w-full mt-8">
+                <PosterCarousel title="You May Also Like" movies={similarMovies} />
+              </div>
+            )}
           </>
         ) : (
           <div className="w-full aspect-video flex items-center justify-center text-neutral-500 bg-neutral-900 rounded-xl border border-neutral-800">
