@@ -30,6 +30,22 @@ interface VideoPlayerProps {
   onEpisodeChange?: (season: number, episode: number) => void;
 }
 
+export interface AudioLanguageOption {
+  code: string;
+  name: string;
+  nativeName: string;
+  flag: string;
+}
+
+export const AUDIO_LANGUAGES: AudioLanguageOption[] = [
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी Dubbed / Original', flag: '🇮🇳' },
+  { code: 'en', name: 'English', nativeName: 'Original English Audio', flag: '🇺🇸' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ் Dubbed', flag: '🇮🇳' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు Dubbed', flag: '🇮🇳' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español Audio', flag: '🇪🇸' },
+  { code: 'auto', name: 'Server Default', nativeName: 'Provider Automatic', flag: '🌐' },
+];
+
 export default function VideoPlayer({
   tmdbId,
   type,
@@ -41,6 +57,8 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showServerModal, setShowServerModal] = useState(false);
+  const [showLangModal, setShowLangModal] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('hi');
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
   const [blockedCount, setBlockedCount] = useState(0);
   const [failoverToast, setFailoverToast] = useState<string | null>(null);
@@ -60,6 +78,7 @@ export default function VideoPlayer({
   const playbackManagerRef = useRef<PlaybackManager | null>(null);
   const toastTimeoutRef = useRef<any>(null);
   const popupTimeoutRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [pending1DmPopup, setPending1DmPopup] = useState<InterceptedPopupInfo | null>(null);
 
@@ -67,6 +86,9 @@ export default function VideoPlayer({
   useEffect(() => {
     const prefs = getPlayerPreferences();
     setSandboxEnabled(prefs.sandboxActive);
+    if (prefs.preferredLanguage) {
+      setSelectedLanguage(prefs.preferredLanguage);
+    }
 
     const initialProvider = prefs.useSafestServerFirst
       ? getBestAvailableProvider(ALL_PROVIDERS, prefs.preferredServer)
@@ -184,9 +206,29 @@ export default function VideoPlayer({
     });
   };
 
-  const currentUrl = activeProvider.buildUrl(type, tmdbId, season, episode, imdbId);
+  const handleLanguageChange = (code: string) => {
+    setSelectedLanguage(code);
+    updatePlayerPreferences({ preferredLanguage: code });
+    setShowLangModal(false);
+
+    try {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: 'SET_AUDIO_LANGUAGE', lang: code, language: code },
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          { type: 'SET_AUDIO_TRACK', lang: code, language: code },
+          '*'
+        );
+      }
+    } catch (e) {}
+  };
+
+  const currentUrl = activeProvider.buildUrl(type, tmdbId, season, episode, imdbId, selectedLanguage);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
   const securityAttributes = resolveEmbedSecurity(activeProvider, sandboxEnabled);
+  const activeLangObj = AUDIO_LANGUAGES.find((l) => l.code === selectedLanguage) || AUDIO_LANGUAGES[0];
 
   const isBufferingOrMounting =
     isPlaying &&
@@ -287,6 +329,7 @@ export default function VideoPlayer({
             )}
 
             <iframe
+              ref={iframeRef}
               key={`${activeProvider.id}-${currentUrl}-${securityAttributes.isSandboxed}`}
               className={styles.iframe}
               src={currentUrl}
@@ -300,6 +343,54 @@ export default function VideoPlayer({
                 setSessionState((prev) => ({ ...prev, state: 'ready' }));
               }}
             ></iframe>
+          </div>
+        )}
+
+        {/* Audio Language Selection Modal */}
+        {showLangModal && (
+          <div className={styles.serverModalOverlay} onClick={() => setShowLangModal(false)}>
+            <div className={styles.serverModalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <div className={styles.modalHeaderTitle}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg>
+                  <span>Select Audio Language</span>
+                </div>
+                <button
+                  className={styles.closeModalBtn}
+                  onClick={() => setShowLangModal(false)}
+                  aria-label="Close language selection"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={styles.modalServerGrid}>
+                {AUDIO_LANGUAGES.map((lang) => {
+                  const isActive = selectedLanguage === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      className={`${styles.modalServerCard} ${
+                        isActive ? styles.activeModalServerCard : ''
+                      }`}
+                      onClick={() => handleLanguageChange(lang.code)}
+                    >
+                      <div className={styles.cardTopRow}>
+                        <span className={styles.serverCardName}>
+                          {lang.flag} {lang.name}
+                          {isActive && <span className={styles.activeCheckIcon}>✓</span>}
+                        </span>
+                      </div>
+                      <span className={styles.serverCardDesc}>{lang.nativeName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -425,6 +516,21 @@ export default function VideoPlayer({
           <span className={styles.qualityTag}>{activeProvider.capabilities.quality}</span>
           <span className={styles.shieldBadge} title="Security Status">
             {securityAttributes.isSandboxed ? '🛡️ Sandbox Active' : '🛡️ uBlock Shield'}
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {/* Audio Language Selection Button */}
+        <button
+          className={styles.toolbarBtn}
+          onClick={() => setShowLangModal(true)}
+          title="Change Audio Language Track"
+        >
+          <span>🌐 Audio:</span>
+          <span className={styles.activeServerBadge}>
+            {activeLangObj.flag} {activeLangObj.name}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />

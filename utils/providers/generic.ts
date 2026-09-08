@@ -15,9 +15,10 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 86,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode, imdbId) => {
+    buildUrl: (type, tmdbId, season, episode, imdbId, preferredLang = 'hi') => {
       const id = imdbId || tmdbId;
-      const params = 'autoPlay=true&autoplay=1&muted=0&autoNext=true';
+      const lang = preferredLang || 'hi';
+      const params = `autoPlay=true&autoplay=1&muted=0&autoNext=true&lang=${lang}&audio=${lang}`;
       if (type === 'tv') {
         return `https://vidrock.ru/tv/${id}/${season || 1}/${episode || 1}?${params}`;
       }
@@ -38,8 +39,9 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 84,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode) => {
-      const params = 'autoplay=1&autostart=true&skip=1';
+    buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+      const lang = preferredLang || 'hi';
+      const params = `autoplay=1&autostart=true&skip=1&ds_lang=${lang}&lang=${lang}`;
       if (type === 'tv') {
         return `https://vidsrcme.ru/embed/tv?tmdb=${tmdbId}&season=${season || 1}&episode=${episode || 1}&${params}`;
       }
@@ -60,8 +62,9 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 82,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode) => {
-      const params = 'autoplay=1&autostart=true';
+    buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+      const lang = preferredLang || 'hi';
+      const params = `autoplay=1&autostart=true&lang=${lang}&audio=${lang}`;
       if (type === 'tv') {
         return `https://vidsrc.in/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params}`;
       }
@@ -82,8 +85,9 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 80,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode) => {
-      const params = 'autoplay=1';
+    buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+      const lang = preferredLang || 'hi';
+      const params = `autoplay=1&lang=${lang}&audio=${lang}`;
       if (type === 'tv') {
         return `https://vidcore.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params}`;
       }
@@ -104,8 +108,9 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 78,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode) => {
-      const params = 'autoplay=1';
+    buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+      const lang = preferredLang || 'hi';
+      const params = `autoplay=1&lang=${lang}&audio=${lang}`;
       if (type === 'tv') {
         return `https://vidfast.net/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params}`;
       }
@@ -126,8 +131,9 @@ export const genericAdapters: ProviderAdapter[] = [
       baseReliability: 75,
     },
     getTimeoutMs: () => 9000,
-    buildUrl: (type, tmdbId, season, episode) => {
-      const params = 'autoplay=1';
+    buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+      const lang = preferredLang || 'hi';
+      const params = `autoplay=1&lang=${lang}&audio=${lang}`;
       if (type === 'tv') {
         return `https://vidsrc.io/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?${params}`;
       }

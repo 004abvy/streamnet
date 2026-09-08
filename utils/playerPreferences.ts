@@ -3,6 +3,7 @@ export interface PlayerPreferences {
   autoNext: boolean;
   skipIntro: boolean;
   preferredServer: string;
+  preferredLanguage: string;
   useSafestServerFirst: boolean;
   sandboxActive: boolean;
 }
@@ -14,6 +15,7 @@ const DEFAULT_PREFERENCES: PlayerPreferences = {
   autoNext: true,
   skipIntro: true,
   preferredServer: 'auto',
+  preferredLanguage: 'hi',
   useSafestServerFirst: true,
   sandboxActive: false,
 };

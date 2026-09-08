@@ -14,8 +14,10 @@ export const vidlinkAdapter: ProviderAdapter = {
     baseReliability: 96,
   },
   getTimeoutMs: () => 8000,
-  buildUrl: (type, tmdbId, season, episode) => {
-    const brandParams = 'primaryColor=f59e0b&secondaryColor=0e0e14&iconColor=f59e0b&autoplay=true&autostart=true&nextbutton=true';
+  buildUrl: (type, tmdbId, season, episode, _imdbId, preferredLang = 'hi') => {
+    const lang = preferredLang || 'hi';
+    const langParams = `fallbackLang=${lang}&lang=${lang}&audio=${lang}`;
+    const brandParams = `primaryColor=f59e0b&secondaryColor=0e0e14&iconColor=f59e0b&autoplay=true&autostart=true&nextbutton=true&${langParams}`;
     if (type === 'tv') {
       return `https://vidlink.pro/tv/${tmdbId}/${season || 1}/${episode || 1}?${brandParams}`;
     }

@@ -17,7 +17,7 @@ export interface ProviderAdapter {
   badge?: string;
   description?: string;
   capabilities: ServerCapabilities;
-  buildUrl(type: 'movie' | 'tv', tmdbId: string, season?: number, episode?: number, imdbId?: string): string;
+  buildUrl(type: 'movie' | 'tv', tmdbId: string, season?: number, episode?: number, imdbId?: string, preferredLang?: string): string;
   getTimeoutMs(): number;
   handleMessage?(event: MessageEvent, onEpisodeChange?: (season: number, episode: number) => void): boolean;
 }
