@@ -343,6 +343,100 @@ export async function GET(
       }
     }
 
+    // 16. /api/stream/nxsha-languages (Nxsha Multi-Audio Language Extractor)
+    if (pathStr === 'stream/nxsha-languages') {
+      const id = searchParams.get('id');
+      const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
+      const season = searchParams.get('season') || '1';
+      const episode = searchParams.get('episode') || '1';
+
+      if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+      const nxshaUrl = type === 'tv'
+        ? `https://web.nxsha.app/embed/tv/${id}/${season}/${episode}`
+        : `https://web.nxsha.app/embed/movie/${id}`;
+
+      const languages: Array<{ code: string; name: string; url: string; nativeName: string; flag: string }> = [
+        {
+          code: 'hi',
+          name: 'Hindi',
+          nativeName: 'हिन्दी Dubbed (Nxsha 4K)',
+          flag: '🇮🇳',
+          url: `${nxshaUrl}?lang=hi&audio=hi`,
+        },
+        {
+          code: 'en',
+          name: 'English',
+          nativeName: 'Original English (Nxsha)',
+          flag: '🇺🇸',
+          url: `${nxshaUrl}?lang=en&audio=en`,
+        },
+        {
+          code: 'ta',
+          name: 'Tamil',
+          nativeName: 'தமிழ் Dubbed (Nxsha)',
+          flag: '🇮🇳',
+          url: `${nxshaUrl}?lang=ta&audio=ta`,
+        },
+        {
+          code: 'te',
+          name: 'Telugu',
+          nativeName: 'తెలుగు Dubbed (Nxsha)',
+          flag: '🇮🇳',
+          url: `${nxshaUrl}?lang=te&audio=te`,
+        },
+      ];
+
+      try {
+        const pageRes = await fetch(nxshaUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://web.nxsha.app/'
+          }
+        });
+
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const m3u8Match = html.match(/(https?:\/\/[^"'\s]+\.m3u8[^"'\s]*)/i);
+          if (m3u8Match && m3u8Match[1]) {
+            const m3u8Url = m3u8Match[1];
+            const manifestRes = await fetch(m3u8Url, {
+              headers: { 'Referer': 'https://web.nxsha.app/' }
+            });
+            if (manifestRes.ok) {
+              const manifestText = await manifestRes.text();
+              const lines = manifestText.split('\n');
+              lines.forEach((line) => {
+                if (line.includes('#EXT-X-MEDIA:TYPE=AUDIO')) {
+                  const nameMatch = line.match(/NAME="([^"]+)"/i);
+                  const langMatch = line.match(/LANGUAGE="([^"]+)"/i);
+                  const uriMatch = line.match(/URI="([^"]+)"/i);
+                  if (uriMatch && uriMatch[1]) {
+                    const audioUri = new URL(uriMatch[1], m3u8Url).href;
+                    const code = langMatch ? langMatch[1].toLowerCase() : 'hi';
+                    const name = nameMatch ? nameMatch[1] : code.toUpperCase();
+                    if (!languages.some((l) => l.code === code)) {
+                      languages.push({
+                        code,
+                        name,
+                        nativeName: `${name} Nxsha Stream`,
+                        flag: code === 'hi' || code === 'ta' || code === 'te' || code === 'ml' || code === 'kn' ? '🇮🇳' : '🌐',
+                        url: audioUri,
+                      });
+                    }
+                  }
+                }
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Nxsha Language Extractor fallback active');
+      }
+
+      return NextResponse.json({ success: true, tmdbId: id, nxshaUrl, languages });
+    }
+
     return NextResponse.json({ error: 'Endpoint not found' }, { status: 404 });
   } catch (error: any) {
     console.error('API Error:', error.message);

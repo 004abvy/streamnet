@@ -261,6 +261,28 @@ export async function resolve1DmMediaInfo(
     console.warn('1DM Media Sniffer Resolver error:', e);
   }
 
+  // Extract Nxsha Multi-Audio Languages for any movie or TV show
+  try {
+    const nxshaRes = await fetch(`${backendUrl}/api/stream/nxsha-languages?id=${tmdbId}&type=${type}&season=${season || 1}&episode=${episode || 1}`);
+    if (nxshaRes.ok) {
+      const nxshaData = await nxshaRes.json();
+      if (nxshaData && Array.isArray(nxshaData.languages)) {
+        nxshaData.languages.forEach((lang: any) => {
+          items.push({
+            id: `nxsha-lang-${lang.code}-${tmdbId}`,
+            type: 'audio',
+            label: `🎵 Nxsha Extracted Track: ${lang.name} ${lang.flag}`,
+            url: lang.url,
+            language: lang.code,
+            mimeType: 'audio/aac',
+          });
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Nxsha Language Sniffer error:', e);
+  }
+
   // Pre-populate instant Hindi & 4K streams
   if (type === 'movie') {
     items.push({
@@ -271,14 +293,6 @@ export async function resolve1DmMediaInfo(
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
     });
-    items.push({
-      id: `audio-hindi-nxsha-${tmdbId}`,
-      type: 'audio',
-      label: '🎵 Hindi Dubbed Master Audio Stream',
-      url: `https://web.nxsha.app/embed/movie/${tmdbId}?lang=hi`,
-      language: 'hi',
-      mimeType: 'audio/aac',
-    });
   } else {
     items.push({
       id: `m3u8-cinesrc-tv-${tmdbId}`,
@@ -287,14 +301,6 @@ export async function resolve1DmMediaInfo(
       url: `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
-    });
-    items.push({
-      id: `audio-hindi-nxsha-tv-${tmdbId}`,
-      type: 'audio',
-      label: `🎵 Hindi Dubbed Episode Audio Stream (S${season || 1} E${episode || 1})`,
-      url: `https://web.nxsha.app/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?lang=hi`,
-      language: 'hi',
-      mimeType: 'audio/aac',
     });
   }
 
