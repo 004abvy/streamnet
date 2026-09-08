@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import styles from './VideoPlayer.module.css';
 import { SERVERS, getLastUsedServerId, setLastUsedServerId } from '../../utils/serverManager';
+import {
+  resolveServerIframeAttributes,
+  getAdShieldPreference,
+  setAdShieldPreference,
+  installAdblockProtection,
+} from '../../utils/adblockFramework';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -27,10 +33,26 @@ export default function VideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
+  const [adShield, setAdShield] = useState(true);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
+    setAdShield(getAdShieldPreference());
   }, []);
+
+  const toggleAdShield = () => {
+    setAdShield((prev) => {
+      const next = !prev;
+      setAdShieldPreference(next);
+      return next;
+    });
+  };
+
+  // Runtime adblock protection against rogue popups & redirects
+  useEffect(() => {
+    if (!isPlaying) return;
+    return installAdblockProtection(adShield);
+  }, [isPlaying, adShield]);
 
   // Listen to CineSrc postMessage events for auto-next episode
   useEffect(() => {
@@ -49,8 +71,9 @@ export default function VideoPlayer({
   }, [onEpisodeChange]);
 
   const activeServer = SERVERS.find((s) => s.id === activeServerId) || SERVERS[0];
-  const videoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
+  const rawVideoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
+  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, adShield);
 
   const handleServerChange = (id: string) => {
     setActiveServerId(id);
@@ -77,12 +100,13 @@ export default function VideoPlayer({
         ) : (
           <div className={styles.iframeContainer}>
             <iframe
-              key={videoUrl}
+              key={`${iframeConfig.src}-${adShield}`}
               className={styles.iframe}
-              src={videoUrl}
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"
+              src={iframeConfig.src}
+              sandbox={iframeConfig.sandbox}
+              allow={iframeConfig.allow}
               allowFullScreen={true}
-              referrerPolicy="no-referrer-when-downgrade"
+              referrerPolicy={iframeConfig.referrerPolicy}
             ></iframe>
           </div>
         )}
@@ -124,6 +148,38 @@ export default function VideoPlayer({
                   );
                 })}
               </div>
+
+              {/* Ad & Popup Shield Setting */}
+              <div className={styles.shieldRow}>
+                <div className={styles.shieldInfo}>
+                  <div className={styles.shieldTitleGroup}>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      className={adShield ? styles.shieldIconActive : styles.shieldIconDisabled}
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span className={styles.shieldTitle}>Ad & Popup Shield</span>
+                  </div>
+                  <span className={styles.shieldSubtitle}>
+                    {adShield ? 'Active • Blocking popups & redirects' : 'Disabled'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleAdShield}
+                  className={`${styles.shieldToggleBtn} ${adShield ? styles.shieldToggleBtnActive : ''}`}
+                  title={adShield ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
+                  aria-label="Toggle Ad & Popup Shield"
+                >
+                  <span className={styles.shieldToggleThumb} />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -146,6 +202,11 @@ export default function VideoPlayer({
           <span className={styles.activeServerBadge}>
             {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}{activeServer.name}
           </span>
+          {adShield && (
+            <span className={styles.shieldBadge} title="Ad & Popup Shield Active">
+              🛡️
+            </span>
+          )}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
           </svg>
