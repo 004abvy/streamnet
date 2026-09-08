@@ -219,8 +219,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setUser(null);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('saved_items');
+        localStorage.removeItem('user_bookmarks');
+        localStorage.removeItem('continueWatching');
+        window.dispatchEvent(new Event('storage'));
+      }
+      await signOut(auth);
+      setUser(null);
+    } catch (e) {
+      console.warn("Logout error:", e);
+    }
   };
 
   const syncUserData = async (saved_items?: any[], continueWatching?: any[]) => {
