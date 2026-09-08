@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../../../components/Navbar/Navbar';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
+import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
 import styles from './movieDetails.module.css';
 
 export default function MovieDetailsPage({
@@ -61,8 +62,7 @@ export default function MovieDetailsPage({
         updated = [...saved.filter((item: any) => item.id !== movie.id), movie];
       }
       setIsSaved(!isSaved);
-      localStorage.setItem('saved_items', JSON.stringify(updated));
-      localStorage.setItem('user_bookmarks', JSON.stringify(updated.map((item: any) => item.id)));
+      saveWatchlist(updated);
     } catch (e) {
       console.error("Failed to toggle watchlist", e);
     }
@@ -107,7 +107,7 @@ export default function MovieDetailsPage({
                   list = list.filter((m: any) => m.id !== movie.id);
                   list.unshift(movie);
                   if (list.length > 20) list.pop();
-                  localStorage.setItem('continueWatching', JSON.stringify(list));
+                  saveContinueWatching(list);
                 } catch (e) {
                   console.error("Failed to save to continue watching", e);
                 }

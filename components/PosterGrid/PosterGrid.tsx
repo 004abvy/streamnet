@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../context/AuthContext';
+import { saveWatchlist } from '../../utils/userStorage';
 import styles from './PosterGrid.module.css';
 
 interface Movie {
@@ -24,17 +24,21 @@ interface PosterGridProps {
 }
 
 export default function PosterGrid({ title, movies, gridColumns, square = false, isLoading }: PosterGridProps) {
-  const { syncUserData } = useAuth();
   const [savedIds, setSavedIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-      if (Array.isArray(saved)) setSavedIds(saved.map((item) => item.id));
-    } catch {
-      setSavedIds([]);
-    }
+    const syncSaved = () => {
+      if (typeof window === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+        if (Array.isArray(saved)) setSavedIds(saved.map((item) => item.id));
+      } catch {
+        setSavedIds([]);
+      }
+    };
+    syncSaved();
+    window.addEventListener('storage', syncSaved);
+    return () => window.removeEventListener('storage', syncSaved);
   }, []);
 
   const toggleSaved = (event: React.MouseEvent, movie: Movie) => {
@@ -48,7 +52,7 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
       ? [...saved.filter((item: Movie) => item.id !== movie.id), movie]
       : saved.filter((item: Movie) => item.id !== movie.id);
     setSavedIds(nextIds);
-    syncUserData(nextItems, undefined);
+    saveWatchlist(nextItems);
   };
 
   if (isLoading) {

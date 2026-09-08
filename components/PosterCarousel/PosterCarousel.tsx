@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../../context/AuthContext';
+import { saveWatchlist } from '../../utils/userStorage';
 import styles from './PosterCarousel.module.css';
 
 interface Movie {
@@ -25,20 +25,24 @@ interface PosterCarouselProps {
 }
 
 export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem }: PosterCarouselProps) {
-  const { syncUserData } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [savedIds, setSavedIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-      if (Array.isArray(saved)) setSavedIds(saved.map((item) => item.id));
-    } catch {
-      setSavedIds([]);
-    }
+    const syncSaved = () => {
+      if (typeof window === 'undefined') return;
+      try {
+        const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+        if (Array.isArray(saved)) setSavedIds(saved.map((item) => item.id));
+      } catch {
+        setSavedIds([]);
+      }
+    };
+    syncSaved();
+    window.addEventListener('storage', syncSaved);
+    return () => window.removeEventListener('storage', syncSaved);
   }, []);
 
   const toggleSaved = (event: React.MouseEvent, movie: Movie) => {
@@ -52,7 +56,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
       ? [...saved.filter((item: Movie) => item.id !== movie.id), movie]
       : saved.filter((item: Movie) => item.id !== movie.id);
     setSavedIds(nextIds);
-    syncUserData(nextItems, undefined);
+    saveWatchlist(nextItems);
   };
 
   const calculatePages = () => {

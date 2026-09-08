@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { saveWatchlist, saveContinueWatching } from '../../utils/userStorage';
 import styles from './TrendingSection.module.css';
 
 interface TrendingItem {
@@ -76,7 +77,6 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
         updated = [...prev, item.id];
       }
       try {
-        localStorage.setItem('user_bookmarks', JSON.stringify(updated));
         const storedItems = localStorage.getItem('saved_items');
         const savedItems: TrendingItem[] = storedItems ? JSON.parse(storedItems) : [];
         const nextItems = item
@@ -84,7 +84,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
             ? [...savedItems.filter((saved) => saved.id !== item.id), item]
             : savedItems.filter((saved) => saved.id !== item.id)
           : savedItems;
-        localStorage.setItem('saved_items', JSON.stringify(nextItems));
+        saveWatchlist(nextItems);
       } catch (err) {
         console.error('Failed to save bookmark', err);
       }
@@ -99,7 +99,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
       list = list.filter((media) => media.id !== item.id);
       list.unshift({ ...item, media_type: isTv ? 'tv' : 'movie' });
       if (list.length > 20) list.pop();
-      localStorage.setItem('continueWatching', JSON.stringify(list));
+      saveContinueWatching(list);
     } catch (err) {
       console.error('Failed to save to continue watching', err);
     }

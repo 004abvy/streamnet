@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { saveContinueWatching } from '../../utils/userStorage';
 import styles from './HeroCarousel.module.css';
 
 interface Movie {
@@ -82,7 +83,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                       list = list.filter((m: any) => m.id !== movie.id);
                       list.unshift(movie);
                       if (list.length > 20) list.pop();
-                      localStorage.setItem('continueWatching', JSON.stringify(list));
+                      saveContinueWatching(list);
                     } catch (e) {
                       console.error('Failed to save to continue watching', e);
                     }
