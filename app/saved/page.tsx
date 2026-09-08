@@ -126,7 +126,7 @@ export default function SavedPage() {
 
   if (loading || !user) {
     return (
-      <main className={styles.page}>
+      <main className={styles.container}>
         <Navbar />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
           Loading...
@@ -136,30 +136,109 @@ export default function SavedPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <main className={styles.container}>
       <Navbar />
 
       <div className={styles.ambientGlow} />
 
       <div className={styles.content}>
         {/* Header Section */}
-        <div className={styles.header}>
-          <div className={styles.headerTitleGroup}>
-            <h1 className={styles.pageTitle}>Saved</h1>
-            <p className={styles.subtitle}>
-              {items.length === 0
-                ? "Titles you bookmark will show up here."
-                : `${items.length} ${items.length === 1 ? 'title' : 'titles'} you've bookmarked to watch later.`}
-            </p>
+        <div className={styles.headerSection}>
+          <div className={styles.headerTop}>
+            <div className={styles.headerTitleGroup}>
+              <h1 className={styles.pageTitle}>Saved</h1>
+              <p className={styles.subtitle}>
+                {items.length === 0
+                  ? "Titles you bookmark will show up here."
+                  : `${items.length} ${items.length === 1 ? 'title' : 'titles'} you've bookmarked to watch later.`}
+              </p>
+            </div>
+
+            {items.length > 0 && (
+              <button onClick={clearAll} className={styles.clearBtn} title="Clear collection">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Clear All
+              </button>
+            )}
           </div>
 
           {items.length > 0 && (
-            <button onClick={clearAll} className={styles.clearBtn} title="Clear collection">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Clear All
-            </button>
+            <>
+              {/* Toolbar: Search, Type Switcher & Sort */}
+              <div className={styles.toolbar}>
+                <div className={styles.typeTabs}>
+                  <button
+                    className={`${styles.typeTab} ${contentType === 'all' ? styles.activeTypeTab : ''}`}
+                    onClick={() => { setContentType('all'); setSelectedGenre(null); }}
+                  >
+                    All ({items.length})
+                  </button>
+                  <button
+                    className={`${styles.typeTab} ${contentType === 'movie' ? styles.activeTypeTab : ''}`}
+                    onClick={() => { setContentType('movie'); setSelectedGenre(null); }}
+                  >
+                    Movies ({movieCount})
+                  </button>
+                  <button
+                    className={`${styles.typeTab} ${contentType === 'tv' ? styles.activeTypeTab : ''}`}
+                    onClick={() => { setContentType('tv'); setSelectedGenre(null); }}
+                  >
+                    Series ({tvCount})
+                  </button>
+                </div>
+
+                <div className={styles.searchAndSort}>
+                  <div className={styles.searchBox}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search saved..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    {searchQuery && (
+                      <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>✕</button>
+                    )}
+                  </div>
+
+                  <div className={styles.sortWrapper}>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as 'newest' | 'rating' | 'title')}
+                      className={styles.sortSelect}
+                    >
+                      <option value="newest">Recently Saved</option>
+                      <option value="rating">Highest Rating</option>
+                      <option value="title">Title (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Genre Filter Tabs */}
+              <div className={styles.genreNav}>
+                <button
+                  className={`${styles.genreTab} ${selectedGenre === null ? styles.activeGenreTab : ''}`}
+                  onClick={() => setSelectedGenre(null)}
+                >
+                  All Genres
+                </button>
+                {activeGenres.map((genre) => (
+                  <button
+                    key={genre.id}
+                    className={`${styles.genreTab} ${selectedGenre === genre.id ? styles.activeGenreTab : ''}`}
+                    onClick={() => setSelectedGenre(genre.id)}
+                  >
+                    {genre.name}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -183,100 +262,22 @@ export default function SavedPage() {
               </Link>
             </div>
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className={styles.noFilterResults}>
+            <p>No saved titles match your selected filters.</p>
+            <button
+              onClick={() => {
+                setContentType('all');
+                setSelectedGenre(null);
+                setSearchQuery('');
+              }}
+              className={styles.resetFilterBtn}
+            >
+              Reset Filters
+            </button>
+          </div>
         ) : (
-          <section className={styles.savedBrowser}>
-            {/* Toolbar: Search, Type Switcher & Sort */}
-            <div className={styles.toolbar}>
-              <div className={styles.typeTabs}>
-                <button
-                  className={`${styles.typeTab} ${contentType === 'all' ? styles.activeTypeTab : ''}`}
-                  onClick={() => { setContentType('all'); setSelectedGenre(null); }}
-                >
-                  All ({items.length})
-                </button>
-                <button
-                  className={`${styles.typeTab} ${contentType === 'movie' ? styles.activeTypeTab : ''}`}
-                  onClick={() => { setContentType('movie'); setSelectedGenre(null); }}
-                >
-                  Movies ({movieCount})
-                </button>
-                <button
-                  className={`${styles.typeTab} ${contentType === 'tv' ? styles.activeTypeTab : ''}`}
-                  onClick={() => { setContentType('tv'); setSelectedGenre(null); }}
-                >
-                  Series ({tvCount})
-                </button>
-              </div>
-
-              <div className={styles.searchAndSort}>
-                <div className={styles.searchBox}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search saved..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>✕</button>
-                  )}
-                </div>
-
-                <div className={styles.sortWrapper}>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'newest' | 'rating' | 'title')}
-                    className={styles.sortSelect}
-                  >
-                    <option value="newest">Recently Saved</option>
-                    <option value="rating">Highest Rating</option>
-                    <option value="title">Title (A-Z)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Genre Filter Pills */}
-            <div className={styles.genreRow}>
-              <button
-                className={`${styles.genrePill} ${selectedGenre === null ? styles.activeGenrePill : ''}`}
-                onClick={() => setSelectedGenre(null)}
-              >
-                All Genres
-              </button>
-              {activeGenres.map((genre) => (
-                <button
-                  key={genre.id}
-                  className={`${styles.genrePill} ${selectedGenre === genre.id ? styles.activeGenrePill : ''}`}
-                  onClick={() => setSelectedGenre(genre.id)}
-                >
-                  {genre.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Results Grid or Empty Filter */}
-            {filteredItems.length === 0 ? (
-              <div className={styles.noFilterResults}>
-                <p>No saved titles match your selected filters.</p>
-                <button
-                  onClick={() => {
-                    setContentType('all');
-                    setSelectedGenre(null);
-                    setSearchQuery('');
-                  }}
-                  className={styles.resetFilterBtn}
-                >
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
-              <PosterGrid title="" movies={filteredItems} />
-            )}
-          </section>
+          <PosterGrid title="" movies={filteredItems} />
         )}
       </div>
 

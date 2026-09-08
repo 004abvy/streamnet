@@ -1,4 +1,4 @@
-.page {
+.container {
   min-height: 100vh;
   background-color: #000;
   color: #fff;
@@ -21,18 +21,22 @@
 .content {
   position: relative;
   z-index: 10;
-  max-width: 1800px;
-  margin: 0 auto;
   padding-top: 100px;
 }
 
-.header {
+.headerSection {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 5vw, 6rem);
+}
+
+.headerTop {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 2rem;
-  margin-bottom: 2rem;
-  padding: 0 clamp(1rem, 5vw, 6rem) 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -60,32 +64,31 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  padding: 0.5rem 0.2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #9ca3af;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .clearBtn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
   color: #f87171;
 }
 
-.savedBrowser {
-  padding: 0 clamp(1rem, 5vw, 6rem);
-}
-
-/* Toolbar */
+/* Toolbar: Type Switcher & Search/Sort */
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+  gap: 1rem;
+  margin-top: 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -134,7 +137,7 @@
   gap: 0.75rem;
   flex: 1;
   justify-content: flex-end;
-  max-width: 480px;
+  max-width: 500px;
 }
 
 .searchBox {
@@ -202,45 +205,45 @@
   border-color: #f59e0b;
 }
 
-/* Genre Pills */
-.genreRow {
+/* Genre Tabs Bar */
+.genreNav {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   overflow-x: auto;
   padding-bottom: 0.6rem;
-  margin-bottom: 1.5rem;
+  margin-top: 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   scrollbar-width: thin;
   scrollbar-color: #2a2a38 transparent;
 }
 
-.genreRow::-webkit-scrollbar {
+.genreNav::-webkit-scrollbar {
   height: 3px;
 }
 
-.genreRow::-webkit-scrollbar-thumb {
+.genreNav::-webkit-scrollbar-thumb {
   background: #2a2a38;
   border-radius: 999px;
 }
 
-.genrePill {
+.genreTab {
   background: transparent;
   border: none;
   color: #9ca3af;
-  padding: 0.35rem 0;
   font-size: 0.9rem;
   font-weight: 600;
-  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  padding: 0.35rem 0;
+  transition: color 0.2s ease;
 }
 
-.genrePill:hover {
+.genreTab:hover {
   color: #ffffff;
 }
 
-.activeGenrePill {
+.activeGenreTab {
   color: #f59e0b !important;
   font-weight: 700;
   border-bottom: 2px solid #f59e0b;
@@ -258,7 +261,7 @@
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   max-width: 600px;
-  margin: 2rem auto;
+  margin: 3rem auto;
 }
 
 .emptyIconWrapper {
@@ -334,6 +337,9 @@
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: #9ca3af;
+  max-width: 1800px;
+  margin: 2rem auto;
+  box-sizing: border-box;
 }
 
 .resetFilterBtn {
@@ -353,21 +359,54 @@
 }
 
 @media (max-width: 600px) {
-  .header {
+  .content {
+    padding-top: 80px;
+  }
+
+  .headerSection {
+    padding: 0 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .headerTop {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
-    padding: 0 1rem 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
   }
 
-  .savedBrowser {
-    padding: 0 1rem;
+  .pageTitle {
+    font-size: 1.4rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
   }
 
   .toolbar {
     flex-direction: column;
     align-items: stretch;
     gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .typeTabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 0.35rem;
+    width: 100%;
+    scrollbar-width: none;
+  }
+
+  .typeTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .typeTab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
   }
 
   .searchAndSort {
@@ -380,12 +419,18 @@
     width: 100%;
   }
 
-  .genreRow {
+  .genreNav {
     gap: 1.1rem;
+    margin-top: 1rem;
+    padding-bottom: 0.5rem;
     scrollbar-width: none;
   }
 
-  .genreRow::-webkit-scrollbar {
+  .genreNav::-webkit-scrollbar {
     display: none;
+  }
+
+  .genreTab {
+    font-size: 0.85rem;
   }
 }
