@@ -18,7 +18,7 @@ import {
 import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
 import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
-import { initMediaSniffer, resolve1DmMediaInfo, SniffedMediaItem } from '../../utils/mediaSniffer';
+import { initMediaSniffer, resolve1DmMediaInfo, downloadMediaFile, SniffedMediaItem } from '../../utils/mediaSniffer';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -85,6 +85,7 @@ export default function VideoPlayer({
   const [sniffedMedia, setSniffedMedia] = useState<SniffedMediaItem[]>([]);
   const [showSnifferModal, setShowSnifferModal] = useState(false);
   const [copiedMediaId, setCopiedMediaId] = useState<string | null>(null);
+  const [isDownloadingId, setIsDownloadingId] = useState<string | null>(null);
 
   // Initialize 1DM Network & Media Sniffer during active playback
   useEffect(() => {
@@ -572,15 +573,21 @@ export default function VideoPlayer({
                         >
                           {copiedMediaId === media.id ? '✓ Copied!' : '📋 Copy URL'}
                         </button>
-                        <a
-                          href={media.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
                           className={styles.oneDmBlockBtn}
-                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', textDecoration: 'none' }}
+                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
+                          onClick={async () => {
+                            setIsDownloadingId(media.id);
+                            const ext = media.type === 'audio' ? 'aac' : media.type === 'subtitle' ? 'vtt' : 'm3u8';
+                            const cleanTitle = (title || 'StreamNet').replace(/[^a-zA-Z0-9]/g, '_');
+                            const filename = `${cleanTitle}_${media.type}_${media.language || 'track'}.${ext}`;
+                            await downloadMediaFile(media.url, filename);
+                            setIsDownloadingId(null);
+                          }}
                         >
-                          ⬇️ Open / Download
-                        </a>
+                          {isDownloadingId === media.id ? '⏳ Downloading...' : '⬇️ Force Download'}
+                        </button>
                       </div>
                     </div>
                   ))

@@ -306,3 +306,37 @@ export async function resolve1DmMediaInfo(
 
   return items;
 }
+
+/**
+ * Direct CORS-Bypassing File Downloader
+ * Converts remote streams, AAC audio tracks, and VTT subtitles into native browser downloads
+ */
+export async function downloadMediaFile(url: string, suggestedFilename: string): Promise<boolean> {
+  if (typeof window === 'undefined' || !url) return false;
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const proxyUrl = `${backendUrl}/api/stream/proxy?url=${encodeURIComponent(url)}`;
+
+  try {
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error(`Proxy error ${res.status}`);
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = suggestedFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+    return true;
+  } catch (e) {
+    console.warn('Direct download fallback triggered:', e);
+    // Fallback: Open in new window/tab
+    window.open(url, '_blank');
+    return false;
+  }
+}
