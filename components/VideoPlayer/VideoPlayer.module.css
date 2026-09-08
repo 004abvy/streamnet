@@ -490,6 +490,39 @@
   margin-left: 4px;
 }
 
+/* Click Shield Interceptor Overlay */
+.clickShieldOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.clickShieldBadge {
+  background: rgba(16, 185, 129, 0.92);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* Z-Axis Popup & Overlay Suppressor */
 :global(div[class*="popup"]:not([class*="VideoPlayer"]):not([class*="Navbar"]):not([class*="Selector"])),
 :global(div[id*="popup"]:not([id*="VideoPlayer"]):not([id*="Navbar"])),

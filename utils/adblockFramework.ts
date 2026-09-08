@@ -253,7 +253,32 @@ export function installAdblockProtection(
     });
   }
 
-  // 2. Forbid popup window.open calls
+  // Safe dummy window proxy (prevents ad script fallback redirects like top.location = url)
+  const createDummyWindow = () => ({
+    closed: false,
+    name: '',
+    opener: null,
+    focus: () => {},
+    blur: () => {},
+    close: () => {},
+    postMessage: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    location: {
+      href: '',
+      replace: () => {},
+      assign: () => {},
+      reload: () => {},
+    },
+    document: {
+      write: () => {},
+      writeln: () => {},
+      close: () => {},
+      open: () => {},
+    },
+  });
+
+  // 2. Forbid popup window.open calls (AdGuard/uBlock prevent-window-open scriptlet logic)
   const origOpen = window.open;
   window.open = function (...args: any[]) {
     const url = args[0] ? String(args[0]) : '';
@@ -267,7 +292,8 @@ export function installAdblockProtection(
     if (!isInternal || !url || url === 'about:blank') {
       console.warn('[StreamNet Shield] FORBADE popup window.open attempt:', { url: url || 'about:blank', features, target });
       onBlockedAction?.('popup_blocked', url || 'about:blank');
-      return null;
+      // Return safe dummy window proxy to prevent ad scripts from triggering fallback redirects
+      return createDummyWindow() as any;
     }
 
     return origOpen.apply(window, args as any);
