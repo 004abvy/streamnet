@@ -1012,13 +1012,49 @@
 }
 
 /* ===================================================================
-   TABLETS & PHONES (≤1200px) — collapse to hamburger + bottom sheet.
-   Auth is handled by the sheet's .mobileAuthRow, so the top-bar
-   .authButtons (Sign In / Sign Up) is hidden here — otherwise it was
-   fighting the search icon and (when logged in) the avatar for the
-   same few inches of rightSection on every phone.
+   COMPACT DESKTOP (901px – 1150px) — Full navbar fits comfortably
    =================================================================== */
-@media (max-width: 1200px) {
+@media (min-width: 901px) and (max-width: 1150px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .navLinksScroll {
+    gap: clamp(0.3rem, 0.6vw, 0.65rem);
+  }
+
+  .navLink {
+    font-size: 0.78rem;
+    gap: 0.25rem;
+    padding: 0.35rem 0.2rem;
+  }
+
+  .navLink svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .rightSection {
+    gap: 0.45rem;
+  }
+
+  .searchInput {
+    width: 110px;
+  }
+
+  .loginBtn,
+  .signupBtn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* ===================================================================
+   TABLETS & PHONES (≤900px) — collapse to hamburger + bottom sheet.
+   Full navbar is available on screens crossing 900px.
+   =================================================================== */
+@media (max-width: 900px) {
   .mobileAuthRow {
     display: flex;
   }

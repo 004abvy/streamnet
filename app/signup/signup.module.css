@@ -88,8 +88,8 @@
   position: relative;
   z-index: 5;
   width: 100%;
-  max-width: 440px;
-  margin: 1.5rem 0;
+  max-width: 540px;
+  margin: 1.5rem auto;
 }
 
 .authCard {
@@ -428,4 +428,27 @@
   font-size: 0.85rem;
   margin-top: 0.6rem;
   text-align: center;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 1rem 0.75rem;
+  }
+
+  .topBar {
+    position: static;
+    margin-bottom: 1.25rem;
+    padding: 0 0.25rem;
+    width: 100%;
+  }
+
+  .authContainer {
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .authCard {
+    padding: 1.5rem 1.25rem;
+    border-radius: 1.25rem;
+  }
 }
