@@ -87,6 +87,38 @@ export default function VideoPlayer({
   const [copiedMediaId, setCopiedMediaId] = useState<string | null>(null);
   const [isDownloadingId, setIsDownloadingId] = useState<string | null>(null);
 
+  const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
+  const customAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Synced Background Audio Track Engine
+  useEffect(() => {
+    if (!customAudioUrl) {
+      if (customAudioRef.current) {
+        customAudioRef.current.pause();
+        customAudioRef.current = null;
+      }
+      return;
+    }
+
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+    const proxiedAudioUrl = customAudioUrl.startsWith('http')
+      ? `${backendUrl}/api/stream/proxy?url=${encodeURIComponent(customAudioUrl)}`
+      : customAudioUrl;
+
+    const audio = new Audio(proxiedAudioUrl);
+    audio.loop = false;
+    customAudioRef.current = audio;
+
+    if (isPlaying) {
+      audio.play().catch((e) => console.warn('Custom audio track waiting for user interaction:', e));
+    }
+
+    return () => {
+      audio.pause();
+      customAudioRef.current = null;
+    };
+  }, [customAudioUrl, isPlaying]);
+
   // Initialize 1DM Network & Media Sniffer during active playback
   useEffect(() => {
     if (!isPlaying) return;
@@ -558,7 +590,37 @@ export default function VideoPlayer({
                           {media.language && <span className={styles.featureBadge}>{media.language.toUpperCase()}</span>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+                        {media.url.includes('nxsha') && (
+                          <button
+                            type="button"
+                            className={styles.oneDmAllowBtn}
+                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#059669', borderColor: '#10b981', color: '#fff' }}
+                            onClick={() => {
+                              const nxshaProv = getProviderById('nxsha');
+                              handleServerChange(nxshaProv);
+                              handleLanguageChange('hi');
+                              setShowSnifferModal(false);
+                              setFailoverToast('🚀 Switched Player to Nxsha Hindi Stream!');
+                            }}
+                          >
+                            🚀 Switch to Nxsha Hindi Player
+                          </button>
+                        )}
+                        {(media.type === 'audio' || media.url.includes('audio') || media.url.includes('lang=')) && (
+                          <button
+                            type="button"
+                            className={styles.oneDmAllowBtn}
+                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#d97706', borderColor: '#f59e0b', color: '#fff' }}
+                            onClick={() => {
+                              setCustomAudioUrl(media.url);
+                              setShowSnifferModal(false);
+                              setFailoverToast('🎧 Synced Custom Hindi Audio Track!');
+                            }}
+                          >
+                            🎧 Sync Audio Track
+                          </button>
+                        )}
                         <button
                           type="button"
                           className={styles.oneDmAllowBtn}
@@ -653,6 +715,23 @@ export default function VideoPlayer({
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
+
+        {/* Active Custom Synced Audio Badge */}
+        {customAudioUrl && (
+          <button
+            type="button"
+            className={styles.toolbarBtn}
+            style={{ background: '#059669', borderColor: '#10b981', color: '#ffffff' }}
+            onClick={() => {
+              setCustomAudioUrl(null);
+              setFailoverToast('🔊 Custom Audio Track Removed');
+            }}
+            title="Click to remove custom audio track and restore default server audio"
+          >
+            <span>🎧 Synced Audio: Active</span>
+            <span style={{ fontWeight: 800 }}>✕ Reset</span>
+          </button>
+        )}
       </div>
     </div>
   );
