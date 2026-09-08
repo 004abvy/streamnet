@@ -839,6 +839,19 @@
     gap: 0.75rem;
   }
 
+  .userName {
+    display: none !important;
+  }
+
+  .navbarLogoutBtn {
+    display: none !important;
+  }
+
+  .userBadge {
+    padding: 0.45rem !important;
+    border-radius: 50% !important;
+  }
+
   .searchInput {
     width: 110px;
   }

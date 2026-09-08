@@ -149,11 +149,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } : null);
               }
             }, (err) => {
-              console.warn("Firestore listener notice:", err);
+              if (err?.code !== 'unavailable' && !err?.message?.includes('offline')) {
+                console.warn("Firestore listener notice:", err);
+              }
             });
 
-          } catch (e) {
-            console.warn("Firestore sync background notice:", e);
+          } catch (e: any) {
+            if (e?.code !== 'unavailable' && !e?.message?.includes('offline')) {
+              console.warn("Firestore sync background notice:", e);
+            }
           }
         })();
 
