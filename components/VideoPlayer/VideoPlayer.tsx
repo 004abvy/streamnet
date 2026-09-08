@@ -582,72 +582,70 @@ export default function VideoPlayer({
                     🔍 Scanning network traffic for HLS stream playlists, Hindi audio tracks, and subtitles...
                   </div>
                 ) : (
-                  sniffedMedia.map((media) => (
-                    <div key={media.id} className={styles.modalServerCard}>
-                      <div className={styles.cardTopRow}>
-                        <span className={styles.serverCardName}>{media.label}</span>
-                        <div className={styles.serverBadgeGroup}>
-                          <span className={styles.qualityTag}>{media.type.toUpperCase()}</span>
-                          {media.language && <span className={styles.featureBadge}>{media.language.toUpperCase()}</span>}
+                  sniffedMedia.map((media) => {
+                    const isEmbedUrl = media.url.includes('embed') || media.url.includes('nxsha.app') || media.url.includes('cinesrc.st');
+                    return (
+                      <div key={media.id} className={styles.modalServerCard}>
+                        <div className={styles.cardTopRow}>
+                          <span className={styles.serverCardName}>{media.label}</span>
+                          <div className={styles.serverBadgeGroup}>
+                            <span className={styles.qualityTag}>{media.type.toUpperCase()}</span>
+                            {media.language && <span className={styles.featureBadge}>{media.language.toUpperCase()}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+                          {isEmbedUrl ? (
+                            <button
+                              type="button"
+                              className={styles.oneDmAllowBtn}
+                              style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#059669', borderColor: '#10b981', color: '#fff' }}
+                              onClick={() => {
+                                const nxshaProv = getProviderById('nxsha');
+                                handleServerChange(nxshaProv);
+                                handleLanguageChange('hi');
+                                setShowSnifferModal(false);
+                                setFailoverToast('🚀 Switched Player to Nxsha Hindi Stream!');
+                              }}
+                            >
+                              🚀 Play Stream in Player
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={styles.oneDmBlockBtn}
+                              style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
+                              onClick={async () => {
+                                setIsDownloadingId(media.id);
+                                const ext = media.type === 'audio' ? 'aac' : media.type === 'subtitle' ? 'vtt' : 'm3u8';
+                                const cleanTitle = (title || 'StreamNet').replace(/[^a-zA-Z0-9]/g, '_');
+                                const filename = `${cleanTitle}_${media.type}_${media.language || 'track'}.${ext}`;
+                                await downloadMediaFile(media.url, filename);
+                                setIsDownloadingId(null);
+                              }}
+                            >
+                              {isDownloadingId === media.id ? '⏳ Downloading...' : '⬇️ Force Download File'}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className={styles.oneDmAllowBtn}
+                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
+                            onClick={() => {
+                              try {
+                                navigator.clipboard.writeText(media.url);
+                                setCopiedMediaId(media.id);
+                                setTimeout(() => setCopiedMediaId(null), 2000);
+                              } catch (e) {}
+                            }}
+                          >
+                            {copiedMediaId === media.id ? '✓ Copied!' : '📋 Copy URL'}
+                          </button>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
-                        {media.url.includes('nxsha') && (
-                          <button
-                            type="button"
-                            className={styles.oneDmAllowBtn}
-                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#059669', borderColor: '#10b981', color: '#fff' }}
-                            onClick={() => {
-                              const nxshaProv = getProviderById('nxsha');
-                              handleServerChange(nxshaProv);
-                              handleLanguageChange('hi');
-                              setShowSnifferModal(false);
-                              setFailoverToast('🚀 Switched Player to Nxsha Hindi Stream!');
-                            }}
-                          >
-                            🚀 Switch to Nxsha Hindi Player
-                          </button>
-                        )}
-                        {(media.type === 'audio' || media.url.includes('audio') || media.url.includes('lang=')) && (
-                          <button
-                            type="button"
-                            className={styles.oneDmAllowBtn}
-                            style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', background: '#d97706', borderColor: '#f59e0b', color: '#fff' }}
-                            onClick={() => {
-                              setCustomAudioUrl(media.url);
-                              setShowSnifferModal(false);
-                              setFailoverToast('🎧 Synced Custom Hindi Audio Track!');
-                            }}
-                          >
-                            🎧 Sync Audio Track
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className={styles.oneDmAllowBtn}
-                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
-                          onClick={() => {
-                            try {
-                              navigator.clipboard.writeText(media.url);
-                              setCopiedMediaId(media.id);
-                              setTimeout(() => setCopiedMediaId(null), 2000);
-                            } catch (e) {}
-                          }}
-                        >
-                          {copiedMediaId === media.id ? '✓ Copied!' : '📋 Copy URL'}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.oneDmBlockBtn}
-                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
-                          onClick={async () => {
-                            setIsDownloadingId(media.id);
-                            const ext = media.type === 'audio' ? 'aac' : media.type === 'subtitle' ? 'vtt' : 'm3u8';
-                            const cleanTitle = (title || 'StreamNet').replace(/[^a-zA-Z0-9]/g, '_');
-                            const filename = `${cleanTitle}_${media.type}_${media.language || 'track'}.${ext}`;
-                            await downloadMediaFile(media.url, filename);
-                            setIsDownloadingId(null);
-                          }}
+                    );
+                  })
+                )}
                         >
                           {isDownloadingId === media.id ? '⏳ Downloading...' : '⬇️ Force Download'}
                         </button>
