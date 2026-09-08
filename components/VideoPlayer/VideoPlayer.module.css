@@ -344,4 +344,19 @@
   margin-left: 4px;
 }
 
+/* Z-Axis Popup & Overlay Suppressor */
+:global(div[class*="popup"]:not([class*="VideoPlayer"]):not([class*="Navbar"]):not([class*="Selector"])),
+:global(div[id*="popup"]:not([id*="VideoPlayer"]):not([id*="Navbar"])),
+:global(div[class*="popunder"]),
+:global(div[id*="popunder"]),
+:global(div[class*="ad-overlay"]),
+:global(div[id*="ad-overlay"]) {
+  z-index: -99999 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+
 

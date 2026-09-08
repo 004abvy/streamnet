@@ -3,12 +3,13 @@
  *
  * Provides granular, server-specific ad and popup blocking.
  *
- * Differentiates popups using:
- * 1. Window Size & Dimensions (width=, height=, top=, left=)
- * 2. Stripped Browser Chrome (menubar=no, toolbar=no, status=no, popup=yes)
- * 3. Blank Popunders (about:blank triggers)
- * 4. External Targets vs Internal App Navigation
- * 5. Iframe Sandboxing (omits allow-popups and allow-top-navigation, keeping allow-scripts & allow-same-origin)
+ * Differentiates and defuses popups using:
+ * 1. Z-Axis Overlay Defusal (shoves rogue in-page popups, banners, and modals behind on Z-axis: z-index: -99999)
+ * 2. Window Size & Dimensions Inspection (width=, height=, top=, left=)
+ * 3. Stripped Browser Chrome (menubar=no, toolbar=no, status=no, popup=yes)
+ * 4. Blank Popunders (about:blank triggers)
+ * 5. External Targets vs Internal App Navigation
+ * 6. Iframe Sandboxing (omits allow-popups and allow-top-navigation, keeping allow-scripts & allow-same-origin)
  */
 
 export type ShieldLevel = 'ultra' | 'maximum' | 'standard';
@@ -194,9 +195,10 @@ export function resolveServerIframeAttributes(
     sandboxTokens = ULTRA_SANDBOX_TOKENS;
   }
 
+  // Guarantee sandbox is ALWAYS present to block popups
   return {
     src: cleanUrl,
-    sandbox: shieldEnabled ? sandboxTokens.join(' ') : undefined,
+    sandbox: shieldEnabled ? sandboxTokens.join(' ') : MAXIMUM_SANDBOX_TOKENS.join(' '),
     referrerPolicy: policy.referrerPolicy,
     allow: policy.allowFeatures.join('; '),
     protectionLevel: ultraMode ? ('ultra' as ShieldLevel) : policy.protectionLevel,
@@ -233,7 +235,8 @@ export function setUltraShieldPreference(enabled: boolean): void {
 
 /**
  * Intelligent runtime popup interceptor.
- * Differentiates popups using size, dimensions, features, and target inspection.
+ * - Differentiates popups using size, dimensions, features, and target inspection.
+ * - Employs a Z-Axis Defuser (MutationObserver) to instantly push rogue in-page popups/banners behind everything.
  */
 export function installAdblockProtection(
   isActive: boolean,
@@ -306,6 +309,70 @@ export function installAdblockProtection(
     cleanups.push(() => {
       HTMLFormElement.prototype.submit = origFormSubmit;
     });
+  }
+
+  // 4. Z-Axis Defuser: Intercept and force rogue in-page popups/overlays to z-index: -99999
+  if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
+    const defuseElement = (node: Node) => {
+      if (!(node instanceof HTMLElement)) return;
+
+      // Never touch legitimate StreamNet components
+      if (
+        node.closest('[class*="VideoPlayer"]') ||
+        node.closest('[class*="Navbar"]') ||
+        node.closest('[class*="SeasonEpisodeSelector"]') ||
+        node.closest('[class*="DetailsTabs"]') ||
+        node.closest('#__next') ||
+        node.tagName === 'NEXT-ROUTE-ANNOUNCER'
+      ) {
+        return;
+      }
+
+      const id = (node.id || '').toLowerCase();
+      const cls = (node.className && typeof node.className === 'string' ? node.className : '').toLowerCase();
+      const tag = node.tagName.toLowerCase();
+
+      // Detect ad popups, popunders, overlays, interstitials
+      const isAdKeyword =
+        id.includes('ad-') || id.includes('popup') || id.includes('popunder') || id.includes('banner') ||
+        cls.includes('ad-') || cls.includes('popup') || cls.includes('popunder') || cls.includes('banner') || cls.includes('floating-ad') ||
+        tag === 'dialog';
+
+      let isSuspiciousZ = false;
+      try {
+        const style = window.getComputedStyle(node);
+        const zIndex = parseInt(style.zIndex, 10);
+        const isFloating = style.position === 'fixed' || style.position === 'absolute';
+        isSuspiciousZ = isFloating && zIndex > 999;
+      } catch (e) {}
+
+      if (isAdKeyword || isSuspiciousZ) {
+        console.warn('[StreamNet Z-Axis Defuser] Pushed in-page popup behind on Z-axis:', node);
+        node.style.setProperty('z-index', '-99999', 'important');
+        node.style.setProperty('pointer-events', 'none', 'important');
+        node.style.setProperty('opacity', '0', 'important');
+        node.style.setProperty('display', 'none', 'important');
+        node.style.setProperty('visibility', 'hidden', 'important');
+        try {
+          node.remove();
+        } catch (e) {}
+        onBlockedAction?.('z_axis_defused', tag);
+      }
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => defuseElement(node));
+      });
+    });
+
+    const targetContainer = document.body || document.documentElement;
+    if (targetContainer) {
+      observer.observe(targetContainer, { childList: true, subtree: true });
+      cleanups.push(() => {
+        observer.disconnect();
+      });
+    }
   }
 
   return () => {
