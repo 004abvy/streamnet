@@ -646,13 +646,6 @@ export default function VideoPlayer({
                     );
                   })
                 )}
-                        >
-                          {isDownloadingId === media.id ? '⏳ Downloading...' : '⬇️ Force Download'}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
           </div>
