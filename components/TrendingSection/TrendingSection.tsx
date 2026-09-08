@@ -21,12 +21,36 @@ interface TrendingSectionProps {
   title: string;
   items: TrendingItem[];
   viewAllLink?: string;
+  isLoading?: boolean;
 }
 
-const ITEMS_PER_PAGE = 9; // 5 normal posters (row 1) + 4 mini-hero cards (rows 2 & 3)
-
-export default function TrendingSection({ title, items, viewAllLink }: TrendingSectionProps) {
+export default function TrendingSection({ title, items, viewAllLink, isLoading }: TrendingSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
+
+  // Handle Loading State
+  if (isLoading) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.header}>
+          <div className={styles.titleWrapper}>
+            <h2 className={styles.title}>{title}</h2>
+          </div>
+        </div>
+        <div className={styles.postersRow}>
+          {[...Array(5)].map((_, i) => (
+            <div key={`skel-row-${i}`} className={styles.skeletonCard} />
+          ))}
+        </div>
+        <div className={styles.heroGrid}>
+          {[...Array(4)].map((_, i) => (
+            <div key={`skel-hero-${i}`} className={styles.skeletonHero} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
     if (typeof window === 'undefined') return [];
 

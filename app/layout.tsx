@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Movie & TV Streaming Platform",
-  description: "Watch trending movies, series, and anime online",
+  title: "StreamNet",
+  description: "A premium movie and TV streaming platform",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

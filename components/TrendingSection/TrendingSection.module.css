@@ -275,6 +275,32 @@
   overflow: hidden;
 }
 
+/* ==========================================================================
+   LOADING SKELETONS
+   ========================================================================== */
+.skeletonCard {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  background: #161622;
+  border-radius: 12px;
+  animation: pulseSkeleton 1.5s infinite;
+}
+
+.skeletonHero {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #161622;
+  border-radius: 14px;
+  animation: pulseSkeleton 1.5s infinite;
+  min-height: max(290px, max-content);
+}
+
+@keyframes pulseSkeleton {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
 .miniYear {
   margin: 0.2rem 0 0;
   color: #aaaabb;
@@ -431,7 +457,7 @@
   }
 
 
-  .heroCard {
+  .heroCard, .skeletonHero {
     min-height: max(250px, max-content);
   }
 }
@@ -469,7 +495,7 @@
     gap: 0.85rem;
   }
 
-  .heroCard {
+  .heroCard, .skeletonHero {
     min-height: max-content;
     aspect-ratio: auto;
     padding: 1.5rem 0.75rem;

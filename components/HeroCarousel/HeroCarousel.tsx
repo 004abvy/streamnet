@@ -15,10 +15,19 @@ interface Movie {
 
 interface HeroCarouselProps {
   movies: Movie[];
+  isLoading?: boolean;
 }
 
-export default function HeroCarousel({ movies }: HeroCarouselProps) {
+export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Handle Loading State
+  if (isLoading) {
+    return <div className={styles.skeletonHero} />;
+  }
+
+  if (!movies || movies.length === 0) return null;
+
   const visibleMovies = movies.slice(0, 5);
   const loopMovies = visibleMovies.length > 1 ? [...visibleMovies, visibleMovies[0]] : visibleMovies;
 

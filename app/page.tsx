@@ -95,17 +95,13 @@ export default function Home() {
     };
   }, []);
 
-  if (loading) {
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
   return (
     <main className={styles.main}>
       <Navbar />
-      <HeroCarousel movies={trendingMovies} />
+      <HeroCarousel movies={trendingMovies} isLoading={loading} />
 
       <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>
-        {continueWatching.length > 0 && (
+        {continueWatching.length > 0 && !loading && (
           <PosterCarousel
             title="Continue Watching"
             movies={continueWatching}
@@ -119,8 +115,8 @@ export default function Home() {
 
         <GenreExplorerSection />
 
-        <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" />
-        <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" />
+        <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" isLoading={loading} />
+        <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
       </div>
 
       <Footer />

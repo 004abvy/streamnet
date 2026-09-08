@@ -160,3 +160,22 @@
   width: 16px;
   height: 16px;
 }
+
+/* ==========================================================================
+   LOADING SKELETON
+   ========================================================================== */
+.skeletonHero {
+  width: 100%;
+  height: clamp(60vh, 50vw, 95vh);
+  min-height: 500px;
+  background: #111118;
+  position: relative;
+  overflow: hidden;
+  animation: pulseSkeleton 1.5s infinite;
+}
+
+@keyframes pulseSkeleton {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
