@@ -269,6 +269,10 @@ function createDummyWindow() {
   };
 }
 
+import { JavaScriptInjector } from './javascriptInjector';
+
+export { JavaScriptInjector };
+
 /**
  * Comprehensive uBlock Origin Protection Suite (`gorhill/uBlock`)
  * Installs all scriptlets, listeners, and defusers into the runtime environment.
@@ -280,6 +284,9 @@ export function installAdblockProtection(
   if (typeof window === 'undefined' || !isActive) {
     return () => {};
   }
+
+  // Ensure document-start JavaScript Injector is fully running
+  JavaScriptInjector.init();
 
   const cleanups: Array<() => void> = [];
 

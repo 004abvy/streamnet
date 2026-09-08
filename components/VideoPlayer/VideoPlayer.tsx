@@ -35,7 +35,6 @@ export default function VideoPlayer({
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
   const [sandboxEnabled, setSandboxEnabled] = useState(true);
-  const [clickShieldActive, setClickShieldActive] = useState(true);
   const [blockedCount, setBlockedCount] = useState(0);
 
   useEffect(() => {
@@ -51,9 +50,12 @@ export default function VideoPlayer({
     });
   };
 
-  // Hardened automatic popup, redirect, and click-jack defense
+  // Hardened automatic popup, redirect, and click-jack defense via JavaScript Injector
   useEffect(() => {
     if (!isPlaying) return;
+    if (typeof window !== 'undefined' && (window as any).__STREAMNET_BLOCKED_COUNT__) {
+      setBlockedCount((c) => Math.max(c, (window as any).__STREAMNET_BLOCKED_COUNT__));
+    }
     return installAdblockProtection(true, (_type, _target) => {
       setBlockedCount((c) => c + 1);
     });
@@ -98,7 +100,6 @@ export default function VideoPlayer({
       return;
     }
     setIsLoading(true);
-    setClickShieldActive(true);
     setActiveServerId(id);
     setLastUsedServerId(id);
     setShowServerModal(false);
@@ -106,7 +107,6 @@ export default function VideoPlayer({
 
   const handleStartPlayback = () => {
     setIsLoading(true);
-    setClickShieldActive(true);
     setIsPlaying(true);
   };
 
@@ -138,26 +138,6 @@ export default function VideoPlayer({
                 <span className={styles.loadingSubText}>
                   {activeServer.quality || '4K UHD'} • {sandboxEnabled ? 'iFrame Sandbox Active' : 'Direct Stream'}
                 </span>
-              </div>
-            )}
-
-            {/* Click Shield Overlay to absorb rogue ad-click overlays from embed servers */}
-            {clickShieldActive && !isLoading && (
-              <div
-                className={styles.clickShieldOverlay}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setClickShieldActive(false);
-                  setBlockedCount((c) => c + 1);
-                }}
-                title="Click to activate player controls and block rogue popups"
-              >
-                <div className={styles.clickShieldBadge}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  <span>Click Shield Active • Tap to unblock stream</span>
-                </div>
               </div>
             )}
 
@@ -231,7 +211,7 @@ export default function VideoPlayer({
                 })}
               </div>
 
-              {/* uBlock Origin Protection & Sandbox Controls */}
+              {/* JavaScript Injector & uBlock Origin Controls */}
               <div className={styles.shieldStatusCard}>
                 <div className={styles.shieldStatusLeft}>
                   <div className={styles.shieldStatusPulse}>
@@ -240,7 +220,7 @@ export default function VideoPlayer({
                   </div>
                   <div>
                     <div className={styles.shieldStatusTitle}>
-                      uBlock Origin Shield & Sandbox
+                      JavaScript Injector & uBlock Shield
                       <span className={styles.activeBadge}>
                         {sandboxEnabled ? 'ENABLED' : 'DIRECT MODE'}
                       </span>
@@ -250,8 +230,8 @@ export default function VideoPlayer({
                     </div>
                     <div className={styles.shieldStatusDesc}>
                       {sandboxEnabled
-                        ? 'uBlock Origin Scriptlets & Sandbox Active • Popups, redirects & new tabs strictly forbidden'
-                        : 'uBlock Origin Scriptlets Active • Seamless stream playback with popup & redirect defense'}
+                        ? 'Document-start JS Injector & Sandbox Active • Popups, redirects & new tabs strictly forbidden'
+                        : 'Document-start JS Injector Active • Seamless stream playback with dynamic DOM & popup defusal'}
                     </div>
                   </div>
                 </div>
@@ -290,8 +270,8 @@ export default function VideoPlayer({
           {activeServer.quality && (
             <span className={styles.qualityTag}>{activeServer.quality}</span>
           )}
-          <span className={styles.shieldBadge} title="uBlock Origin Shield Status">
-            {sandboxEnabled ? '🛡️ uBlock + Sandbox' : '🛡️ uBlock Shield'}
+          <span className={styles.shieldBadge} title="JavaScript Injector Status">
+            {sandboxEnabled ? '🛡️ JS Injector + Sandbox' : '🛡️ JS Injector Active'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />

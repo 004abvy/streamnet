@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "../context/AuthContext";
 import ScrollToTopOnRefresh from "../components/ScrollToTopOnRefresh";
+import { GET_INJECTABLE_UBLOCK_BUNDLE } from "../utils/javascriptInjector";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,6 +36,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+        {/* Document-Start JavaScript Injector (uBlock Origin Core Scriptlets) */}
+        <Script
+          id="streamnet-js-injector"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: GET_INJECTABLE_UBLOCK_BUNDLE(),
+          }}
+        />
 
         <Script
           id="scroll-restoration"
