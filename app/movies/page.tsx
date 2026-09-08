@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
 import PosterGrid from '../../components/PosterGrid/PosterGrid';
@@ -10,6 +10,7 @@ import styles from './movies.module.css';
 
 const GENRES = [
   { id: '', name: 'All Genres' },
+  { id: 'wishlist', name: 'Wishlist ♡' },
   { id: '28', name: 'Action' },
   { id: '35', name: 'Comedy' },
   { id: '18', name: 'Drama' },
@@ -32,8 +33,38 @@ function MoviesContent() {
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
+  const [wishlistMovies, setWishlistMovies] = useState<any[]>([]);
+
+  // Load wishlist from localStorage
+  useEffect(() => {
+    const loadWishlist = () => {
+      try {
+        const saved = localStorage.getItem('saved_items');
+        const parsed = saved ? JSON.parse(saved) : [];
+        if (Array.isArray(parsed)) {
+          const moviesOnly = parsed.filter(
+            (item: any) => !(item.media_type === 'tv' || Boolean(item.name && !item.title))
+          );
+          setWishlistMovies(moviesOnly);
+        }
+      } catch (e) {
+        console.error("Failed to load wishlist", e);
+      }
+    };
+
+    loadWishlist();
+    window.addEventListener('storage', loadWishlist);
+    return () => window.removeEventListener('storage', loadWishlist);
+  }, []);
 
   useEffect(() => {
+    if (genreParam === 'wishlist') {
+      setMovies(wishlistMovies);
+      setTotalPages(1);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -66,7 +97,7 @@ function MoviesContent() {
     return () => {
       isMounted = false;
     };
-  }, [filterParam, genreParam, pageParam]);
+  }, [filterParam, genreParam, pageParam, wishlistMovies]);
 
   const updateQueryParams = (newFilter?: string, newGenre?: string, newPage?: number) => {
     const filter = newFilter !== undefined ? newFilter : filterParam;
@@ -83,6 +114,12 @@ function MoviesContent() {
   };
 
   const getPageInfo = () => {
+    if (genreParam === 'wishlist') {
+      return {
+        title: 'My Wishlist Movies',
+        subtitle: 'Your bookmarked movies saved for easy access and viewing.'
+      };
+    }
     if (filterParam === '4k') {
       return {
         title: '4K Ultra HD Movies',
@@ -121,6 +158,7 @@ function MoviesContent() {
   };
 
   const pageInfo = getPageInfo();
+  const activeMovies = genreParam === 'wishlist' ? wishlistMovies : movies;
 
   return (
     <div className={styles.content}>
@@ -179,18 +217,22 @@ function MoviesContent() {
         </div>
       </div>
 
-      {movies.length === 0 && !loading ? (
+      {activeMovies.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
-          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No movies found for this filter or genre.</p>
+          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+            {genreParam === 'wishlist'
+              ? 'Your Wishlist is empty. Bookmark movies to see them here!'
+              : 'No movies found for this filter or genre.'}
+          </p>
           <button
             onClick={() => updateQueryParams('popular', '', 1)}
             style={{
-              background: '#ef4444',
-              color: '#fff',
+              background: '#f59e0b',
+              color: '#000',
               border: 'none',
               padding: '0.6rem 1.2rem',
               borderRadius: '8px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer'
             }}
           >
@@ -199,8 +241,8 @@ function MoviesContent() {
         </div>
       ) : (
         <>
-          <PosterGrid title="" movies={movies} isLoading={loading} />
-          {!loading && totalPages > 1 && (
+          <PosterGrid title="" movies={activeMovies} isLoading={loading} />
+          {!loading && genreParam !== 'wishlist' && totalPages > 1 && (
             <Pagination
               currentPage={pageParam}
               totalPages={totalPages}

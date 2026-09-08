@@ -10,6 +10,7 @@ import styles from './tv.module.css';
 
 const GENRES = [
   { id: '', name: 'All Genres' },
+  { id: 'wishlist', name: 'Wishlist ♡' },
   { id: '10759', name: 'Action & Adventure' },
   { id: '35', name: 'Comedy' },
   { id: '18', name: 'Drama' },
@@ -31,8 +32,38 @@ function TvContent() {
   const [shows, setShows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
+  const [wishlistShows, setWishlistShows] = useState<any[]>([]);
+
+  // Load wishlist from localStorage
+  useEffect(() => {
+    const loadWishlist = () => {
+      try {
+        const saved = localStorage.getItem('saved_items');
+        const parsed = saved ? JSON.parse(saved) : [];
+        if (Array.isArray(parsed)) {
+          const tvOnly = parsed.filter(
+            (item: any) => item.media_type === 'tv' || Boolean(item.name && !item.title)
+          );
+          setWishlistShows(tvOnly);
+        }
+      } catch (e) {
+        console.error("Failed to load wishlist", e);
+      }
+    };
+
+    loadWishlist();
+    window.addEventListener('storage', loadWishlist);
+    return () => window.removeEventListener('storage', loadWishlist);
+  }, []);
 
   useEffect(() => {
+    if (genreParam === 'wishlist') {
+      setShows(wishlistShows);
+      setTotalPages(1);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -65,7 +96,7 @@ function TvContent() {
     return () => {
       isMounted = false;
     };
-  }, [filterParam, genreParam, pageParam]);
+  }, [filterParam, genreParam, pageParam, wishlistShows]);
 
   const updateQueryParams = (newFilter?: string, newGenre?: string, newPage?: number) => {
     const filter = newFilter !== undefined ? newFilter : filterParam;
@@ -82,6 +113,12 @@ function TvContent() {
   };
 
   const getPageInfo = () => {
+    if (genreParam === 'wishlist') {
+      return {
+        title: 'My Wishlist Series',
+        subtitle: 'Your bookmarked TV series saved for easy access and viewing.'
+      };
+    }
     if (filterParam === 'top_rated') {
       return {
         title: 'Top Rated TV Shows',
@@ -114,6 +151,7 @@ function TvContent() {
   };
 
   const pageInfo = getPageInfo();
+  const activeShows = genreParam === 'wishlist' ? wishlistShows : shows;
 
   return (
     <div className={styles.content}>
@@ -165,18 +203,22 @@ function TvContent() {
         </div>
       </div>
 
-      {shows.length === 0 && !loading ? (
+      {activeShows.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
-          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No TV shows found for this filter or genre.</p>
+          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>
+            {genreParam === 'wishlist'
+              ? 'Your Wishlist is empty. Bookmark series to see them here!'
+              : 'No TV shows found for this filter or genre.'}
+          </p>
           <button
             onClick={() => updateQueryParams('popular', '', 1)}
             style={{
-              background: '#ef4444',
-              color: '#fff',
+              background: '#f59e0b',
+              color: '#000',
               border: 'none',
               padding: '0.6rem 1.2rem',
               borderRadius: '8px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: 'pointer'
             }}
           >
@@ -185,8 +227,8 @@ function TvContent() {
         </div>
       ) : (
         <>
-          <PosterGrid title="" movies={shows} isLoading={loading} />
-          {!loading && totalPages > 1 && (
+          <PosterGrid title="" movies={activeShows} isLoading={loading} />
+          {!loading && genreParam !== 'wishlist' && totalPages > 1 && (
             <Pagination
               currentPage={pageParam}
               totalPages={totalPages}

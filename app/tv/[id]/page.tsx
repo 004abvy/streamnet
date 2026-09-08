@@ -14,6 +14,7 @@ export default function TVDetailsPage({
   const { id } = use(params);
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -38,6 +39,35 @@ export default function TVDetailsPage({
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!movie?.id) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+      setIsSaved(Array.isArray(saved) && saved.some((item: any) => item.id === movie.id));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [movie]);
+
+  const toggleWatchlist = () => {
+    if (!movie?.id) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+      const itemToSave = { ...movie, media_type: 'tv' };
+      let updated = [];
+      if (isSaved) {
+        updated = saved.filter((item: any) => item.id !== movie.id);
+      } else {
+        updated = [...saved.filter((item: any) => item.id !== movie.id), itemToSave];
+      }
+      setIsSaved(!isSaved);
+      localStorage.setItem('saved_items', JSON.stringify(updated));
+      localStorage.setItem('user_bookmarks', JSON.stringify(updated.map((item: any) => item.id)));
+    } catch (e) {
+      console.error("Failed to toggle watchlist", e);
+    }
+  };
 
   if (loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -90,12 +120,15 @@ export default function TVDetailsPage({
               Watch Series
             </Link>
             <div className={styles.actions}>
-              <button className={styles.actionBtn}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-                Watchlist
-              </button>
-              <button className={styles.actionBtn} style={{flex: '0 0 auto'}}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              <button
+                className={styles.actionBtn}
+                onClick={toggleWatchlist}
+                style={isSaved ? { background: '#f59e0b', color: '#000', borderColor: '#f59e0b', fontWeight: 700 } : {}}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </svg>
+                {isSaved ? 'In Watchlist ✓' : 'Watchlist'}
               </button>
             </div>
           </div>
