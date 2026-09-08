@@ -28,6 +28,45 @@ export interface ServerAdPolicy {
   notes?: string;
 }
 
+/**
+ * The Perfect HTML5 IFrame Sandbox Configuration
+ *
+ * ALLOWED:
+ * 1. `allow-scripts`: Essential for video players (HLS.js, Dash.js, custom video controls)
+ * 2. `allow-same-origin`: Essential for CORS video chunk requests, cookies, and local player storage
+ * 3. `allow-forms`: Essential for Cloudflare Turnstile & reCAPTCHA verification challenges
+ * 4. `allow-presentation`: Essential for Chromecast, AirPlay, and external display streaming
+ *
+ * STRICTLY FORBIDDEN (OMITTED):
+ * - `allow-popups`: BLOCKED (Prevents window.open, new tab popups, and click-jack spawns)
+ * - `allow-popups-to-escape-sandbox`: BLOCKED (Prevents un-sandboxed popup windows)
+ * - `allow-top-navigation`: BLOCKED (Prevents iframe from redirecting the parent window)
+ * - `allow-top-navigation-by-user-activation`: BLOCKED (Prevents click-triggered page redirects)
+ * - `allow-top-navigation-to-custom-protocols`: BLOCKED (Prevents rogue app intent launches)
+ * - `allow-modals`: BLOCKED (Prevents fake virus/infection alert dialogs)
+ * - `allow-downloads`: BLOCKED (Prevents automatic drive-by malware downloads)
+ * - `allow-pointer-lock`: BLOCKED (Prevents cursor hijacking)
+ */
+export const PERFECT_SANDBOX_TOKENS = [
+  'allow-scripts',
+  'allow-same-origin',
+  'allow-forms',
+  'allow-presentation',
+] as const;
+
+export const FORBIDDEN_SANDBOX_TOKENS = [
+  'allow-popups',
+  'allow-popups-to-escape-sandbox',
+  'allow-top-navigation',
+  'allow-top-navigation-by-user-activation',
+  'allow-top-navigation-to-custom-protocols',
+  'allow-modals',
+  'allow-downloads',
+  'allow-pointer-lock',
+] as const;
+
+export const PERFECT_SANDBOX_STRING = PERFECT_SANDBOX_TOKENS.join(' ');
+
 const STANDARD_ALLOW_FEATURES = [
   'autoplay',
   'fullscreen',
@@ -157,9 +196,8 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  // If user has explicitly enabled sandbox via the UI toggle, apply stream-safe tokens
   const sandbox = sandboxActive
-    ? (policy.sandboxTokens ? policy.sandboxTokens.join(' ') : 'allow-scripts allow-same-origin allow-forms allow-presentation')
+    ? (policy.sandboxTokens ? policy.sandboxTokens.join(' ') : PERFECT_SANDBOX_STRING)
     : null;
 
   return {
