@@ -69,6 +69,12 @@ export default function SavedPage() {
     return () => window.removeEventListener('storage', loadSavedItems);
   }, []);
 
+  useEffect(() => {
+    if (user?.saved_items && Array.isArray(user.saved_items)) {
+      setItems(user.saved_items);
+    }
+  }, [user?.saved_items]);
+
   const clearAll = () => {
     if (confirm('Are you sure you want to clear your saved collection?')) {
       setItems([]);

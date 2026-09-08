@@ -2,10 +2,10 @@ import { db, auth } from './firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 export function getUserDocKey(email?: string | null, uid?: string): string | null {
+  if (uid) return uid;
   if (email && email.trim()) {
     return email.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '_');
   }
-  if (uid) return uid;
   return null;
 }
 

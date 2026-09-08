@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setLoading(false);
 
-        // 2. Perform background cloud synchronization using normalized email key
+        // 2. Perform background cloud synchronization using the Firebase user ID.
         (async () => {
           try {
             const docKey = getUserDocKey(firebaseUser.email, firebaseUser.uid);

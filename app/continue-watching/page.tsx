@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
+import { useAuth } from '../../context/AuthContext';
 import { saveContinueWatching } from '../../utils/userStorage';
 import styles from './continueWatching.module.css';
 
@@ -20,6 +21,7 @@ interface MediaItem {
 }
 
 export default function ContinueWatchingPage() {
+  const { user } = useAuth();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -44,6 +46,12 @@ export default function ContinueWatchingPage() {
       window.removeEventListener('storage', loadItems);
     };
   }, []);
+
+  useEffect(() => {
+    if (user?.continueWatching && Array.isArray(user.continueWatching)) {
+      setItems(user.continueWatching);
+    }
+  }, [user?.continueWatching]);
 
   const removeItem = (id: number, e: React.MouseEvent) => {
     e.preventDefault();

@@ -8,6 +8,7 @@ import TrendingSection from '../components/TrendingSection/TrendingSection';
 import ProvidersSection from '../components/ProvidersSection/ProvidersSection';
 import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplorerSection';
 import Footer from '../components/Footer/Footer';
+import { useAuth } from '../context/AuthContext';
 import { saveContinueWatching } from '../utils/userStorage';
 import styles from './page.module.css';
 
@@ -25,6 +26,7 @@ interface HomeMediaItem {
 }
 
 export default function Home() {
+  const { user } = useAuth();
   const [trendingMovies, setTrendingMovies] = useState<HomeMediaItem[]>([]);
   const [trendingTv, setTrendingTv] = useState<HomeMediaItem[]>([]);
   const [continueWatching, setContinueWatching] = useState<HomeMediaItem[]>([]);
@@ -61,6 +63,12 @@ export default function Home() {
       window.removeEventListener('storage', loadContinueWatching);
     };
   }, []);
+
+  useEffect(() => {
+    if (user?.continueWatching && Array.isArray(user.continueWatching)) {
+      setContinueWatching(user.continueWatching);
+    }
+  }, [user?.continueWatching]);
 
   const handleClearContinueWatching = () => {
     if (confirm('Clear all continue watching history?')) {
