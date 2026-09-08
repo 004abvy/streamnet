@@ -1,5 +1,6 @@
 .section {
   width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
   padding: clamp(1.5rem, 3vw, 4rem) clamp(1rem, 5vw, 6rem);
   box-sizing: border-box;
@@ -203,7 +204,7 @@
   align-items: center;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  min-height: 290px;
+  min-height: max(290px, max-content);
   border: 1px solid #222232;
   border-radius: 14px;
   background: #0d0d14;
@@ -429,8 +430,9 @@
     grid-template-columns: 1fr;
   }
 
+
   .heroCard {
-    min-height: 250px;
+    min-height: max(250px, max-content);
   }
 }
 
@@ -468,9 +470,10 @@
   }
 
   .heroCard {
-    min-height: 220px;
+    min-height: max-content;
     aspect-ratio: auto;
     padding: 1.5rem 0.75rem;
+    max-width: 100%;
   }
 
   .heroContent {

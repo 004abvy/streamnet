@@ -1,5 +1,6 @@
 .section {
   width: 100%;
+  max-width: 1800px;
   margin: clamp(2rem, 4vw, 5rem) auto;
   padding: 0 clamp(1rem, 5vw, 6rem);
   color: #ffffff;

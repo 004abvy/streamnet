@@ -2,6 +2,7 @@
   padding: clamp(1.5rem, 3vw, 4rem) clamp(1rem, 5vw, 6rem);
   position: relative;
   width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
   z-index: 1;
   box-sizing: border-box;
