@@ -8,7 +8,7 @@ export const vidlinkAdapter: ProviderAdapter = {
   description: 'Ad-Free VIP • Multi-Audio & Subtitles',
   capabilities: {
     autoplay: true,
-    sandboxCompatible: true,
+    sandboxCompatible: false, // Forbids <iframe sandbox> to prevent anti-sandbox alert
     popupRisk: 'low',
     quality: '4K UHD',
     baseReliability: 96,

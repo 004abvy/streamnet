@@ -54,7 +54,7 @@ export const genericAdapters: ProviderAdapter[] = [
     description: 'Low-latency Regional CDN',
     capabilities: {
       autoplay: true,
-      sandboxCompatible: true,
+      sandboxCompatible: false, // Prevents anti-sandbox errors
       popupRisk: 'low',
       quality: '1080p',
       baseReliability: 82,
@@ -76,7 +76,7 @@ export const genericAdapters: ProviderAdapter[] = [
     description: 'Fast Buffer Pipeline',
     capabilities: {
       autoplay: true,
-      sandboxCompatible: true,
+      sandboxCompatible: false, // Prevents anti-sandbox errors
       popupRisk: 'low',
       quality: 'HD',
       baseReliability: 80,
@@ -98,7 +98,7 @@ export const genericAdapters: ProviderAdapter[] = [
     description: 'Alternative Fast Mirror',
     capabilities: {
       autoplay: true,
-      sandboxCompatible: true,
+      sandboxCompatible: false, // Prevents anti-sandbox errors
       popupRisk: 'low',
       quality: 'HD',
       baseReliability: 78,
@@ -120,7 +120,7 @@ export const genericAdapters: ProviderAdapter[] = [
     description: 'Alternative Global Mirror',
     capabilities: {
       autoplay: true,
-      sandboxCompatible: true,
+      sandboxCompatible: false, // Prevents anti-sandbox errors
       popupRisk: 'low',
       quality: 'HD',
       baseReliability: 75,

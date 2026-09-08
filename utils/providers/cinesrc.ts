@@ -8,7 +8,7 @@ export const cinesrcAdapter: ProviderAdapter = {
   description: 'Fast CDN • Auto-Next Episodes',
   capabilities: {
     autoplay: true,
-    sandboxCompatible: true,
+    sandboxCompatible: false, // Forbids <iframe sandbox> to prevent anti-sandbox errors
     popupRisk: 'low',
     quality: '4K UHD',
     baseReliability: 94,

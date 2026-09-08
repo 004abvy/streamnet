@@ -15,7 +15,7 @@ const DEFAULT_PREFERENCES: PlayerPreferences = {
   skipIntro: true,
   preferredServer: 'auto',
   useSafestServerFirst: true,
-  sandboxActive: true,
+  sandboxActive: false,
 };
 
 export function getPlayerPreferences(): PlayerPreferences {

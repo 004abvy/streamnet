@@ -8,7 +8,7 @@ export const nxshaAdapter: ProviderAdapter = {
   description: 'Direct 4K Cinema Stream',
   capabilities: {
     autoplay: true,
-    sandboxCompatible: true,
+    sandboxCompatible: false, // Forbids <iframe sandbox> to prevent anti-sandbox errors
     popupRisk: 'low',
     quality: '4K UHD',
     baseReliability: 91,

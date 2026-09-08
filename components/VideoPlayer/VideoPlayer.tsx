@@ -41,7 +41,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showServerModal, setShowServerModal] = useState(false);
-  const [sandboxEnabled, setSandboxEnabled] = useState(true);
+  const [sandboxEnabled, setSandboxEnabled] = useState(false);
   const [blockedCount, setBlockedCount] = useState(0);
   const [failoverToast, setFailoverToast] = useState<string | null>(null);
 
@@ -54,7 +54,6 @@ export default function VideoPlayer({
   const [sessionState, setSessionState] = useState<PlaybackSession>({
     state: 'idle',
     currentProvider: activeProvider,
-    failedProviderIds: [],
     loadStartTime: 0,
   });
 
@@ -176,8 +175,6 @@ export default function VideoPlayer({
   const isBufferingOrMounting =
     isPlaying &&
     (sessionState.state === 'mounting_iframe' ||
-      sessionState.state === 'waiting_for_load' ||
-      sessionState.state === 'switching_server' ||
       sessionState.state === 'idle');
 
   return (
@@ -215,7 +212,7 @@ export default function VideoPlayer({
                   Connecting to {activeProvider.name}...
                 </span>
                 <span className={styles.loadingSubText}>
-                  {activeProvider.capabilities.quality} • {securityAttributes.isSandboxed ? 'Strict Sandbox Active' : 'Direct Stream'}
+                  {activeProvider.capabilities.quality} • {securityAttributes.isSandboxed ? 'Strict Sandbox Active' : 'Direct Stream (uBlock Protected)'}
                 </span>
               </div>
             )}
@@ -229,7 +226,10 @@ export default function VideoPlayer({
               allowFullScreen={true}
               referrerPolicy={securityAttributes.referrerPolicy}
               loading="eager"
-              onLoad={() => playbackManagerRef.current?.handleIframeLoad()}
+              onLoad={() => {
+                playbackManagerRef.current?.handleIframeLoad();
+                setSessionState((prev) => ({ ...prev, state: 'ready' }));
+              }}
             ></iframe>
           </div>
         )}
@@ -355,7 +355,7 @@ export default function VideoPlayer({
           </span>
           <span className={styles.qualityTag}>{activeProvider.capabilities.quality}</span>
           <span className={styles.shieldBadge} title="Security Status">
-            {securityAttributes.isSandboxed ? '🛡️ Sandbox Active' : '⚡ Direct Stream'}
+            {securityAttributes.isSandboxed ? '🛡️ Sandbox Active' : '🛡️ uBlock Shield'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
