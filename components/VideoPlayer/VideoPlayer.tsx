@@ -18,6 +18,7 @@ import {
 import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
 import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
+import { initMediaSniffer, SniffedMediaItem } from '../../utils/mediaSniffer';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -81,6 +82,21 @@ export default function VideoPlayer({
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [pending1DmPopup, setPending1DmPopup] = useState<InterceptedPopupInfo | null>(null);
+  const [sniffedMedia, setSniffedMedia] = useState<SniffedMediaItem[]>([]);
+  const [showSnifferModal, setShowSnifferModal] = useState(false);
+  const [copiedMediaId, setCopiedMediaId] = useState<string | null>(null);
+
+  // Initialize 1DM Network & Media Sniffer during active playback
+  useEffect(() => {
+    if (!isPlaying) return;
+    return initMediaSniffer((newItems) => {
+      setSniffedMedia((prev) => {
+        const existingUrls = new Set(prev.map((item) => item.url));
+        const filtered = newItems.filter((item) => !existingUrls.has(item.url));
+        return [...prev, ...filtered];
+      });
+    });
+  }, [isPlaying]);
 
   // Initialize preferences and initial best server
   useEffect(() => {
@@ -494,6 +510,74 @@ export default function VideoPlayer({
             </div>
           </div>
         )}
+
+        {/* 1DM Media Sniffer Modal */}
+        {showSnifferModal && (
+          <div className={styles.serverModalOverlay} onClick={() => setShowSnifferModal(false)}>
+            <div className={styles.serverModalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <div className={styles.modalHeaderTitle}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <span>1DM Media Sniffer & Track Extractor</span>
+                </div>
+                <button
+                  className={styles.closeModalBtn}
+                  onClick={() => setShowSnifferModal(false)}
+                  aria-label="Close sniffer modal"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={styles.modalServerGrid}>
+                {sniffedMedia.length === 0 ? (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem' }}>
+                    🔍 Scanning network traffic for HLS stream playlists, Hindi audio tracks, and subtitles...
+                  </div>
+                ) : (
+                  sniffedMedia.map((media) => (
+                    <div key={media.id} className={styles.modalServerCard}>
+                      <div className={styles.cardTopRow}>
+                        <span className={styles.serverCardName}>{media.label}</span>
+                        <div className={styles.serverBadgeGroup}>
+                          <span className={styles.qualityTag}>{media.type.toUpperCase()}</span>
+                          {media.language && <span className={styles.featureBadge}>{media.language.toUpperCase()}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem' }}>
+                        <button
+                          type="button"
+                          className={styles.oneDmAllowBtn}
+                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem' }}
+                          onClick={() => {
+                            try {
+                              navigator.clipboard.writeText(media.url);
+                              setCopiedMediaId(media.id);
+                              setTimeout(() => setCopiedMediaId(null), 2000);
+                            } catch (e) {}
+                          }}
+                        >
+                          {copiedMediaId === media.id ? '✓ Copied!' : '📋 Copy URL'}
+                        </button>
+                        <a
+                          href={media.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.oneDmBlockBtn}
+                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', textDecoration: 'none' }}
+                        >
+                          ⬇️ Open / Download
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Toolbar Below Player */}
@@ -531,6 +615,21 @@ export default function VideoPlayer({
           <span>🌐 Audio:</span>
           <span className={styles.activeServerBadge}>
             {activeLangObj.flag} {activeLangObj.name}
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {/* 1DM Sniffer Button */}
+        <button
+          className={styles.toolbarBtn}
+          onClick={() => setShowSnifferModal(true)}
+          title="View 1DM Sniffed Media Streams & Audio Tracks"
+        >
+          <span>⚡ 1DM Sniffer:</span>
+          <span className={styles.activeServerBadge}>
+            {sniffedMedia.length > 0 ? `${sniffedMedia.length} Tracks Found` : 'Scanning...'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
