@@ -11,11 +11,10 @@ import {
   updateProfile,
   sendPasswordResetEmail,
   confirmPasswordReset,
-  verifyPasswordResetCode,
-  fetchSignInMethodsForEmail,
-  User as FirebaseUser
+  verifyPasswordResetCode
 } from 'firebase/auth';
-import { auth } from '../utils/firebase';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../utils/firebase';
 
 export interface User {
   id: string;
@@ -46,27 +45,124 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    let firestoreUnsubscribe: (() => void) | null = null;
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firestoreUnsubscribe) {
+        firestoreUnsubscribe();
+        firestoreUnsubscribe = null;
+      }
+
       if (firebaseUser) {
-        // Hydrate from localStorage
-        const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-        const continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '[]');
-        
-        setUser({
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || 'User',
-          email: firebaseUser.email || '',
-          isVerified: firebaseUser.emailVerified,
-          saved_items: saved,
-          continueWatching: continueWatching
-        });
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+
+        try {
+          const snapshot = await getDoc(userDocRef);
+          const localSaved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+          const localContinue = JSON.parse(localStorage.getItem('continueWatching') || '[]');
+
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            const cloudSaved = data.saved_items || [];
+            const cloudContinue = data.continueWatching || [];
+
+            // Merge local and cloud saved items (avoiding duplicates)
+            const mergedSavedMap = new Map<number, any>();
+            cloudSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
+            localSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
+            const mergedSaved = Array.from(mergedSavedMap.values());
+
+            // Merge local and cloud continueWatching
+            const mergedContinueMap = new Map<number, any>();
+            cloudContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
+            localContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
+            const mergedContinue = Array.from(mergedContinueMap.values());
+
+            // Write merged data back to localStorage
+            localStorage.setItem('saved_items', JSON.stringify(mergedSaved));
+            localStorage.setItem('user_bookmarks', JSON.stringify(mergedSaved.map((item: any) => item.id)));
+            localStorage.setItem('continueWatching', JSON.stringify(mergedContinue));
+
+            // Sync merged state back to Firestore
+            await setDoc(userDocRef, {
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || 'User',
+              saved_items: mergedSaved,
+              continueWatching: mergedContinue,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            setUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'User',
+              email: firebaseUser.email || '',
+              isVerified: firebaseUser.emailVerified,
+              saved_items: mergedSaved,
+              continueWatching: mergedContinue
+            });
+          } else {
+            // First time user login -> Save current localStorage state to Firestore
+            await setDoc(userDocRef, {
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || 'User',
+              saved_items: localSaved,
+              continueWatching: localContinue,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
+
+            setUser({
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'User',
+              email: firebaseUser.email || '',
+              isVerified: firebaseUser.emailVerified,
+              saved_items: localSaved,
+              continueWatching: localContinue
+            });
+          }
+
+          // Real-time listener for multi-device sync
+          firestoreUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const freshData = docSnap.data();
+              const freshSaved = freshData.saved_items || [];
+              const freshContinue = freshData.continueWatching || [];
+
+              localStorage.setItem('saved_items', JSON.stringify(freshSaved));
+              localStorage.setItem('user_bookmarks', JSON.stringify(freshSaved.map((item: any) => item.id)));
+              localStorage.setItem('continueWatching', JSON.stringify(freshContinue));
+
+              setUser((prev) => prev ? {
+                ...prev,
+                saved_items: freshSaved,
+                continueWatching: freshContinue
+              } : null);
+            }
+          });
+
+        } catch (e) {
+          console.warn("Failed to initialize cloud user sync:", e);
+          const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+          const continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '[]');
+          setUser({
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'User',
+            email: firebaseUser.email || '',
+            isVerified: firebaseUser.emailVerified,
+            saved_items: saved,
+            continueWatching: continueWatching
+          });
+        }
       } else {
         setUser(null);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (firestoreUnsubscribe) firestoreUnsubscribe();
+    };
   }, []);
 
   const signup = async (name: string, email: string, password: string) => {
@@ -74,10 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       
-      // Update profile with name
       await updateProfile(firebaseUser, { displayName: name });
-      
-      // Send verification email
       await sendEmailVerification(firebaseUser);
       
       return { success: true, message: 'Verification email sent. Please check your inbox.' };
@@ -119,8 +212,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const syncUserData = async (saved_items?: any[], continueWatching?: any[]) => {
-    if (saved_items) localStorage.setItem('saved_items', JSON.stringify(saved_items));
-    if (continueWatching) localStorage.setItem('continueWatching', JSON.stringify(continueWatching));
+    if (saved_items) {
+      localStorage.setItem('saved_items', JSON.stringify(saved_items));
+      localStorage.setItem('user_bookmarks', JSON.stringify(saved_items.map((item: any) => item.id)));
+    }
+    if (continueWatching) {
+      localStorage.setItem('continueWatching', JSON.stringify(continueWatching));
+    }
+
+    if (auth.currentUser) {
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      const payload: Record<string, any> = { updatedAt: new Date().toISOString() };
+      if (saved_items !== undefined) payload.saved_items = saved_items;
+      if (continueWatching !== undefined) payload.continueWatching = continueWatching;
+
+      try {
+        await setDoc(userDocRef, payload, { merge: true });
+      } catch (e) {
+        console.warn("Failed to sync user data to Firestore:", e);
+      }
+    }
   };
 
   const verifyEmailToken = async (actionCode: string) => {

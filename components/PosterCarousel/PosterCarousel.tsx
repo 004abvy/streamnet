@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../../context/AuthContext';
 import styles from './PosterCarousel.module.css';
 
 interface Movie {
@@ -24,18 +25,21 @@ interface PosterCarouselProps {
 }
 
 export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem }: PosterCarouselProps) {
+  const { syncUserData } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [savedIds, setSavedIds] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return [];
+  const [savedIds, setSavedIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-      return Array.isArray(saved) ? saved.map((item) => item.id) : [];
+      if (Array.isArray(saved)) setSavedIds(saved.map((item) => item.id));
     } catch {
-      return [];
+      setSavedIds([]);
     }
-  });
+  }, []);
 
   const toggleSaved = (event: React.MouseEvent, movie: Movie) => {
     event.preventDefault();
@@ -48,8 +52,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
       ? [...saved.filter((item: Movie) => item.id !== movie.id), movie]
       : saved.filter((item: Movie) => item.id !== movie.id);
     setSavedIds(nextIds);
-    localStorage.setItem('saved_items', JSON.stringify(nextItems));
-    localStorage.setItem('user_bookmarks', JSON.stringify(nextIds));
+    syncUserData(nextItems, undefined);
   };
 
   const calculatePages = () => {
