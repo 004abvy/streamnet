@@ -212,6 +212,13 @@ a, button {
   font-size: var(--font-small);
 }
 
+/* Mega Menu Dropdown Popups (Movies & TV Shows) */
+[class*="Navbar_megaDropdownMenu"] {
+  max-width: min(580px, calc(100vw - 1.5rem)) !important;
+  max-height: calc(100vh - 80px) !important;
+  box-sizing: border-box !important;
+}
+
 /* Mobile Bottom Sheet Menu Container (collapse at <= 900px) */
 @media (max-width: 900px) {
   [class*="Navbar_navLinks"] {

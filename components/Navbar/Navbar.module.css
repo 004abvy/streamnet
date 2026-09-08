@@ -19,6 +19,7 @@
   min-width: 0;
   overflow: visible;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .closeSheetBtn,
@@ -228,7 +229,7 @@
    MEGA MENU DROPDOWN (Movies & TV Shows)
    =================================================================== */
 .megaDropdownWrapper {
-  position: relative;
+  position: static;
 }
 
 .megaDropdownMenu {
@@ -236,20 +237,33 @@
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(540px, 46vw, 620px);
+  width: min(580px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 85px);
+  overflow-y: auto;
   background: #09090b;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 1.5rem 1.6rem;
+  border-radius: 14px;
+  padding: 1.4rem 1.6rem;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.18s ease, visibility 0.18s ease;
   z-index: 400;
+  box-sizing: border-box;
+}
+
+.megaDropdownMenu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.megaDropdownMenu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 .megaDropdownMenu::before {
@@ -1047,6 +1061,42 @@
   .signupBtn {
     padding: 0.35rem 0.65rem;
     font-size: 0.78rem;
+  }
+
+  .megaDropdownMenu {
+    width: min(520px, calc(100vw - 1.5rem)) !important;
+    padding: 1.15rem 1.25rem !important;
+    gap: 1rem !important;
+  }
+
+  .megaGrid {
+    column-gap: 1.25rem !important;
+    row-gap: 0.9rem !important;
+  }
+
+  .megaDesc {
+    font-size: 0.8rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .megaItemDesc {
+    font-size: 0.74rem !important;
+  }
+}
+
+@media screen and (max-height: 720px) and (min-width: 901px) {
+  .megaDropdownMenu {
+    max-height: calc(100vh - 75px) !important;
+    padding: 1rem 1.25rem !important;
+    gap: 0.85rem !important;
+  }
+
+  .megaDesc {
+    display: none !important;
+  }
+
+  .megaGrid {
+    row-gap: 0.75rem !important;
   }
 }
 
