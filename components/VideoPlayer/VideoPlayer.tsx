@@ -36,7 +36,7 @@ export default function VideoPlayer({
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
   const [adShield, setAdShield] = useState(true);
-  const [ultraShield, setUltraShield] = useState(false);
+  const [ultraShield, setUltraShield] = useState(true);
   const [blockedCount, setBlockedCount] = useState(0);
 
   useEffect(() => {

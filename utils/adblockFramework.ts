@@ -229,8 +229,10 @@ export function setAdShieldPreference(enabled: boolean): void {
 }
 
 export function getUltraShieldPreference(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(ULTRA_STORAGE_KEY) === 'true';
+  if (typeof window === 'undefined') return true;
+  const saved = localStorage.getItem(ULTRA_STORAGE_KEY);
+  // Defaults to TRUE so ultra-strict isolation is persistent out-of-the-box
+  return saved === null ? true : saved === 'true';
 }
 
 export function setUltraShieldPreference(enabled: boolean): void {
