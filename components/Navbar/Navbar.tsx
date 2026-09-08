@@ -108,6 +108,12 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleDropdownClick = (menu: string) => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 1200) {
+      setExpandedMenu(expandedMenu === menu ? null : menu);
+    }
+  };
+
   return (
     <nav className={styles.navbar}>
       <Link href="/" prefetch={false} className={styles.logo}>
@@ -134,10 +140,23 @@ export default function Navbar() {
 
       <div ref={navLinksRef} className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>
         
-        {/* Bottom Sheet Header */}
+        {/* Bottom Sheet Header with close button */}
         <div className={styles.bottomSheetHeader}>
           <div className={styles.dragHandle}></div>
-          <h3 className={styles.menuTitle}>Menu</h3>
+          <div className={styles.bottomSheetHeaderRow}>
+            <h3 className={styles.menuTitle}>Menu</h3>
+            <button
+              type="button"
+              className={styles.closeSheetBtn}
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <Link href="/" prefetch={false} className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
@@ -147,7 +166,7 @@ export default function Navbar() {
 
         {/* Movies Mega Dropdown */}
         <div className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${expandedMenu === 'movies' ? styles.expanded : ''}`}>
-          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'movies' ? null : 'movies')}>
+          <div className={styles.navLink} onClick={() => handleDropdownClick('movies')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
             Movies
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
@@ -238,7 +257,7 @@ export default function Navbar() {
 
         {/* TV Shows Mega Dropdown */}
         <div className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${expandedMenu === 'tv' ? styles.expanded : ''}`}>
-          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'tv' ? null : 'tv')}>
+          <div className={styles.navLink} onClick={() => handleDropdownClick('tv')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
             TV Shows
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
@@ -359,7 +378,7 @@ export default function Navbar() {
 
         {/* More Dropdown */}
         <div className={`${styles.navLinkDropdown} ${expandedMenu === 'more' ? styles.expanded : ''}`}>
-          <div className={styles.navLink} onClick={() => setExpandedMenu(expandedMenu === 'more' ? null : 'more')}>
+          <div className={styles.navLink} onClick={() => handleDropdownClick('more')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
             More
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>

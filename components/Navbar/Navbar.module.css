@@ -100,6 +100,10 @@
   padding: 0.5rem 0;
 }
 
+.navLinkDropdown:hover {
+  z-index: 500;
+}
+
 .chevron {
   opacity: 0.6;
   margin-left: 0.2rem;
@@ -151,8 +155,7 @@
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
 }
 
-.navLinkDropdown:hover .dropdownMenu,
-.navLinkDropdown.expanded .dropdownMenu,
+.navLinkDropdown:hover > .dropdownMenu,
 .dropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
@@ -166,8 +169,7 @@
   transform: none !important;
 }
 
-.navLinkDropdown:hover .userDropdownMenu,
-.navLinkDropdown.expanded .userDropdownMenu,
+.navLinkDropdown:hover > .userDropdownMenu,
 .userDropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
@@ -247,8 +249,7 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
 }
 
-.navLinkDropdown:hover .megaDropdownMenu,
-.navLinkDropdown.expanded .megaDropdownMenu {
+.navLinkDropdown:hover > .megaDropdownMenu {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
@@ -1074,7 +1075,7 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     position: sticky;
     top: 0;
     background: inherit;
@@ -1088,18 +1089,51 @@
     height: 4px;
     background-color: #3f3f46;
     border-radius: 4px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .bottomSheetHeaderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
   }
 
   .menuTitle {
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.15rem;
+    font-weight: 800;
     color: #ffffff;
     margin: 0;
+    letter-spacing: -0.01em;
   }
 
   [data-theme="light"] .menuTitle {
     color: #000000;
+  }
+
+  .closeSheetBtn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .closeSheetBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+
+  [data-theme="light"] .closeSheetBtn {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #111827;
   }
 
   .navLink {
