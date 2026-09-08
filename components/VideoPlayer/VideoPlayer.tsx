@@ -7,6 +7,8 @@ import {
   resolveServerIframeAttributes,
   getAdShieldPreference,
   setAdShieldPreference,
+  getUltraShieldPreference,
+  setUltraShieldPreference,
   installAdblockProtection,
 } from '../../utils/adblockFramework';
 
@@ -34,10 +36,13 @@ export default function VideoPlayer({
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
   const [adShield, setAdShield] = useState(true);
+  const [ultraShield, setUltraShield] = useState(false);
+  const [blockedCount, setBlockedCount] = useState(0);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
     setAdShield(getAdShieldPreference());
+    setUltraShield(getUltraShieldPreference());
   }, []);
 
   const toggleAdShield = () => {
@@ -48,10 +53,20 @@ export default function VideoPlayer({
     });
   };
 
-  // Runtime adblock protection against rogue popups & redirects
+  const toggleUltraShield = () => {
+    setUltraShield((prev) => {
+      const next = !prev;
+      setUltraShieldPreference(next);
+      return next;
+    });
+  };
+
+  // Hardened runtime protection against rogue popups, forms & synthetic clicks
   useEffect(() => {
     if (!isPlaying) return;
-    return installAdblockProtection(adShield);
+    return installAdblockProtection(adShield, (_type, _target) => {
+      setBlockedCount((c) => c + 1);
+    });
   }, [isPlaying, adShield]);
 
   // Listen to CineSrc postMessage events for auto-next episode
@@ -73,7 +88,7 @@ export default function VideoPlayer({
   const activeServer = SERVERS.find((s) => s.id === activeServerId) || SERVERS[0];
   const rawVideoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
-  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, adShield);
+  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, adShield, ultraShield);
 
   const handleServerChange = (id: string) => {
     setActiveServerId(id);
@@ -100,7 +115,7 @@ export default function VideoPlayer({
         ) : (
           <div className={styles.iframeContainer}>
             <iframe
-              key={`${iframeConfig.src}-${adShield}`}
+              key={`${iframeConfig.src}-${adShield}-${ultraShield}`}
               className={styles.iframe}
               src={iframeConfig.src}
               sandbox={iframeConfig.sandbox}
@@ -165,9 +180,12 @@ export default function VideoPlayer({
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                     <span className={styles.shieldTitle}>Ad & Popup Shield</span>
+                    {blockedCount > 0 && (
+                      <span className={styles.blockedBadge}>{blockedCount} blocked</span>
+                    )}
                   </div>
                   <span className={styles.shieldSubtitle}>
-                    {adShield ? 'Active • Blocking popups & redirects' : 'Disabled'}
+                    {adShield ? 'Active • Neutralizing popups & redirects' : 'Disabled'}
                   </span>
                 </div>
                 <button
@@ -176,6 +194,28 @@ export default function VideoPlayer({
                   className={`${styles.shieldToggleBtn} ${adShield ? styles.shieldToggleBtnActive : ''}`}
                   title={adShield ? 'Disable Ad Blocker' : 'Enable Ad Blocker'}
                   aria-label="Toggle Ad & Popup Shield"
+                >
+                  <span className={styles.shieldToggleThumb} />
+                </button>
+              </div>
+
+              {/* Ultra Isolation Mode Setting */}
+              <div className={styles.shieldRow} style={{ borderTop: '1px solid #1a1a28' }}>
+                <div className={styles.shieldInfo}>
+                  <div className={styles.shieldTitleGroup}>
+                    <span style={{ fontSize: '0.85rem' }}>⚡</span>
+                    <span className={styles.shieldTitle}>Ultra Isolation Mode</span>
+                  </div>
+                  <span className={styles.shieldSubtitle}>
+                    {ultraShield ? 'Active • Cookies & tracking storage stripped' : 'Maximum ad resistance'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleUltraShield}
+                  className={`${styles.shieldToggleBtn} ${ultraShield ? styles.shieldToggleBtnActive : ''}`}
+                  title={ultraShield ? 'Disable Ultra Isolation' : 'Enable Ultra Isolation'}
+                  aria-label="Toggle Ultra Isolation Mode"
                 >
                   <span className={styles.shieldToggleThumb} />
                 </button>
@@ -203,8 +243,8 @@ export default function VideoPlayer({
             {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}{activeServer.name}
           </span>
           {adShield && (
-            <span className={styles.shieldBadge} title="Ad & Popup Shield Active">
-              🛡️
+            <span className={styles.shieldBadge} title="Ad Shield Active">
+              {ultraShield ? '🛡️ Ultra' : '🛡️ Shield'}
             </span>
           )}
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

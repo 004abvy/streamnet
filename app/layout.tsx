@@ -35,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta httpEquiv="Content-Security-Policy" content="form-action 'self'; object-src 'none';" />
         <Script
           id="scroll-restoration"
           strategy="beforeInteractive"
