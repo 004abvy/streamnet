@@ -18,6 +18,10 @@ interface MediaItem {
   release_date?: string;
   first_air_date?: string;
   media_type?: string;
+  season?: number;
+  episode?: number;
+  last_season?: number;
+  last_episode?: number;
 }
 
 export default function ContinueWatchingPage() {
@@ -154,10 +158,12 @@ export default function ContinueWatchingPage() {
             <div className={styles.grid}>
               {filteredItems.map((item) => {
                 const title = item.title || item.name || 'Untitled';
-                const watchHref = `/watch/${item.id}`;
                 const date = item.release_date || item.first_air_date;
                 const year = date ? date.split('-')[0] : '';
-                const isTV = item.media_type === 'tv' || (item.name && !item.title);
+                const isTV = item.media_type === 'tv' || Boolean(item.name && !item.title);
+                const season = item.last_season || item.season || 1;
+                const episode = item.last_episode || item.episode || 1;
+                const watchHref = isTV ? `/watch/tv/${item.id}/${season}/${episode}` : `/watch/${item.id}`;
 
                 return (
                   <article className={styles.card} key={item.id}>
@@ -201,8 +207,11 @@ export default function ContinueWatchingPage() {
                       <div className={styles.cardInfo}>
                         <h3 className={styles.itemTitle}>{title}</h3>
                         <div className={styles.itemMeta}>
-                          {year && <span>{year}</span>}
-                          {isTV ? <span>• TV Series</span> : <span>• Movie</span>}
+                          {isTV ? (
+                            <span>Season {season} • Ep {episode}</span>
+                          ) : (
+                            <span>{year ? `${year} • ` : ''}Movie</span>
+                          )}
                         </div>
                       </div>
                     </Link>

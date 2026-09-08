@@ -14,6 +14,10 @@ interface Movie {
   release_date?: string;
   first_air_date?: string;
   media_type?: string;
+  season?: number;
+  episode?: number;
+  last_season?: number;
+  last_episode?: number;
 }
 
 interface PosterCarouselProps {
@@ -22,13 +26,16 @@ interface PosterCarouselProps {
   viewAllLink?: string;
   onClear?: () => void;
   onRemoveItem?: (id: number) => void;
+  isContinueWatching?: boolean;
 }
 
-export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem }: PosterCarouselProps) {
+export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem, isContinueWatching }: PosterCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [savedIds, setSavedIds] = useState<number[]>([]);
+
+  const isContinue = isContinueWatching ?? (title.toLowerCase().includes('continue') || Boolean(onRemoveItem));
 
   useEffect(() => {
     const syncSaved = () => {
@@ -158,8 +165,13 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
           const year = displayDate ? displayDate.split('-')[0] : '';
           const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '8.0';
 
-          const isTV = movie.media_type === 'tv' || (movie.name && !movie.title);
-          const linkHref = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+          const isTV = movie.media_type === 'tv' || Boolean(movie.name && !movie.title);
+          const season = movie.last_season || movie.season || 1;
+          const episode = movie.last_episode || movie.episode || 1;
+
+          const playerHref = isTV ? `/watch/tv/${movie.id}/${season}/${episode}` : `/watch/${movie.id}`;
+          const detailsHref = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+          const linkHref = isContinue ? playerHref : detailsHref;
           
           return (
             <Link href={linkHref} key={movie.id} className={styles.card}>
@@ -170,6 +182,16 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                 loading="lazy"
               />
               <div className={styles.overlay}></div>
+
+              {isContinue && (
+                <div className={styles.playOverlay}>
+                  <div className={styles.playIconCircle}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
+                  </div>
+                </div>
+              )}
 
               {onRemoveItem && (
                 <button
@@ -205,7 +227,11 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                   <div className={styles.rating}>{rating}</div>
                 )}
                 <h3 className={styles.movieTitle}>{displayTitle}</h3>
-                {year && <p className={styles.year}>{year}</p>}
+                {isContinue && isTV ? (
+                  <p className={styles.year}>S{season} E{episode}</p>
+                ) : year ? (
+                  <p className={styles.year}>{year}</p>
+                ) : null}
               </div>
             </Link>
           );

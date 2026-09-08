@@ -7,6 +7,7 @@ import Navbar from '../../../../../../components/Navbar/Navbar';
 import VideoPlayer from '../../../../../../components/VideoPlayer/VideoPlayer';
 import SeasonEpisodeSelector from '../../../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
 import PosterCarousel from '../../../../../../components/PosterCarousel/PosterCarousel';
+import { saveContinueWatching } from '../../../../../../utils/userStorage';
 
 export default function WatchTvPage() {
   const params = useParams();
@@ -34,6 +35,30 @@ export default function WatchTvPage() {
       .then((data) => {
         if (data && !data.error) {
           setShow(data);
+
+          // Add/update TV continue watching with season and episode
+          try {
+            const stored = localStorage.getItem('continueWatching');
+            const list = stored ? JSON.parse(stored) : [];
+            const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
+            const itemToSave = {
+              id: data.id || Number(id),
+              title: data.name || data.title,
+              name: data.name || data.title,
+              poster_path: data.poster_path,
+              backdrop_path: data.backdrop_path,
+              vote_average: data.vote_average,
+              first_air_date: data.first_air_date || data.release_date,
+              media_type: 'tv',
+              last_season: season,
+              last_episode: episode,
+              season: season,
+              episode: episode
+            };
+            saveContinueWatching([itemToSave, ...filtered]);
+          } catch (e) {
+            console.warn(e);
+          }
         } else {
           setShow(null);
         }
@@ -44,7 +69,7 @@ export default function WatchTvPage() {
         setShow(null);
         setLoading(false);
       });
-  }, [id]);
+  }, [id, season, episode]);
 
   const handleEpisodeChange = (newSeason: number, newEpisode: number) => {
     router.push(`/watch/tv/${id}/${newSeason}/${newEpisode}`);

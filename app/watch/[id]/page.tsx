@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from '../../../components/Navbar/Navbar';
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
 import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
+import { saveContinueWatching } from '../../../utils/userStorage';
 
 export default function WatchPage({
   params,
@@ -26,7 +27,29 @@ export default function WatchPage({
         return res.json();
       })
       .then((data) => {
-        if (data && !data.error) setMovie(data);
+        if (data && !data.error) {
+          setMovie(data);
+
+          // Add/update to continue watching
+          try {
+            const stored = localStorage.getItem('continueWatching');
+            const list = stored ? JSON.parse(stored) : [];
+            const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
+            const itemToSave = {
+              id: data.id || Number(id),
+              title: data.title || data.name,
+              name: data.name || data.title,
+              poster_path: data.poster_path,
+              backdrop_path: data.backdrop_path,
+              vote_average: data.vote_average,
+              release_date: data.release_date || data.first_air_date,
+              media_type: 'movie'
+            };
+            saveContinueWatching([itemToSave, ...filtered]);
+          } catch (e) {
+            console.warn(e);
+          }
+        }
         setLoading(false);
       })
       .catch((err) => {
