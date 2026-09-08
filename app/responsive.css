@@ -1,69 +1,78 @@
 /**
  * ===================================================================
- * StreamNet Responsive Scaling System (responsive.css)
+ * StreamNet Universal Responsive Scaling Engine (responsive.css)
  * -------------------------------------------------------------------
- * Automatically scales UI, typography, spacing, cards, and layouts
- * proportionally based on screen width (px) across all device sizes:
- * 4K -> Ultra-wide -> Desktop -> Laptop -> Tablet -> Mobile -> Foldable
+ * Automatically scales every component, card, button, section, modal,
+ * and page proportionally based on pixel width across all devices:
+ * 4K / Ultra-wide -> Desktop -> Laptop -> Tablet -> Mobile -> Foldable
  * ===================================================================
  */
 
 /* ===================================================================
-   1. FLUID ROOT SCALING (Automatic rem recalculation across screens)
+   1. FLUID ROOT DESIGN TOKENS & SYSTEM SCALING
    =================================================================== */
 
 :root {
-  /* Dynamic fluid scale factor variables */
+  /* Dynamic fluid scale factor */
   --scale-factor: 1;
-  --header-height: clamp(60px, 4vw + 40px, 80px);
-  --page-padding-x: clamp(0.75rem, 3vw, 2.5rem);
-  --page-padding-y: clamp(1rem, 2.5vw, 2rem);
-  --container-max-width: 1600px;
-  --grid-gap: clamp(0.6rem, 1.2vw, 1.25rem);
-  
-  /* Fluid Typography Tokens */
-  --font-hero-title: clamp(1.75rem, 3.5vw + 1rem, 3.75rem);
-  --font-h1: clamp(1.5rem, 2.5vw + 0.5rem, 2.5rem);
-  --font-h2: clamp(1.25rem, 2vw + 0.4rem, 2rem);
-  --font-h3: clamp(1.1rem, 1.5vw + 0.3rem, 1.5rem);
-  --font-h4: clamp(1rem, 1.2vw + 0.2rem, 1.25rem);
-  --font-body: clamp(0.85rem, 0.5vw + 0.75rem, 1rem);
-  --font-small: clamp(0.75rem, 0.4vw + 0.65rem, 0.875rem);
-  --font-micro: clamp(0.65rem, 0.3vw + 0.55rem, 0.75rem);
 
-  /* Fluid Spacing Tokens */
-  --space-2xs: clamp(0.2rem, 0.4vw, 0.35rem);
-  --space-xs: clamp(0.35rem, 0.6vw, 0.5rem);
-  --space-sm: clamp(0.5rem, 0.8vw, 0.75rem);
-  --space-md: clamp(0.75rem, 1.2vw, 1.25rem);
-  --space-lg: clamp(1rem, 2vw, 2rem);
-  --space-xl: clamp(1.5rem, 3vw, 3rem);
-  --space-2xl: clamp(2rem, 4.5vw, 4.5rem);
+  /* Layout Dimensions */
+  --header-height: clamp(56px, 4vw + 38px, 80px);
+  --container-max-width: 1720px;
+  --page-padding-x: clamp(0.75rem, 3.5vw, 4.5rem);
+  --page-padding-y: clamp(1rem, 2.5vw, 3rem);
+  --grid-gap: clamp(0.6rem, 1.2vw, 1.35rem);
 
-  /* Touch & Mobile Accessibility */
+  /* Fluid Typography Scale */
+  --font-hero-title: clamp(1.65rem, 3.8vw + 0.8rem, 4rem);
+  --font-h1: clamp(1.4rem, 2.5vw + 0.5rem, 2.6rem);
+  --font-h2: clamp(1.2rem, 1.8vw + 0.4rem, 2.1rem);
+  --font-h3: clamp(1.05rem, 1.3vw + 0.3rem, 1.6rem);
+  --font-h4: clamp(0.95rem, 1vw + 0.2rem, 1.3rem);
+  --font-body: clamp(0.85rem, 0.45vw + 0.72rem, 1.05rem);
+  --font-small: clamp(0.75rem, 0.35vw + 0.65rem, 0.9rem);
+  --font-micro: clamp(0.65rem, 0.25vw + 0.55rem, 0.78rem);
+
+  /* Fluid Spacing Scale */
+  --space-3xs: clamp(0.15rem, 0.25vw, 0.25rem);
+  --space-2xs: clamp(0.25rem, 0.4vw, 0.45rem);
+  --space-xs: clamp(0.4rem, 0.65vw, 0.65rem);
+  --space-sm: clamp(0.6rem, 0.9vw, 0.9rem);
+  --space-md: clamp(0.85rem, 1.4vw, 1.4rem);
+  --space-lg: clamp(1.25rem, 2.2vw, 2.25rem);
+  --space-xl: clamp(1.75rem, 3.2vw, 3.5rem);
+  --space-2xl: clamp(2.5rem, 4.8vw, 5rem);
+
+  /* Component Dimensions */
+  --poster-radius: clamp(8px, 0.8vw, 14px);
+  --card-aspect: 2 / 3;
+  --button-radius: clamp(6px, 0.6vw, 10px);
+  --pill-radius: 9999px;
   --touch-target-min: 44px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* ===================================================================
-   2. PIXEL-BASED RESPONSIVE ROOT SIZING (Proportional Auto-Scaling)
+   2. PIXEL-BASED ROOT SCALING BREAKPOINTS (Auto Rem Adjustment)
    =================================================================== */
 
-/* 4K & Ultra-Wide Screens (>= 2200px) */
+/* 4K & Extreme Displays (>= 2200px) */
 @media screen and (min-width: 2200px) {
   html {
     font-size: 18px;
     --scale-factor: 1.15;
-    --container-max-width: 2000px;
+    --container-max-width: 2100px;
+    --page-padding-x: 5rem;
   }
 }
 
-/* Large QHD Displays (1920px - 2199px) */
+/* QHD & Ultra-wide Monitors (1920px - 2199px) */
 @media screen and (min-width: 1920px) and (max-width: 2199px) {
   html {
     font-size: 16.5px;
     --scale-factor: 1.05;
-    --container-max-width: 1750px;
+    --container-max-width: 1850px;
+    --page-padding-x: 4rem;
   }
 }
 
@@ -72,14 +81,18 @@
   html {
     font-size: 16px;
     --scale-factor: 1;
+    --container-max-width: 1680px;
+    --page-padding-x: 3rem;
   }
 }
 
-/* Laptops & Medium Desktops (1200px - 1439px) */
+/* Laptops & Medium Screens (1200px - 1439px) */
 @media screen and (min-width: 1200px) and (max-width: 1439px) {
   html {
     font-size: 15.5px;
     --scale-factor: 0.97;
+    --container-max-width: 1380px;
+    --page-padding-x: 2.5rem;
   }
 }
 
@@ -87,17 +100,17 @@
 @media screen and (min-width: 992px) and (max-width: 1199px) {
   html {
     font-size: 15px;
-    --scale-factor: 0.94;
-    --page-padding-x: 1.5rem;
+    --scale-factor: 0.93;
+    --page-padding-x: 2rem;
   }
 }
 
-/* Medium Tablets & iPads (768px - 991px) */
+/* Portrait Tablets & Large Foldables (768px - 991px) */
 @media screen and (min-width: 768px) and (max-width: 991px) {
   html {
     font-size: 14.5px;
-    --scale-factor: 0.90;
-    --page-padding-x: 1.25rem;
+    --scale-factor: 0.89;
+    --page-padding-x: 1.5rem;
   }
 }
 
@@ -105,8 +118,8 @@
 @media screen and (min-width: 576px) and (max-width: 767px) {
   html {
     font-size: 13.75px;
-    --scale-factor: 0.86;
-    --page-padding-x: 1rem;
+    --scale-factor: 0.85;
+    --page-padding-x: 1.15rem;
   }
 }
 
@@ -114,7 +127,7 @@
 @media screen and (min-width: 390px) and (max-width: 575px) {
   html {
     font-size: 13px;
-    --scale-factor: 0.82;
+    --scale-factor: 0.81;
     --page-padding-x: 0.85rem;
   }
 }
@@ -123,25 +136,24 @@
 @media screen and (min-width: 340px) and (max-width: 389px) {
   html {
     font-size: 12.25px;
-    --scale-factor: 0.77;
+    --scale-factor: 0.76;
     --page-padding-x: 0.65rem;
   }
 }
 
-/* Foldable outer displays & Ultra-compact screens (< 340px) */
+/* Ultra-Compact / Closed Foldable Screens (< 340px) */
 @media screen and (max-width: 339px) {
   html {
     font-size: 11.5px;
-    --scale-factor: 0.72;
+    --scale-factor: 0.71;
     --page-padding-x: 0.5rem;
   }
 }
 
 /* ===================================================================
-   3. GLOBAL RESPONSIVE MEDIA & ELEMENT RESIZING
+   3. GLOBAL RESET & OVERFLOW DEFENSE
    =================================================================== */
 
-/* Prevent any child element from overflowing its container width */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -156,58 +168,442 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-/* Responsive images, videos, and canvas elements */
-img, video, canvas, svg {
+img, video, canvas, svg, iframe {
   max-width: 100%;
   height: auto;
 }
 
-/* Ensure buttons and inputs scale appropriately */
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
+a, button {
+  touch-action: manipulation;
 }
 
 /* ===================================================================
-   4. RESPONSIVE GRID & LAYOUT UTILITIES
+   4. COMPONENT-BY-COMPONENT RESPONSIVE SCALING
    =================================================================== */
 
-/* Universal container wrapper */
-.responsive-container {
+/* -------------------------------------------------------------------
+   A. NAVBAR & MOBILE MENU
+   ------------------------------------------------------------------- */
+[class*="Navbar_navbar"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[class*="Navbar_logo"] {
+  font-size: clamp(1.1rem, 1.4vw, 1.5rem) !important;
+}
+
+[class*="Navbar_logoIcon"] {
+  width: clamp(20px, 1.8vw, 30px) !important;
+  height: clamp(20px, 1.8vw, 30px) !important;
+}
+
+/* Search Box & Suggestions */
+[class*="Navbar_searchBox"] {
+  max-width: 100%;
+}
+
+[class*="Navbar_searchInput"] {
+  font-size: var(--font-small) !important;
+}
+
+[class*="Navbar_suggestionsDropdown"] {
+  max-width: min(340px, calc(100vw - 2rem));
+  font-size: var(--font-small);
+}
+
+/* Mobile Bottom Sheet Menu Container */
+@media (max-width: 1200px) {
+  [class*="Navbar_navLinks"] {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  [class*="Navbar_navLinksScroll"] {
+    width: 100% !important;
+    padding-left: var(--page-padding-x) !important;
+    padding-right: var(--page-padding-x) !important;
+  }
+
+  [class*="Navbar_navLink"] {
+    font-size: var(--font-body) !important;
+  }
+}
+
+/* -------------------------------------------------------------------
+   B. HERO CAROUSEL & BANNER
+   ------------------------------------------------------------------- */
+[class*="HeroCarousel_container"] {
+  width: 100%;
+  min-height: clamp(480px, 75vh, 850px);
+}
+
+[class*="HeroCarousel_content"] {
+  width: min(92%, 750px) !important;
+  padding: 0 1rem;
+}
+
+[class*="HeroCarousel_title"] {
+  font-size: var(--font-hero-title) !important;
+  line-height: 1.15 !important;
+}
+
+[class*="HeroCarousel_description"] {
+  font-size: var(--font-body) !important;
+  line-height: 1.5 !important;
+}
+
+[class*="HeroCarousel_playBtn"],
+[class*="HeroCarousel_moreInfoBtn"] {
+  font-size: var(--font-small) !important;
+  padding: clamp(0.5rem, 0.8vw, 0.9rem) clamp(1.1rem, 1.8vw, 2rem) !important;
+  border-radius: var(--button-radius) !important;
+}
+
+/* -------------------------------------------------------------------
+   C. POSTER GRIDS, CAROUSELS & MOVIE CARDS
+   ------------------------------------------------------------------- */
+[class*="PosterGrid_container"],
+[class*="PosterCarousel_container"],
+[class*="TrendingSection_container"] {
   width: 100%;
   max-width: var(--container-max-width);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--page-padding-x);
-  padding-right: var(--page-padding-x);
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+  box-sizing: border-box;
 }
 
-/* Auto-fitting responsive movie & media card grid */
-.responsive-movie-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(130px, 14vw, 210px), 1fr));
-  gap: var(--grid-gap);
+[class*="PosterGrid_title"],
+[class*="TrendingSection_title"],
+[class*="GenreExplorerSection_title"] {
+  font-size: var(--font-h2) !important;
+  margin-bottom: clamp(0.75rem, 1.5vw, 1.5rem) !important;
+}
+
+/* Movie Card Poster Aspect Ratio & Rounding */
+[class*="PosterGrid_card"],
+[class*="PosterCarousel_card"] {
+  border-radius: var(--poster-radius) !important;
+  overflow: hidden;
+}
+
+/* Responsive Grid Columns by Screen Size */
+@media (min-width: 1600px) {
+  [class*="PosterGrid_grid"] {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: var(--grid-gap) !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+  [class*="PosterGrid_grid"] {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: var(--grid-gap) !important;
+  }
+}
+
+@media (min-width: 860px) and (max-width: 1199px) {
+  [class*="PosterGrid_grid"] {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: var(--grid-gap) !important;
+  }
+}
+
+@media (min-width: 580px) and (max-width: 859px) {
+  [class*="PosterGrid_grid"] {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: clamp(0.5rem, 1vw, 0.85rem) !important;
+  }
+}
+
+@media (max-width: 579px) {
+  [class*="PosterGrid_grid"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: clamp(0.45rem, 1vw, 0.7rem) !important;
+  }
+}
+
+/* Card Titles & Subtitles */
+[class*="PosterGrid_movieTitle"],
+[class*="PosterCarousel_movieTitle"] {
+  font-size: var(--font-small) !important;
+}
+
+[class*="PosterGrid_rating"],
+[class*="PosterCarousel_rating"] {
+  font-size: var(--font-micro) !important;
+}
+
+/* -------------------------------------------------------------------
+   D. GENRE EXPLORER & PILLS
+   ------------------------------------------------------------------- */
+[class*="GenreExplorerSection_section"] {
   width: 100%;
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
 }
 
-@media (max-width: 480px) {
-  .responsive-movie-grid {
-    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-    gap: 0.6rem;
+[class*="GenreExplorerSection_typeBtn"] {
+  font-size: var(--font-small) !important;
+  padding: clamp(0.35rem, 0.5vw, 0.75rem) clamp(0.75rem, 1vw, 1.5rem) !important;
+}
+
+[class*="GenreExplorerSection_genrePill"] {
+  font-size: var(--font-small) !important;
+  padding: clamp(0.4rem, 0.6vw, 0.75rem) clamp(0.75rem, 1vw, 1.25rem) !important;
+  border-radius: var(--pill-radius) !important;
+}
+
+/* -------------------------------------------------------------------
+   E. PROVIDERS SECTION (Streaming Networks)
+   ------------------------------------------------------------------- */
+[class*="ProvidersSection_section"],
+[class*="ProvidersSection_container"] {
+  width: 100%;
+  max-width: var(--container-max-width);
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+}
+
+[class*="ProvidersSection_grid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(85px, 8vw, 140px), 1fr)) !important;
+  gap: clamp(0.5rem, 1vw, 1rem) !important;
+}
+
+/* -------------------------------------------------------------------
+   F. MOVIE & TV DETAILS PAGE
+   ------------------------------------------------------------------- */
+[class*="movieDetails_container"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[class*="movieDetails_mainContainer"] {
+  width: 100%;
+  max-width: min(1300px, 94%) !important;
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+}
+
+[class*="movieDetails_title"] {
+  font-size: var(--font-h1) !important;
+  line-height: 1.2 !important;
+}
+
+[class*="movieDetails_overview"] {
+  font-size: var(--font-body) !important;
+  line-height: 1.6 !important;
+}
+
+[class*="movieDetails_actionButtons"] button,
+[class*="movieDetails_actionButtons"] a {
+  font-size: var(--font-small) !important;
+  padding: clamp(0.55rem, 0.8vw, 0.9rem) clamp(1rem, 1.5vw, 1.8rem) !important;
+  border-radius: var(--button-radius) !important;
+}
+
+/* Cast Grid on Details Page */
+[class*="DetailsTabs_castGrid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(110px, 11vw, 160px), 1fr)) !important;
+  gap: clamp(0.5rem, 1vw, 1rem) !important;
+}
+
+/* -------------------------------------------------------------------
+   G. VIDEO PLAYER & WATCH PAGE
+   ------------------------------------------------------------------- */
+[class*="watch_container"] {
+  width: 100%;
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+  box-sizing: border-box;
+}
+
+[class*="VideoPlayer_container"] {
+  width: 100%;
+  max-width: min(1200px, 100%) !important;
+  border-radius: var(--poster-radius) !important;
+  overflow: hidden;
+}
+
+[class*="VideoPlayer_headerBar"] {
+  padding: clamp(0.5rem, 0.8vw, 0.9rem) var(--page-padding-x) !important;
+}
+
+[class*="VideoPlayer_title"] {
+  font-size: var(--font-h3) !important;
+}
+
+/* Server Selector Buttons */
+[class*="VideoPlayer_serverBtn"],
+[class*="serverBtn"] {
+  font-size: var(--font-small) !important;
+  padding: clamp(0.4rem, 0.6vw, 0.7rem) clamp(0.75rem, 1vw, 1.25rem) !important;
+  border-radius: var(--button-radius) !important;
+}
+
+/* Season / Episode Selector */
+[class*="SeasonEpisodeSelector_episodesGrid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(200px, 20vw, 290px), 1fr)) !important;
+  gap: var(--grid-gap) !important;
+}
+
+/* -------------------------------------------------------------------
+   H. AUTHENTICATION (Login, Signup, Reset Password)
+   ------------------------------------------------------------------- */
+[class*="login_container"],
+[class*="signup_container"],
+[class*="authContainer"] {
+  width: 100%;
+  padding: var(--page-padding-y) var(--page-padding-x) !important;
+  box-sizing: border-box;
+}
+
+[class*="authCard"],
+[class*="login_card"],
+[class*="signup_card"] {
+  width: min(440px, 100%) !important;
+  padding: clamp(1.25rem, 3vw, 2.5rem) !important;
+  border-radius: clamp(12px, 1.2vw, 20px) !important;
+}
+
+[class*="authTitle"] {
+  font-size: var(--font-h2) !important;
+}
+
+[class*="authInput"],
+[class*="inputGroup"] input {
+  font-size: var(--font-body) !important;
+  padding: clamp(0.65rem, 0.9vw, 0.9rem) clamp(0.85rem, 1vw, 1.15rem) !important;
+}
+
+[class*="authSubmitBtn"] {
+  font-size: var(--font-body) !important;
+  padding: clamp(0.7rem, 1vw, 1rem) !important;
+}
+
+/* -------------------------------------------------------------------
+   I. ANDROID APP DOWNLOAD PAGE
+   ------------------------------------------------------------------- */
+[class*="android_container"] {
+  width: 100%;
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+}
+
+[class*="android_heroTitle"] {
+  font-size: var(--font-hero-title) !important;
+}
+
+[class*="android_featuresGrid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(240px, 22vw, 340px), 1fr)) !important;
+  gap: var(--grid-gap) !important;
+}
+
+/* -------------------------------------------------------------------
+   J. PAGINATION
+   ------------------------------------------------------------------- */
+[class*="Pagination_container"] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(0.25rem, 0.5vw, 0.5rem) !important;
+  padding: clamp(1rem, 2vw, 2.5rem) var(--page-padding-x) !important;
+}
+
+[class*="Pagination_pageBtn"],
+[class*="Pagination_pageNavBtn"] {
+  min-width: clamp(32px, 2.6vw, 42px) !important;
+  height: clamp(32px, 2.6vw, 42px) !important;
+  font-size: var(--font-small) !important;
+  border-radius: var(--button-radius) !important;
+}
+
+/* -------------------------------------------------------------------
+   K. FOOTER
+   ------------------------------------------------------------------- */
+[class*="Footer_footer"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+[class*="Footer_container"] {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-padding-x) !important;
+  padding-right: var(--page-padding-x) !important;
+  padding-top: clamp(2rem, 3.5vw, 4.5rem) !important;
+  padding-bottom: clamp(2rem, 3vw, 3.5rem) !important;
+}
+
+[class*="Footer_linksGrid"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(130px, 14vw, 220px), 1fr)) !important;
+  gap: clamp(1rem, 2vw, 2.5rem) !important;
+}
+
+[class*="Footer_footerLink"] {
+  font-size: var(--font-small) !important;
+}
+
+[class*="Footer_copyright"],
+[class*="Footer_disclaimer"] {
+  font-size: var(--font-micro) !important;
+}
+
+/* ===================================================================
+   5. LANDSCAPE & SHORT VIEWPORT HEIGHT PROTECTION
+   =================================================================== */
+@media screen and (max-height: 650px) {
+  [class*="HeroCarousel_container"] {
+    min-height: 380px !important;
+    height: 70vh !important;
+  }
+
+  [class*="HeroCarousel_content"] {
+    top: 50% !important;
+  }
+
+  [class*="Navbar_navLinks"] {
+    max-height: 94vh !important;
+  }
+
+  [class*="Navbar_navLinksScroll"] {
+    padding-top: 0.8rem !important;
+    padding-bottom: 1.8rem !important;
+  }
+
+  [class*="Navbar_navLink"] {
+    padding: 0.65rem 0 !important;
   }
 }
 
-@media (max-width: 340px) {
-  .responsive-movie-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.45rem;
+@media screen and (max-height: 480px) {
+  [class*="HeroCarousel_container"] {
+    min-height: 300px !important;
+    height: 90vh !important;
   }
-}
 
-/* Touch target helper for mobile devices */
-@media (pointer: coarse) {
-  .touch-target {
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
+  [class*="HeroCarousel_title"] {
+    font-size: 1.4rem !important;
+  }
+
+  [class*="HeroCarousel_description"] {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
