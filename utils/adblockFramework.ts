@@ -378,6 +378,25 @@ export function installAdblockProtection(
         cls.includes('ad-') || cls.includes('popup') || cls.includes('popunder') || cls.includes('banner') || cls.includes('floating-ad') ||
         tag === 'dialog';
 
+      // 7. Automatic iFrame Ad Blocker: Restrict or eliminate rogue iframes
+      if (tag === 'iframe') {
+        const iframe = node as HTMLIFrameElement;
+        if (!iframe.closest('[class*="VideoPlayer"]')) {
+          // Third-party ad iframe injected outside our player
+          iframe.style.setProperty('z-index', '-99999', 'important');
+          iframe.style.setProperty('pointer-events', 'none', 'important');
+          iframe.style.setProperty('display', 'none', 'important');
+          try {
+            iframe.remove();
+          } catch (e) {}
+          onBlockedAction?.('rogue_iframe_blocked', iframe.src || 'unknown');
+          return;
+        } else if (!iframe.hasAttribute('sandbox')) {
+          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+          onBlockedAction?.('iframe_sandboxed', iframe.src || 'player');
+        }
+      }
+
       let isSuspiciousZ = false;
       try {
         const style = window.getComputedStyle(node);
@@ -400,10 +419,19 @@ export function installAdblockProtection(
       }
     };
 
-    // Initial sweep of existing DOM elements
+    // Initial sweep of existing DOM elements & iframes (native iFrame Ad Blocker)
     try {
       const allSuspicious = document.querySelectorAll('[class*="popup"], [id*="popup"], [class*="popunder"], [id*="popunder"], [class*="ad-"]');
       allSuspicious.forEach((el) => defuseElement(el));
+
+      const allIframes = document.querySelectorAll('iframe');
+      allIframes.forEach((iframe) => {
+        if (!iframe.closest('[class*="VideoPlayer"]')) {
+          iframe.remove();
+        } else if (!iframe.hasAttribute('sandbox')) {
+          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+        }
+      });
     } catch (e) {}
 
     const observer = new MutationObserver((mutations) => {
