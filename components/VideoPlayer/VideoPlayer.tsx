@@ -15,24 +15,20 @@ interface VideoPlayerProps {
   onEpisodeChange?: (season: number, episode: number) => void;
 }
 
-interface SubtitleTrack {
-  id?: string;
-  display?: string;
-  language?: string;
-  url: string;
-  format?: string;
-}
-
-export default function VideoPlayer({ tmdbId, type, title, backdropPath, season, episode, imdbId, onEpisodeChange }: VideoPlayerProps) {
+export default function VideoPlayer({
+  tmdbId,
+  type,
+  title,
+  backdropPath,
+  season,
+  episode,
+  imdbId,
+  onEpisodeChange,
+}: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
-  const [showSubModal, setShowSubModal] = useState(false);
-  const [subtitles, setSubtitles] = useState<SubtitleTrack[]>([]);
-  const [selectedSub, setSelectedSub] = useState<SubtitleTrack | null>(null);
-  const [loadingSubs, setLoadingSubs] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<'fit' | 'zoom' | 'stretch'>('fit');
+  const [showServerNotice, setShowServerNotice] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playerWrapperRef = useRef<HTMLDivElement>(null);
@@ -48,8 +44,8 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
 
   const startControlsTimer = (duration = AUTO_HIDE_MS) => {
     clearControlsTimer();
-    // Do not auto-fade menu while user is choosing server or subtitles
-    if (showServerModal || showSubModal) return;
+    // Do not auto-fade menu while user is choosing server
+    if (showServerModal) return;
 
     controlsTimeoutRef.current = setTimeout(() => {
       setControlsVisible(false);
@@ -66,14 +62,6 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     setControlsVisible(false);
   };
 
-  const toggleControls = () => {
-    if (controlsVisible) {
-      hideControls();
-    } else {
-      showControls();
-    }
-  };
-
   // Start 7-second countdown when video begins playing or server changes
   useEffect(() => {
     if (isPlaying) {
@@ -82,15 +70,15 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     return () => clearControlsTimer();
   }, [isPlaying, activeServerId]);
 
-  // Keep menu visible while any modal is open; restart 7s timer on modal close
+  // Keep menu visible while server modal is open; restart 7s timer on modal close
   useEffect(() => {
-    if (showServerModal || showSubModal) {
+    if (showServerModal) {
       setControlsVisible(true);
       clearControlsTimer();
     } else if (isPlaying) {
       startControlsTimer(AUTO_HIDE_MS);
     }
-  }, [showServerModal, showSubModal, isPlaying]);
+  }, [showServerModal, isPlaying]);
 
   // Detect user clicks/taps inside cross-origin video iframe to toggle controls
   useEffect(() => {
@@ -122,46 +110,7 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     setActiveServerId(getLastUsedServerId());
   }, []);
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  // Fetch Wyzie Subtitles on demand when Subtitle Modal opens
-  useEffect(() => {
-    if (!showSubModal) return;
-
-    setLoadingSubs(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-    const queryId = imdbId || tmdbId;
-
-    let subUrl = `${backendUrl}/api/subtitles?id=${queryId}`;
-    if (type === 'tv') {
-      subUrl += `&season=${season || 1}&episode=${episode || 1}`;
-    }
-
-    fetch(subUrl)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data && (Array.isArray(data) || Array.isArray(data.subtitles))) {
-          const list = Array.isArray(data) ? data : data.subtitles;
-          setSubtitles(list);
-        } else {
-          setSubtitles([]);
-        }
-        setLoadingSubs(false);
-      })
-      .catch(err => {
-        console.warn("Failed to fetch Wyzie subtitles:", err);
-        setSubtitles([]);
-        setLoadingSubs(false);
-      });
-  }, [showSubModal, tmdbId, imdbId, type, season, episode]);
-
-  // Listen to CineSrc postMessage events
+  // Listen to CineSrc postMessage events for auto-next episode
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.origin !== 'https://cinesrc.st') return;
@@ -177,15 +126,8 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     return () => window.removeEventListener('message', handleMessage);
   }, [onEpisodeChange]);
 
-  const activeServer = SERVERS.find(s => s.id === activeServerId) || SERVERS[0];
-  let videoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
-
-  // Append custom subtitle if selected
-  if (selectedSub) {
-    const sep = videoUrl.includes('?') ? '&' : '?';
-    videoUrl += `${sep}sub_file=${encodeURIComponent(selectedSub.url)}&sub_label=${encodeURIComponent(selectedSub.display || selectedSub.language || 'English')}`;
-  }
-
+  const activeServer = SERVERS.find((s) => s.id === activeServerId) || SERVERS[0];
+  const videoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
 
   const handleServerChange = (id: string) => {
@@ -194,32 +136,53 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     setShowServerModal(false);
   };
 
-  const handleToggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      if (playerWrapperRef.current?.requestFullscreen) {
-        playerWrapperRef.current.requestFullscreen().catch(err => {
-          console.warn("Could not enter fullscreen mode:", err);
-        });
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  };
-
-  const cycleAspect = () => {
-    setAspectRatio((prev) => (prev === 'fit' ? 'zoom' : prev === 'zoom' ? 'stretch' : 'fit'));
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.headerBar}>
         <h2 className={styles.title}>Now Watching: {title}</h2>
       </div>
 
-      <div 
-        className={styles.playerWrapper} 
+      {/* Dismissible Notice Box Above Player */}
+      {showServerNotice && (
+        <div className={styles.serverNoticeBox}>
+          <div className={styles.serverNoticeContent}>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={styles.serverNoticeIcon}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span className={styles.serverNoticeText}>
+              If the current server does not work,{' '}
+              <button
+                className={styles.noticeServerLink}
+                onClick={() => setShowServerModal(true)}
+                title="Choose another server"
+              >
+                choose another server
+              </button>
+            </span>
+          </div>
+          <button
+            className={styles.closeServerNoticeBtn}
+            onClick={() => setShowServerNotice(false)}
+            aria-label="Close notice"
+            title="Dismiss notice"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      <div
+        className={styles.playerWrapper}
         ref={playerWrapperRef}
         onMouseMove={() => {
           if (!controlsVisible) {
@@ -237,8 +200,8 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
         }}
       >
         {!isPlaying ? (
-          <div 
-            className={styles.posterOverlay} 
+          <div
+            className={styles.posterOverlay}
             style={{ backgroundImage: `url(${posterUrl})` }}
             onClick={() => setIsPlaying(true)}
           >
@@ -255,11 +218,6 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
               key={videoUrl}
               className={styles.iframe}
               src={videoUrl}
-              style={{
-                transform: aspectRatio === 'zoom' ? 'scale(1.2)' : aspectRatio === 'stretch' ? 'scaleX(1.3)' : 'scale(1)',
-                transformOrigin: 'center center',
-                transition: 'transform 0.3s ease',
-              }}
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"
               allowFullScreen={true}
               referrerPolicy="no-referrer-when-downgrade"
@@ -267,16 +225,20 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
           </div>
         )}
 
-        {/* In-Player Floating Controls Overlay (7s auto-fade & tap-to-toggle) */}
+        {/* In-Player Floating Controls Overlay (7s auto-fade & tap-to-toggle) - Server ONLY */}
         {isPlaying && (
           <div
-            className={`${styles.playerOverlayControls} ${controlsVisible ? styles.controlsVisible : styles.controlsHidden}`}
+            className={`${styles.playerOverlayControls} ${
+              controlsVisible ? styles.controlsVisible : styles.controlsHidden
+            }`}
           >
             {/* Top Bar */}
             <div className={styles.playerOverlayTop}>
               <div className={styles.playerOverlayTitleGroup}>
                 <span className={styles.playerOverlayBadge}>
-                  {type === 'tv' && season && episode ? `S${season}:E${episode}` : (activeServer.quality || '4K')}
+                  {type === 'tv' && season && episode
+                    ? `S${season}:E${episode}`
+                    : activeServer.quality || '4K'}
                 </span>
                 <h3 className={styles.playerOverlayTitle} title={title}>
                   {title}
@@ -309,106 +271,28 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
               <span className={styles.tapHintText}>Tap video to hide menu</span>
             </div>
 
-            {/* Bottom Bar Controls */}
+            {/* Bottom Bar Controls - ONLY Server Switcher */}
             <div className={styles.playerOverlayBottom}>
-              <div className={styles.overlayButtonGroup}>
-                {/* Server Switcher */}
-                <button
-                  className={`${styles.overlayBtn} ${showServerModal ? styles.overlayBtnActive : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowServerModal(true);
-                  }}
-                  title="Switch Video Streaming Server"
-                >
-                  <span>{activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-
-                {/* Subtitles */}
-                <button
-                  className={`${styles.overlayBtn} ${selectedSub ? styles.overlayBtnActive : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSubModal(true);
-                  }}
-                  title="Subtitles & Closed Captions"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <span>{selectedSub ? (selectedSub.display || selectedSub.language) : 'CC / Subs'}</span>
-                </button>
-
-                {/* Aspect Ratio */}
-                <button
-                  className={styles.overlayBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cycleAspect();
-                    startControlsTimer(AUTO_HIDE_MS);
-                  }}
-                  title="Cycle Aspect Ratio (Fit 16:9 / Zoom 1.2x / Stretch)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" />
-                    <line x1="8" y1="21" x2="16" y2="21" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
-                  <span>{aspectRatio === 'fit' ? 'Fit 16:9' : aspectRatio === 'zoom' ? 'Zoom 1.2x' : 'Stretch'}</span>
-                </button>
-
-                {/* Series Next Episode */}
-                {type === 'tv' && onEpisodeChange && (
-                  <button
-                    className={styles.overlayBtn}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEpisodeChange(season || 1, (episode || 1) + 1);
-                    }}
-                    title="Play Next Episode"
-                  >
-                    <span>Next Ep</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M5 4v16l11-8zm11 0v16h2V4z" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Fullscreen Button */}
               <button
-                className={styles.overlayBtn}
+                className={`${styles.overlayBtn} ${showServerModal ? styles.overlayBtnActive : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggleFullscreen();
-                  startControlsTimer(AUTO_HIDE_MS);
+                  setShowServerModal(true);
                 }}
-                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                title="Switch Video Streaming Server"
               >
-                {isFullscreen ? (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-                    </svg>
-                    <span>Exit</span>
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                    </svg>
-                    <span>Fullscreen</span>
-                  </>
-                )}
+                <span>
+                  {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </button>
             </div>
           </div>
         )}
 
-        {/* Floating Menu Trigger Button (shown when controls are hidden so user can also summon menu anytime) */}
+        {/* Floating Menu Trigger Button (shown when controls are hidden) */}
         {!controlsVisible && isPlaying && (
           <button
             className={styles.floatingMenuTrigger}
@@ -416,7 +300,7 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
               e.stopPropagation();
               showControls();
             }}
-            title="Open Player Menu"
+            title="Open Server Menu"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="3" y1="12" x2="21" y2="12" />
@@ -447,11 +331,14 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
                   return (
                     <button
                       key={server.id}
-                      className={`${styles.modalServerCard} ${isActive ? styles.activeModalServerCard : ''}`}
+                      className={`${styles.modalServerCard} ${
+                        isActive ? styles.activeModalServerCard : ''
+                      }`}
                       onClick={() => handleServerChange(server.id)}
                     >
                       <span className={styles.serverCardName}>
-                        {server.flag ? `${server.flag} ` : ''}{server.name}
+                        {server.flag ? `${server.flag} ` : ''}
+                        {server.name}
                       </span>
                       {server.quality && (
                         <span className={styles.qualityTag}>{server.quality}</span>
@@ -463,105 +350,16 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
             </div>
           </div>
         )}
-
-        {/* Wyzie Subtitles Selection Modal */}
-        {showSubModal && (
-          <div className={styles.serverModalOverlay} onClick={() => setShowSubModal(false)}>
-            <div className={styles.serverModalContent} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.modalHeader}>
-                <span className={styles.modalHeaderTitle}>Wyzie Subtitles & CC</span>
-                <button
-                  className={styles.closeModalBtn}
-                  onClick={() => setShowSubModal(false)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className={styles.modalServerGrid}>
-                <button
-                  className={`${styles.modalServerCard} ${!selectedSub ? styles.activeModalServerCard : ''}`}
-                  onClick={() => { setSelectedSub(null); setShowSubModal(false); }}
-                >
-                  <span className={styles.serverCardName}>Off (None)</span>
-                </button>
-
-                {loadingSubs ? (
-                  <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#888', padding: '1rem', fontSize: '0.85rem' }}>
-                    Searching Wyzie Subtitles...
-                  </div>
-                ) : subtitles.length > 0 ? (
-                  subtitles.map((sub, i) => {
-                    const isSel = selectedSub?.url === sub.url;
-                    return (
-                      <button
-                        key={i}
-                        className={`${styles.modalServerCard} ${isSel ? styles.activeModalServerCard : ''}`}
-                        onClick={() => { setSelectedSub(sub); setShowSubModal(false); }}
-                      >
-                        <span className={styles.serverCardName}>
-                          {sub.display || sub.language || `Sub ${i + 1}`}
-                        </span>
-                        {sub.format && (
-                          <span className={styles.qualityTag}>{sub.format.toUpperCase()}</span>
-                        )}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#888', padding: '1rem', fontSize: '0.82rem' }}>
-                    No extra Wyzie subtitles found. Native player subtitles available inside player.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
+      {/* Toolbar Below Player - ONLY Server Switcher */}
       <div className={styles.toolbar}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            className={styles.toolbarBtn}
-            onClick={() => setShowServerModal(true)}
-            title="Change Streaming Server"
-          >
-            {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name} ▾
-          </button>
-
-          <button
-            className={styles.toolbarBtn}
-            onClick={() => setShowSubModal(true)}
-            title="Subtitles & Closed Captions"
-          >
-            💬 CC {selectedSub ? `(${selectedSub.display || selectedSub.language})` : ''}
-          </button>
-
-          <button
-            className={styles.toolbarBtn}
-            onClick={cycleAspect}
-            title="Cycle Aspect Ratio (Fit / Zoom / Stretch)"
-          >
-            📐 Ratio: {aspectRatio.toUpperCase()}
-          </button>
-
-          {type === 'tv' && onEpisodeChange && (
-            <button
-              className={styles.toolbarBtn}
-              onClick={() => onEpisodeChange(season || 1, (episode || 1) + 1)}
-              title="Play Next Episode"
-            >
-              ⏭ Next Episode
-            </button>
-          )}
-        </div>
-
         <button
           className={styles.toolbarBtn}
-          onClick={handleToggleFullscreen}
-          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          onClick={() => setShowServerModal(true)}
+          title="Change Streaming Server"
         >
-          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          {activeServer.flag ? `${activeServer.flag} ` : '⚡ '}Server: {activeServer.name} ▾
         </button>
       </div>
     </div>

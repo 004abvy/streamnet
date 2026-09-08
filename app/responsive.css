@@ -535,6 +535,15 @@ a, button {
   padding: clamp(0.3rem, 0.45vw, 0.45rem) clamp(0.6rem, 0.8vw, 0.9rem) !important;
 }
 
+[class*="VideoPlayer_serverNoticeBox"] {
+  margin: clamp(0.4rem, 0.6vw, 0.8rem) clamp(0.5rem, 0.8vw, 1rem) !important;
+  padding: clamp(0.4rem, 0.55vw, 0.65rem) clamp(0.65rem, 0.8vw, 1rem) !important;
+}
+
+[class*="VideoPlayer_serverNoticeText"] {
+  font-size: clamp(0.75rem, 0.82vw, 0.92rem) !important;
+}
+
 /* -------------------------------------------------------------------
    J. ANDROID APP DOWNLOAD PAGE
    ------------------------------------------------------------------- */
