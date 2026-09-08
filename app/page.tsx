@@ -52,10 +52,12 @@ export default function Home() {
 
     window.addEventListener('focus', loadContinueWatching);
     window.addEventListener('popstate', loadContinueWatching);
+    window.addEventListener('storage', loadContinueWatching);
 
     return () => {
       window.removeEventListener('focus', loadContinueWatching);
       window.removeEventListener('popstate', loadContinueWatching);
+      window.removeEventListener('storage', loadContinueWatching);
     };
   }, []);
 

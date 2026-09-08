@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem('saved_items', JSON.stringify(mergedSaved));
               localStorage.setItem('user_bookmarks', JSON.stringify(mergedSaved.map((item: any) => item.id)));
               localStorage.setItem('continueWatching', JSON.stringify(mergedContinue));
+              if (typeof window !== 'undefined') window.dispatchEvent(new Event('storage'));
 
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
@@ -141,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 localStorage.setItem('saved_items', JSON.stringify(freshSaved));
                 localStorage.setItem('user_bookmarks', JSON.stringify(freshSaved.map((item: any) => item.id)));
                 localStorage.setItem('continueWatching', JSON.stringify(freshContinue));
+                if (typeof window !== 'undefined') window.dispatchEvent(new Event('storage'));
 
                 setUser((prev) => prev ? {
                   ...prev,

@@ -37,7 +37,11 @@ export default function ContinueWatchingPage() {
 
     loadItems();
     window.addEventListener('focus', loadItems);
-    return () => window.removeEventListener('focus', loadItems);
+    window.addEventListener('storage', loadItems);
+    return () => {
+      window.removeEventListener('focus', loadItems);
+      window.removeEventListener('storage', loadItems);
+    };
   }, []);
 
   const removeItem = (id: number, e: React.MouseEvent) => {
