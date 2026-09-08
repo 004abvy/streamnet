@@ -30,6 +30,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Force scroll to top on page refresh
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
+    }
+
     const loadContinueWatching = () => {
       try {
         const stored = localStorage.getItem('continueWatching');
@@ -50,6 +56,9 @@ export default function Home() {
     return () => {
       window.removeEventListener('focus', loadContinueWatching);
       window.removeEventListener('popstate', loadContinueWatching);
+      if (typeof window !== 'undefined') {
+        window.history.scrollRestoration = 'auto';
+      }
     };
   }, []);
 
