@@ -627,14 +627,27 @@
   }
 
   .navbar {
-    padding: 1rem;
+    padding: 0.75rem 1.25rem;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
   }
   
   .mobileMenuBtn {
-    display: flex;
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     order: -1;
+    z-index: 200;
+    flex-shrink: 0;
   }
   
   .menuBackdrop {
@@ -650,9 +663,23 @@
   }
 
   .logo {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 150;
+    height: 36px;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .logoIcon {
+    width: 22px;
+    height: 22px;
+    display: block;
   }
 
   .navLinks {
@@ -773,7 +800,7 @@
 
   .expanded .dropdownMenu {
     display: flex;
-    max-height: 500px; /* large enough for content */
+    max-height: 500px;
     margin-bottom: 1rem;
   }
 
@@ -790,7 +817,6 @@
     white-space: normal;
   }
 
-  /* Override hover for mobile since we use click/expanded state */
   .navLinkDropdown:hover .dropdownMenu {
     display: none;
   }
@@ -836,7 +862,11 @@
   }
 
   .rightSection {
-    gap: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    z-index: 160;
   }
 
   .userName {
@@ -861,17 +891,71 @@
   }
 }
 
-@media (max-width: 480px) {
+/* Specific styling for 375px to 500px devices */
+@media (max-width: 520px) {
   .navbar {
-    padding: 1rem 0.75rem;
+    padding: 0.65rem 0.85rem;
+    min-height: 54px;
   }
+
+  .mobileMenuBtn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  .logo {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  .logoIcon {
+    width: 22px;
+    height: 22px;
+  }
+
   .rightSection {
-    gap: 0.4rem;
-    position: static;
+    gap: 0.35rem;
   }
+
+  .iconButton {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .navActionIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .authButtons {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .loginBtn,
+  .signupBtn {
+    padding: 0.32rem 0.55rem;
+    font-size: 0.78rem;
+    height: 30px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
   .searchWrapper {
     position: static;
   }
+
   .searchBox {
     position: absolute;
     top: 100%;
@@ -882,11 +966,13 @@
     z-index: 400;
     justify-content: center;
   }
+
   .searchInput {
     width: 100%;
     font-size: 0.9rem;
     padding: 0.4rem 0;
   }
+
   .suggestionsDropdown {
     width: 280px;
     left: 0;
