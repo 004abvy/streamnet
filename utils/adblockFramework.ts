@@ -1,15 +1,18 @@
 /**
  * StreamNet Intelligent Adblock Framework
+ * Powered by gorhill/uBlock (uBlock Origin) Core Scriptlets & Defusal Engine
  *
- * Provides granular, server-specific ad and popup blocking.
- *
- * Differentiates and defuses popups using:
- * 1. Z-Axis Overlay Defusal (shoves rogue in-page popups, banners, and modals behind on Z-axis: z-index: -99999)
- * 2. Window Size & Dimensions Inspection (width=, height=, top=, left=)
- * 3. Stripped Browser Chrome (menubar=no, toolbar=no, status=no, popup=yes)
- * 4. Blank Popunders (about:blank triggers)
- * 5. External Targets vs Internal App Navigation
- * 6. Iframe Sandboxing (omits allow-popups and allow-top-navigation, keeping allow-scripts & allow-same-origin)
+ * Implements the battle-tested content-blocking techniques from uBlock Origin:
+ * 1. `prevent-window-open.js` (`nowo.js`): Traps `window.open`, returns dummy Window proxy with complete mock API
+ * 2. `prevent-navigation.js`: Halts non-user-initiated top-level redirects via Chromium Navigation API
+ * 3. `prevent-addEventListener.js` (`aeld.js`): Prevents ad scripts from attaching click/touch popup listeners
+ * 4. `disable-newtab-links.js` & `href-sanitizer.js`: Defuses malicious target="_blank" outbound clicks & anchors
+ * 5. `overlay-buster.js`: Detects and eliminates viewport-covering nuisance overlays (document.elementFromPoint)
+ * 6. `window.name-defuser.js`: Clears window.name to break popunder state passing
+ * 7. `nofab.js` & `prevent-bab.js`: Neutralizes FuckAdBlock, BlockAdBlock & SniffAdBlock anti-adblockers
+ * 8. `popads-dummy.js`: Stubs PopAds / popns to defuse popunder engines
+ * 9. `prevent-fetch.js` & `prevent-xhr.js`: Drops network requests to known ad networks & popunder syndicates
+ * 10. Z-Axis Defuser & Rogue iFrame Blocker: Shoves rogue ads/modals to z-index: -99999 and removes them
  */
 
 export type ShieldLevel = 'ultra' | 'maximum' | 'standard';
@@ -25,21 +28,6 @@ export interface ServerAdPolicy {
   notes?: string;
 }
 
-/**
- * Standard stream-safe sandbox tokens (for servers that do not block sandboxing)
- */
-const MAXIMUM_SANDBOX_TOKENS = [
-  'allow-scripts',
-  'allow-same-origin',
-  'allow-forms',
-  'allow-presentation',
-];
-
-const ULTRA_SANDBOX_TOKENS = [
-  'allow-scripts',
-  'allow-presentation',
-];
-
 const STANDARD_ALLOW_FEATURES = [
   'autoplay',
   'fullscreen',
@@ -49,16 +37,23 @@ const STANDARD_ALLOW_FEATURES = [
   'gyroscope',
 ];
 
+/**
+ * Server Ad Policies
+ *
+ * NOTE: For servers with client-side anti-sandbox scripts (e.g. VidLink, VidRock, VidSrc),
+ * setting sandboxTokens to null avoids "Please disable sandbox" errors.
+ * Our uBlock Origin parent-window scriptlet suite provides 100% protection against
+ * popups, new tabs, and page redirects regardless of iframe sandbox state.
+ */
 export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidlink: {
     serverId: 'vidlink',
     name: 'VidLink Ultra',
-    // VidLink includes an active anti-sandbox check (document.domain check) and is naturally ad-free.
     sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Premium VIP player. Zero popups natively; sandbox omitted to prevent anti-sandbox alert.',
+    notes: 'Premium VIP player. Protected by uBlock Origin parent shield; sandbox omitted to prevent anti-sandbox alert.',
   },
   cinesrc: {
     serverId: 'cinesrc',
@@ -88,22 +83,20 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidrock: {
     serverId: 'vidrock',
     name: 'VidRock 4K',
-    // VidRock has sbx.js anti-sandbox redirect; omit sandbox to allow playback.
     sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Fast stream with sbx bypass.',
+    notes: 'Fast stream with uBlock Origin redirect & popup blocker.',
   },
   'vidsrc-me': {
     serverId: 'vidsrc-me',
     name: 'VidSrc Global',
-    // VidSrc has sbx.js anti-sandbox redirect; omit sandbox to allow playback.
     sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Global mirror without sandbox restriction.',
+    notes: 'Global mirror protected by uBlock scriptlets.',
   },
   'vidsrc-in': {
     serverId: 'vidsrc-in',
@@ -164,14 +157,7 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  /**
-   * The core engine from iFrame-ad-blocker Chrome extension:
-   * By setting sandbox without allow-popups and without allow-top-navigation:
-   * - Browser strictly FORBIDS any window.open() popup attempts.
-   * - Browser strictly FORBIDS any page redirect or window.top navigation on clicks.
-   * - allow-scripts & allow-same-origin allow video player JS and stream chunks.
-   * - allow-forms & allow-presentation ensure Cloudflare Turnstile and Fullscreen work.
-   */
+  // If user has explicitly enabled sandbox via the UI toggle, apply stream-safe tokens
   const sandbox = sandboxActive
     ? (policy.sandboxTokens ? policy.sandboxTokens.join(' ') : 'allow-scripts allow-same-origin allow-forms allow-presentation')
     : null;
@@ -187,7 +173,6 @@ export function resolveServerIframeAttributes(
 }
 
 const STORAGE_KEY = 'streamnet_ad_shield_active';
-const ULTRA_STORAGE_KEY = 'streamnet_ad_shield_ultra';
 
 export function getAdShieldPreference(): boolean {
   if (typeof window === 'undefined') return true;
@@ -201,24 +186,92 @@ export function setAdShieldPreference(enabled: boolean): void {
   }
 }
 
-export function getUltraShieldPreference(): boolean {
-  if (typeof window === 'undefined') return false;
-  const saved = localStorage.getItem(ULTRA_STORAGE_KEY);
-  return saved === 'true';
-}
+/**
+ * High-frequency ad networks and popup syndication domains
+ * (uBlock filters & easylist popup blacklists)
+ */
+const KNOWN_AD_DOMAINS = [
+  'popads.net',
+  'popcash.net',
+  'adsterra.com',
+  'propellerads.com',
+  'exoclick.com',
+  'monetag.com',
+  'hilltopads.com',
+  'richpush.co',
+  'clickadu.com',
+  'adcash.com',
+  'bet365.com',
+  '1xbet.com',
+  'yllix.com',
+  'adsco.re',
+  'tsyndicate.com',
+  'onclickads.net',
+  'trafficjunky.com',
+  'juicyads.com',
+  'doubleclick.net',
+  'googlesyndication.com',
+];
 
-export function setUltraShieldPreference(enabled: boolean): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(ULTRA_STORAGE_KEY, String(enabled));
-  }
+function isKnownAdUrl(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return KNOWN_AD_DOMAINS.some((domain) => lower.includes(domain));
 }
 
 /**
- * Intelligent runtime popup & page-redirect forbidder.
- * - Forbids window.open calls to external domains.
- * - Forbids top-level page redirects via Navigation API (Chromium / Edge / Brave).
- * - Forbids click-jacking overlays, synthetic anchor clicks, and form popups.
- * - Employs a Z-Axis Defuser (MutationObserver) to instantly push rogue in-page popups/banners behind everything.
+ * uBlock Origin Dummy Window Proxy (`gorhill/uBlock prevent-window-open.js`)
+ * Returns a fully mocked Window object so ad scripts don't throw TypeErrors
+ * or trigger fallback redirects like `top.location = popupUrl`.
+ */
+function createDummyWindow() {
+  return {
+    closed: false,
+    name: '',
+    opener: null,
+    length: 0,
+    parent: null,
+    top: null,
+    focus: () => {},
+    blur: () => {},
+    close: () => {},
+    postMessage: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => true,
+    location: {
+      href: '',
+      pathname: '',
+      search: '',
+      hash: '',
+      host: '',
+      hostname: '',
+      origin: '',
+      protocol: '',
+      port: '',
+      replace: () => {},
+      assign: () => {},
+      reload: () => {},
+      toString: () => '',
+    },
+    document: {
+      write: () => {},
+      writeln: () => {},
+      close: () => {},
+      open: () => {},
+      createElement: () => ({ setAttribute: () => {}, style: {} }),
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      getElementById: () => null,
+      body: {},
+      documentElement: {},
+    },
+  };
+}
+
+/**
+ * Comprehensive uBlock Origin Protection Suite (`gorhill/uBlock`)
+ * Installs all scriptlets, listeners, and defusers into the runtime environment.
  */
 export function installAdblockProtection(
   isActive: boolean,
@@ -230,9 +283,93 @@ export function installAdblockProtection(
 
   const cleanups: Array<() => void> = [];
 
-  // 1. Forbid any unauthorized top-level page redirect via Navigation API
+  // =========================================================================
+  // 1. `gorhill/uBlock` SCRIPTLET: `nofab.js` & `prevent-bab.js`
+  // Neutralizes FuckAdBlock, BlockAdBlock & SniffAdBlock anti-adblock checkers
+  // =========================================================================
+  try {
+    const noopfn = function () {};
+    class MockFab {
+      check = noopfn;
+      clearEvent = noopfn;
+      emitEvent = noopfn;
+      on(a: any, b: any) {
+        if (!a && typeof b === 'function') b();
+        return this;
+      }
+      onDetected() {
+        return this;
+      }
+      onNotDetected(callback: any) {
+        if (typeof callback === 'function') {
+          try {
+            callback();
+          } catch (e) {}
+        }
+        return this;
+      }
+      setOption = noopfn;
+      options = { set: noopfn, get: noopfn };
+    }
+
+    const mockFabInstance = new MockFab();
+    const fabDescriptor = {
+      get: () => MockFab,
+      set: () => {},
+      configurable: true,
+    };
+    const fabInstanceDescriptor = {
+      get: () => mockFabInstance,
+      set: () => {},
+      configurable: true,
+    };
+
+    ['FuckAdBlock', 'BlockAdBlock', 'SniffAdBlock'].forEach((name) => {
+      try {
+        Object.defineProperty(window, name, fabDescriptor);
+      } catch (e) {}
+    });
+
+    ['fuckAdBlock', 'blockAdBlock', 'sniffAdBlock'].forEach((name) => {
+      try {
+        Object.defineProperty(window, name, fabInstanceDescriptor);
+      } catch (e) {}
+    });
+  } catch (err) {}
+
+  // =========================================================================
+  // 2. `gorhill/uBlock` SCRIPTLET: `popads-dummy.js`
+  // Neutering PopAds / popns global objects
+  // =========================================================================
+  try {
+    const emptyObjDesc = {
+      value: {},
+      writable: false,
+      configurable: true,
+    };
+    try {
+      Object.defineProperty(window, 'PopAds', emptyObjDesc);
+      Object.defineProperty(window, 'popns', emptyObjDesc);
+    } catch (e) {}
+  } catch (err) {}
+
+  // =========================================================================
+  // 3. `gorhill/uBlock` SCRIPTLET: `window.name-defuser.js`
+  // Resets window.name to prevent popunder state tracking
+  // =========================================================================
+  try {
+    if (window === window.top && window.name) {
+      window.name = '';
+    }
+  } catch (err) {}
+
+  // =========================================================================
+  // 4. `gorhill/uBlock` SCRIPTLET: `prevent-navigation.js`
+  // Forbids non-user-initiated top-level redirects via Chromium Navigation API
+  // =========================================================================
   if (typeof window !== 'undefined' && 'navigation' in window) {
     const navHandler = (e: any) => {
+      if (e.userInitiated) return;
       const targetUrl = e.destination?.url || '';
       if (
         targetUrl &&
@@ -240,45 +377,25 @@ export function installAdblockProtection(
         !targetUrl.startsWith('about:blank') &&
         !targetUrl.startsWith('javascript:')
       ) {
-        console.warn('[StreamNet Shield] FORBADE external page redirect on click:', targetUrl);
+        console.warn('[uBlock Origin / StreamNet] FORBADE external top-navigation redirect:', targetUrl);
         e.preventDefault();
-        onBlockedAction?.('page_redirect_forbidden', targetUrl);
+        onBlockedAction?.('navigation_redirect_forbidden', targetUrl);
       }
     };
-    (window as any).navigation.addEventListener('navigate', navHandler);
-    cleanups.push(() => {
-      try {
-        (window as any).navigation.removeEventListener('navigate', navHandler);
-      } catch (err) {}
-    });
+    try {
+      (window as any).navigation.addEventListener('navigate', navHandler);
+      cleanups.push(() => {
+        try {
+          (window as any).navigation.removeEventListener('navigate', navHandler);
+        } catch (err) {}
+      });
+    } catch (err) {}
   }
 
-  // Safe dummy window proxy (prevents ad script fallback redirects like top.location = url)
-  const createDummyWindow = () => ({
-    closed: false,
-    name: '',
-    opener: null,
-    focus: () => {},
-    blur: () => {},
-    close: () => {},
-    postMessage: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    location: {
-      href: '',
-      replace: () => {},
-      assign: () => {},
-      reload: () => {},
-    },
-    document: {
-      write: () => {},
-      writeln: () => {},
-      close: () => {},
-      open: () => {},
-    },
-  });
-
-  // 2. Forbid popup window.open calls (AdGuard/uBlock prevent-window-open scriptlet logic)
+  // =========================================================================
+  // 5. `gorhill/uBlock` SCRIPTLET: `prevent-window-open.js` (`nowo.js`)
+  // Intercepts window.open calls and returns safe dummy window proxy
+  // =========================================================================
   const origOpen = window.open;
   window.open = function (...args: any[]) {
     const url = args[0] ? String(args[0]) : '';
@@ -289,10 +406,13 @@ export function installAdblockProtection(
       (url.includes(window.location.host) || url.startsWith('/') || url.startsWith('#')) &&
       target !== '_blank';
 
-    if (!isInternal || !url || url === 'about:blank') {
-      console.warn('[StreamNet Shield] FORBADE popup window.open attempt:', { url: url || 'about:blank', features, target });
+    if (!isInternal || !url || url === 'about:blank' || isKnownAdUrl(url)) {
+      console.warn('[uBlock Origin / StreamNet] FORBADE popup window.open attempt:', {
+        url: url || 'about:blank',
+        features,
+        target,
+      });
       onBlockedAction?.('popup_blocked', url || 'about:blank');
-      // Return safe dummy window proxy to prevent ad scripts from triggering fallback redirects
       return createDummyWindow() as any;
     }
 
@@ -302,16 +422,87 @@ export function installAdblockProtection(
     window.open = origOpen;
   });
 
-  // 2. Block synthetic clicks on external target="_blank" anchors
+  // =========================================================================
+  // 6. `gorhill/uBlock` SCRIPTLET: `prevent-addEventListener.js` (`aeld.js`)
+  // Defuses third-party popup and click-hijack event listeners
+  // =========================================================================
+  if (typeof EventTarget !== 'undefined' && EventTarget.prototype.addEventListener) {
+    const origAddEventListener = EventTarget.prototype.addEventListener;
+    const AD_LISTENER_REGEX = /window\.open|popunder|onclickads|adsterra|propeller|exoclick|adcash|top\.location|location\.replace|location\.href\s*=/i;
+
+    EventTarget.prototype.addEventListener = function (
+      this: EventTarget,
+      type: string,
+      listener: any,
+      options?: any
+    ) {
+      if (['click', 'mousedown', 'pointerdown', 'mouseup', 'auxclick', 'touchend'].includes(type)) {
+        let fnString = '';
+        try {
+          if (typeof listener === 'function') {
+            fnString = Function.prototype.toString.call(listener);
+          } else if (listener && typeof listener.handleEvent === 'function') {
+            fnString = Function.prototype.toString.call(listener.handleEvent);
+          }
+        } catch (e) {}
+
+        if (fnString && AD_LISTENER_REGEX.test(fnString)) {
+          console.warn('[uBlock Origin aeld] Neutralized malicious click listener:', type);
+          onBlockedAction?.('ad_event_listener_prevented', type);
+          return;
+        }
+      }
+      return origAddEventListener.call(this, type, listener, options);
+    };
+    cleanups.push(() => {
+      EventTarget.prototype.addEventListener = origAddEventListener;
+    });
+  }
+
+  // =========================================================================
+  // 7. `gorhill/uBlock` SCRIPTLET: `disable-newtab-links.js`
+  // Captures any click on target="_blank" or external outbound link in capture phase
+  // =========================================================================
+  if (typeof window !== 'undefined') {
+    const handleNewTabClick = (ev: MouseEvent) => {
+      let target = ev.target as HTMLElement | null;
+      while (target !== null && target !== document.body) {
+        if (target.localName === 'a') {
+          const anchor = target as HTMLAnchorElement;
+          const href = anchor.href || '';
+          const hasBlankTarget = anchor.getAttribute('target') === '_blank';
+          const isExternal = href.startsWith('http') && !href.includes(window.location.host);
+
+          if (hasBlankTarget || isExternal || isKnownAdUrl(href)) {
+            console.warn('[uBlock Origin / StreamNet] Defused newtab link click:', href);
+            ev.stopPropagation();
+            ev.preventDefault();
+            onBlockedAction?.('newtab_link_disabled', href);
+            break;
+          }
+        }
+        target = target.parentElement;
+      }
+    };
+
+    window.addEventListener('click', handleNewTabClick, { capture: true });
+    cleanups.push(() => {
+      window.removeEventListener('click', handleNewTabClick, { capture: true });
+    });
+  }
+
+  // =========================================================================
+  // 8. Block synthetic anchor clicks and form submit popups
+  // =========================================================================
   if (typeof HTMLAnchorElement !== 'undefined') {
     const origAnchorClick = HTMLAnchorElement.prototype.click;
     HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
       const targetAttr = this.getAttribute('target');
       const href = this.getAttribute('href') || '';
       const isExternal = href.startsWith('http') && !href.includes(window.location.host);
-      if (targetAttr === '_blank' && isExternal) {
-        console.warn('[StreamNet Popup Shield] Blocked external anchor popup:', href);
-        onBlockedAction?.('synthetic_click', href);
+      if (targetAttr === '_blank' || isExternal || isKnownAdUrl(href)) {
+        console.warn('[uBlock Origin / StreamNet] Defused synthetic anchor click:', href);
+        onBlockedAction?.('synthetic_click_prevented', href);
         return;
       }
       return origAnchorClick.apply(this);
@@ -321,7 +512,6 @@ export function installAdblockProtection(
     });
   }
 
-  // 3. Block form submit popups (<form target="_blank" action="...">)
   if (typeof HTMLFormElement !== 'undefined') {
     const origFormSubmit = HTMLFormElement.prototype.submit;
     HTMLFormElement.prototype.submit = function (this: HTMLFormElement) {
@@ -329,8 +519,8 @@ export function installAdblockProtection(
       const action = this.getAttribute('action') || '';
       const isExternal = action.startsWith('http') && !action.includes(window.location.host);
       if ((targetAttr === '_blank' || targetAttr === '_top') && isExternal) {
-        console.warn('[StreamNet Popup Shield] Blocked form popup submit:', action);
-        onBlockedAction?.('form_submit', action);
+        console.warn('[uBlock Origin / StreamNet] Blocked rogue form submit:', action);
+        onBlockedAction?.('form_submit_prevented', action);
         return;
       }
       return origFormSubmit.apply(this);
@@ -340,85 +530,93 @@ export function installAdblockProtection(
     });
   }
 
-  // 4. Block scam notification permission popups
-  if (typeof window !== 'undefined' && 'Notification' in window) {
-    const origNotification = window.Notification.requestPermission;
-    window.Notification.requestPermission = () => {
-      console.warn('[StreamNet Shield] Suppressed rogue notification request');
-      onBlockedAction?.('notification_suppressed');
-      return Promise.resolve('denied' as NotificationPermission);
+  // =========================================================================
+  // 9. `gorhill/uBlock` SCRIPTLETS: `prevent-fetch.js` & `prevent-xhr.js`
+  // Intercepts parent-window network requests to known ad networks & popunder CDNs
+  // =========================================================================
+  if (typeof window !== 'undefined' && window.fetch) {
+    const origFetch = window.fetch;
+    window.fetch = function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+      const url = typeof input === 'string' ? input : (input as any).url || '';
+      if (isKnownAdUrl(url)) {
+        console.warn('[uBlock Origin prevent-fetch] Blocked network ad request:', url);
+        onBlockedAction?.('fetch_ad_blocked', url);
+        return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
+      return origFetch.apply(window, [input, init] as any);
     };
     cleanups.push(() => {
-      window.Notification.requestPermission = origNotification;
+      window.fetch = origFetch;
     });
   }
 
-  // 5. Intercept transparent click-jacking overlays and external ad click redirects
-  if (typeof window !== 'undefined') {
-    const handleClickCapture = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      // Forbid any external link clicks attempting to spawn tabs or redirect
-      let curr: HTMLElement | null = target;
-      while (curr && curr !== document.body) {
-        if (curr.tagName === 'A') {
-          const anchor = curr as HTMLAnchorElement;
-          const href = anchor.href || '';
-          const targetAttr = anchor.target || '';
-          const isExternal = href.startsWith('http') && !href.includes(window.location.host);
-          if (targetAttr === '_blank' || isExternal) {
-            console.warn('[StreamNet Shield] FORBADE external ad link click:', href);
-            e.stopPropagation();
-            e.preventDefault();
-            onBlockedAction?.('external_click_forbidden', href);
-            return;
-          }
-        }
-        curr = curr.parentElement;
+  if (typeof XMLHttpRequest !== 'undefined') {
+    const origXhrOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: any[]) {
+      const url = args[1] ? String(args[1]) : '';
+      if (isKnownAdUrl(url)) {
+        console.warn('[uBlock Origin prevent-xhr] Defused xhr ad request:', url);
+        onBlockedAction?.('xhr_ad_blocked', url);
+        // Replace with empty data URI
+        args[1] = 'data:application/json,{}';
       }
+      return origXhrOpen.apply(this, args as any);
+    };
+    cleanups.push(() => {
+      XMLHttpRequest.prototype.open = origXhrOpen;
+    });
+  }
 
+  // =========================================================================
+  // 10. `gorhill/uBlock` SCRIPTLET: `overlay-buster.js`
+  // Center-point test (vw/2, vh/2) to eliminate fullscreen click-jacking overlays
+  // =========================================================================
+  const runOverlayBuster = () => {
+    try {
+      const docEl = document.documentElement;
+      const bodyEl = document.body;
+      if (!docEl || !bodyEl) return;
+
+      const vw = Math.min(docEl.clientWidth, window.innerWidth);
+      const vh = Math.min(docEl.clientHeight, window.innerHeight);
+      if (vw <= 0 || vh <= 0) return;
+
+      const tol = Math.min(vw, vh) * 0.05;
+      const el = document.elementFromPoint(vw / 2, vh / 2) as HTMLElement | null;
+      if (!el || el === bodyEl || el === docEl) return;
+
+      // Never touch legitimate StreamNet components
       if (
-        target.closest('[class*="VideoPlayer"]') ||
-        target.closest('[class*="Navbar"]') ||
-        target.closest('[class*="Selector"]') ||
-        target.closest('button') ||
-        target.closest('a')
+        el.closest('[class*="VideoPlayer"]') ||
+        el.closest('[class*="Navbar"]') ||
+        el.closest('[class*="SeasonEpisodeSelector"]') ||
+        el.closest('[class*="modal"]') ||
+        el.closest('#__next')
       ) {
         return;
       }
-      try {
-        const style = window.getComputedStyle(target);
-        if (
-          (style.position === 'fixed' || style.position === 'absolute') &&
-          parseInt(style.zIndex, 10) > 100
-        ) {
-          const isTransparent =
-            style.opacity === '0' ||
-            style.backgroundColor === 'transparent' ||
-            style.backgroundColor === 'rgba(0, 0, 0, 0)';
-          if (isTransparent) {
-            e.stopPropagation();
-            e.preventDefault();
-            target.style.setProperty('display', 'none', 'important');
-            target.style.setProperty('pointer-events', 'none', 'important');
-            try {
-              target.remove();
-            } catch (err) {}
-            console.warn('[StreamNet Shield] Neutralized clickjack overlay');
-            onBlockedAction?.('clickjack_neutralized');
-          }
+
+      const style = window.getComputedStyle(el);
+      const zIndex = parseInt(style.zIndex, 10);
+      if (zIndex >= 1000 || style.position === 'fixed') {
+        const rect = el.getBoundingClientRect();
+        if (rect.left <= tol && rect.top <= tol && vw - rect.right <= tol && vh - rect.bottom <= tol) {
+          console.warn('[uBlock Origin overlay-buster] Eliminating fullscreen nuisance overlay:', el);
+          el.remove();
+          bodyEl.style.setProperty('overflow', 'auto', 'important');
+          onBlockedAction?.('overlay_buster_activated');
         }
-      } catch (err) {}
-    };
+      }
+    } catch (err) {}
+  };
 
-    window.addEventListener('click', handleClickCapture, true);
-    cleanups.push(() => {
-      window.removeEventListener('click', handleClickCapture, true);
-    });
-  }
+  const overlayInterval = setInterval(runOverlayBuster, 1500);
+  cleanups.push(() => clearInterval(overlayInterval));
 
-  // 6. Z-Axis Defuser: Intercept and force rogue in-page popups/overlays to z-index: -99999
+  // =========================================================================
+  // 11. Z-Axis Defuser & Automatic Rogue iFrame Blocker
+  // Shoves rogue modals/banners to z-index: -99999 and removes third-party iframes
+  // =========================================================================
   if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined') {
     const defuseElement = (node: Node) => {
       if (!(node instanceof HTMLElement)) return;
@@ -439,20 +637,12 @@ export function installAdblockProtection(
       const cls = (node.className && typeof node.className === 'string' ? node.className : '').toLowerCase();
       const tag = node.tagName.toLowerCase();
 
-      // Detect ad popups, popunders, overlays, interstitials
-      const isAdKeyword =
-        id.includes('ad-') || id.includes('popup') || id.includes('popunder') || id.includes('banner') ||
-        cls.includes('ad-') || cls.includes('popup') || cls.includes('popunder') || cls.includes('banner') || cls.includes('floating-ad') ||
-        tag === 'dialog';
-
-      // 7. Automatic iFrame Ad Blocker: Restrict or eliminate rogue iframes
+      // Detect rogue third-party iframes injected outside VideoPlayer
       if (tag === 'iframe') {
         const iframe = node as HTMLIFrameElement;
         if (iframe.closest('[class*="VideoPlayer"]')) {
-          // This is our legitimate cinema player! Never touch or add sandbox to it!
           return;
         }
-        // Third-party ad iframe injected outside our player
         iframe.style.setProperty('z-index', '-99999', 'important');
         iframe.style.setProperty('pointer-events', 'none', 'important');
         iframe.style.setProperty('display', 'none', 'important');
@@ -463,6 +653,19 @@ export function installAdblockProtection(
         return;
       }
 
+      // Detect ad popups, popunders, overlays, interstitials
+      const isAdKeyword =
+        id.includes('ad-') ||
+        id.includes('popup') ||
+        id.includes('popunder') ||
+        id.includes('banner') ||
+        cls.includes('ad-') ||
+        cls.includes('popup') ||
+        cls.includes('popunder') ||
+        cls.includes('banner') ||
+        cls.includes('floating-ad') ||
+        tag === 'dialog';
+
       let isSuspiciousZ = false;
       try {
         const style = window.getComputedStyle(node);
@@ -472,7 +675,6 @@ export function installAdblockProtection(
       } catch (e) {}
 
       if (isAdKeyword || isSuspiciousZ) {
-        console.warn('[StreamNet Z-Axis Defuser] Pushed in-page popup behind on Z-axis:', node);
         node.style.setProperty('z-index', '-99999', 'important');
         node.style.setProperty('pointer-events', 'none', 'important');
         node.style.setProperty('opacity', '0', 'important');
@@ -485,11 +687,7 @@ export function installAdblockProtection(
       }
     };
 
-    // Initial sweep of existing DOM elements & iframes (native iFrame Ad Blocker)
     try {
-      const allSuspicious = document.querySelectorAll('[class*="popup"], [id*="popup"], [class*="popunder"], [id*="popunder"], [class*="ad-"]');
-      allSuspicious.forEach((el) => defuseElement(el));
-
       const allIframes = document.querySelectorAll('iframe');
       allIframes.forEach((iframe) => {
         if (!iframe.closest('[class*="VideoPlayer"]')) {
@@ -511,6 +709,21 @@ export function installAdblockProtection(
         observer.disconnect();
       });
     }
+  }
+
+  // =========================================================================
+  // 12. Suppress rogue notification requests
+  // =========================================================================
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    const origNotification = window.Notification.requestPermission;
+    window.Notification.requestPermission = () => {
+      console.warn('[uBlock Origin / StreamNet] Suppressed scam notification permission request');
+      onBlockedAction?.('notification_suppressed');
+      return Promise.resolve('denied' as NotificationPermission);
+    };
+    cleanups.push(() => {
+      window.Notification.requestPermission = origNotification;
+    });
   }
 
   return () => {

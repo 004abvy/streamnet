@@ -231,7 +231,7 @@ export default function VideoPlayer({
                 })}
               </div>
 
-              {/* iFrame Ad Blocker Engine Controls (from iFrame Ad Blocker Extension) */}
+              {/* uBlock Origin Protection & Sandbox Controls */}
               <div className={styles.shieldStatusCard}>
                 <div className={styles.shieldStatusLeft}>
                   <div className={styles.shieldStatusPulse}>
@@ -240,9 +240,9 @@ export default function VideoPlayer({
                   </div>
                   <div>
                     <div className={styles.shieldStatusTitle}>
-                      iFrame Sandbox & Popup Shield
+                      uBlock Origin Shield & Sandbox
                       <span className={styles.activeBadge}>
-                        {sandboxEnabled ? 'ENABLED' : 'DISABLED'}
+                        {sandboxEnabled ? 'ENABLED' : 'DIRECT MODE'}
                       </span>
                       {blockedCount > 0 && (
                         <span className={styles.blockedBadge}>{blockedCount} blocked</span>
@@ -250,8 +250,8 @@ export default function VideoPlayer({
                     </div>
                     <div className={styles.shieldStatusDesc}>
                       {sandboxEnabled
-                        ? 'Active • All popups, new tabs, and page redirects are strictly forbidden'
-                        : 'Disabled • Sandbox removed if an embed provider requests it'}
+                        ? 'uBlock Origin Scriptlets & Sandbox Active • Popups, redirects & new tabs strictly forbidden'
+                        : 'uBlock Origin Scriptlets Active • Seamless stream playback with popup & redirect defense'}
                     </div>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export default function VideoPlayer({
                   type="button"
                   onClick={toggleSandbox}
                   className={`${styles.shieldToggleBtn} ${sandboxEnabled ? styles.shieldToggleBtnActive : ''}`}
-                  title={sandboxEnabled ? 'Disable Sandbox' : 'Enable Sandbox'}
+                  title={sandboxEnabled ? 'Switch to Direct Mode (Avoid Sandbox Errors)' : 'Enable Strict Sandbox'}
                   aria-label="Toggle iFrame Sandbox Protection"
                 >
                   <span className={styles.shieldToggleThumb} />
@@ -290,8 +290,8 @@ export default function VideoPlayer({
           {activeServer.quality && (
             <span className={styles.qualityTag}>{activeServer.quality}</span>
           )}
-          <span className={styles.shieldBadge} title="iFrame Shield Status">
-            {sandboxEnabled ? '🛡️ Sandbox Active' : '⚡ Direct Mode'}
+          <span className={styles.shieldBadge} title="uBlock Origin Shield Status">
+            {sandboxEnabled ? '🛡️ uBlock + Sandbox' : '🛡️ uBlock Shield'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
