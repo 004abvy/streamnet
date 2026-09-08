@@ -11,10 +11,13 @@ import {
   updateProfile,
   sendPasswordResetEmail,
   confirmPasswordReset,
-  verifyPasswordResetCode
+  verifyPasswordResetCode,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
+import { getUserDocKey } from '../utils/userStorage';
 
 export interface User {
   id: string;
@@ -30,6 +33,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; code?: string; message?: string }>;
   signup: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  googleLogin: () => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   syncUserData: (saved_items?: any[], continueWatching?: any[]) => Promise<void>;
   verifyEmailToken: (actionCode: string) => Promise<{ success: boolean; message?: string }>;
@@ -54,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (firebaseUser) {
-        // 1. Instantly set user state from auth & local storage for zero lag
+        // 1. Instantly set user state from auth & local storage
         const localSaved = JSON.parse(localStorage.getItem('saved_items') || '[]');
         const localContinue = JSON.parse(localStorage.getItem('continueWatching') || '[]');
 
@@ -68,10 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setLoading(false);
 
-        // 2. Perform background cloud synchronization with Firestore
+        // 2. Perform background cloud synchronization using normalized email key
         (async () => {
           try {
-            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const docKey = getUserDocKey(firebaseUser.email, firebaseUser.uid);
+            if (!docKey) return;
+
+            const userDocRef = doc(db, 'users', docKey);
             const snapshot = await getDoc(userDocRef);
 
             if (snapshot.exists()) {
@@ -97,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
+                uid: firebaseUser.uid,
                 name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
                 saved_items: mergedSaved,
                 continueWatching: mergedContinue,
@@ -114,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               await setDoc(userDocRef, {
                 email: firebaseUser.email,
+                uid: firebaseUser.uid,
                 name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
                 saved_items: localSaved,
                 continueWatching: localContinue,
@@ -122,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }, { merge: true });
             }
 
-            // Real-time listener for multi-device sync
+            // Real-time listener for multi-device sync across all logins with same email
             firestoreUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
               if (docSnap.exists()) {
                 const freshData = docSnap.data();
@@ -199,6 +208,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const googleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Google sign in failed' };
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
     setUser(null);
@@ -215,7 +234,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (auth.currentUser) {
       try {
-        const userDocRef = doc(db, 'users', auth.currentUser.uid);
+        const docKey = getUserDocKey(auth.currentUser.email, auth.currentUser.uid);
+        if (!docKey) return;
+
+        const userDocRef = doc(db, 'users', docKey);
         const payload: Record<string, any> = { updatedAt: new Date().toISOString() };
         if (saved_items !== undefined) payload.saved_items = saved_items;
         if (continueWatching !== undefined) payload.continueWatching = continueWatching;
@@ -270,6 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         signup,
+        googleLogin,
         logout,
         syncUserData,
         verifyEmailToken,
