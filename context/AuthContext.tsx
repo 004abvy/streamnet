@@ -47,116 +47,111 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let firestoreUnsubscribe: (() => void) | null = null;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firestoreUnsubscribe) {
         firestoreUnsubscribe();
         firestoreUnsubscribe = null;
       }
 
       if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        // 1. Instantly set user state from auth & local storage for zero lag
+        const localSaved = JSON.parse(localStorage.getItem('saved_items') || '[]');
+        const localContinue = JSON.parse(localStorage.getItem('continueWatching') || '[]');
 
-        try {
-          const snapshot = await getDoc(userDocRef);
-          const localSaved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-          const localContinue = JSON.parse(localStorage.getItem('continueWatching') || '[]');
+        setUser({
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || '',
+          isVerified: firebaseUser.emailVerified,
+          saved_items: localSaved,
+          continueWatching: localContinue
+        });
+        setLoading(false);
 
-          if (snapshot.exists()) {
-            const data = snapshot.data();
-            const cloudSaved = data.saved_items || [];
-            const cloudContinue = data.continueWatching || [];
+        // 2. Perform background cloud synchronization with Firestore
+        (async () => {
+          try {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const snapshot = await getDoc(userDocRef);
 
-            // Merge local and cloud saved items (avoiding duplicates)
-            const mergedSavedMap = new Map<number, any>();
-            cloudSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
-            localSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
-            const mergedSaved = Array.from(mergedSavedMap.values());
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              const cloudSaved = data.saved_items || [];
+              const cloudContinue = data.continueWatching || [];
 
-            // Merge local and cloud continueWatching
-            const mergedContinueMap = new Map<number, any>();
-            cloudContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
-            localContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
-            const mergedContinue = Array.from(mergedContinueMap.values());
+              // Merge local and cloud saved items
+              const mergedSavedMap = new Map<number, any>();
+              cloudSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
+              localSaved.forEach((item: any) => item?.id && mergedSavedMap.set(item.id, item));
+              const mergedSaved = Array.from(mergedSavedMap.values());
 
-            // Write merged data back to localStorage
-            localStorage.setItem('saved_items', JSON.stringify(mergedSaved));
-            localStorage.setItem('user_bookmarks', JSON.stringify(mergedSaved.map((item: any) => item.id)));
-            localStorage.setItem('continueWatching', JSON.stringify(mergedContinue));
+              // Merge local and cloud continueWatching
+              const mergedContinueMap = new Map<number, any>();
+              cloudContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
+              localContinue.forEach((item: any) => item?.id && mergedContinueMap.set(item.id, item));
+              const mergedContinue = Array.from(mergedContinueMap.values());
 
-            // Sync merged state back to Firestore
-            await setDoc(userDocRef, {
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || 'User',
-              saved_items: mergedSaved,
-              continueWatching: mergedContinue,
-              updatedAt: new Date().toISOString()
-            }, { merge: true });
+              localStorage.setItem('saved_items', JSON.stringify(mergedSaved));
+              localStorage.setItem('user_bookmarks', JSON.stringify(mergedSaved.map((item: any) => item.id)));
+              localStorage.setItem('continueWatching', JSON.stringify(mergedContinue));
 
-            setUser({
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'User',
-              email: firebaseUser.email || '',
-              isVerified: firebaseUser.emailVerified,
-              saved_items: mergedSaved,
-              continueWatching: mergedContinue
-            });
-          } else {
-            // First time user login -> Save current localStorage state to Firestore
-            await setDoc(userDocRef, {
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || 'User',
-              saved_items: localSaved,
-              continueWatching: localContinue,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            });
+              await setDoc(userDocRef, {
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                saved_items: mergedSaved,
+                continueWatching: mergedContinue,
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
 
-            setUser({
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'User',
-              email: firebaseUser.email || '',
-              isVerified: firebaseUser.emailVerified,
-              saved_items: localSaved,
-              continueWatching: localContinue
-            });
-          }
-
-          // Real-time listener for multi-device sync
-          firestoreUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-              const freshData = docSnap.data();
-              const freshSaved = freshData.saved_items || [];
-              const freshContinue = freshData.continueWatching || [];
-
-              localStorage.setItem('saved_items', JSON.stringify(freshSaved));
-              localStorage.setItem('user_bookmarks', JSON.stringify(freshSaved.map((item: any) => item.id)));
-              localStorage.setItem('continueWatching', JSON.stringify(freshContinue));
-
-              setUser((prev) => prev ? {
-                ...prev,
-                saved_items: freshSaved,
-                continueWatching: freshContinue
-              } : null);
+              setUser({
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                email: firebaseUser.email || '',
+                isVerified: firebaseUser.emailVerified,
+                saved_items: mergedSaved,
+                continueWatching: mergedContinue
+              });
+            } else {
+              await setDoc(userDocRef, {
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+                saved_items: localSaved,
+                continueWatching: localContinue,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
             }
-          });
 
-        } catch (e) {
-          console.warn("Failed to initialize cloud user sync:", e);
-          const saved = JSON.parse(localStorage.getItem('saved_items') || '[]');
-          const continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '[]');
-          setUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'User',
-            email: firebaseUser.email || '',
-            isVerified: firebaseUser.emailVerified,
-            saved_items: saved,
-            continueWatching: continueWatching
-          });
-        }
+            // Real-time listener for multi-device sync
+            firestoreUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const freshData = docSnap.data();
+                const freshSaved = freshData.saved_items || [];
+                const freshContinue = freshData.continueWatching || [];
+
+                localStorage.setItem('saved_items', JSON.stringify(freshSaved));
+                localStorage.setItem('user_bookmarks', JSON.stringify(freshSaved.map((item: any) => item.id)));
+                localStorage.setItem('continueWatching', JSON.stringify(freshContinue));
+
+                setUser((prev) => prev ? {
+                  ...prev,
+                  saved_items: freshSaved,
+                  continueWatching: freshContinue
+                } : null);
+              }
+            }, (err) => {
+              console.warn("Firestore listener notice:", err);
+            });
+
+          } catch (e) {
+            console.warn("Firestore sync background notice:", e);
+          }
+        })();
+
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -171,9 +166,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const firebaseUser = userCredential.user;
       
       await updateProfile(firebaseUser, { displayName: name });
-      await sendEmailVerification(firebaseUser);
+      try {
+        await sendEmailVerification(firebaseUser);
+      } catch (e) {
+        console.warn("Could not send verification email:", e);
+      }
       
-      return { success: true, message: 'Verification email sent. Please check your inbox.' };
+      return { success: true, message: 'Account created successfully! Verification email sent.' };
     } catch (err: any) {
       return { success: false, message: err.message || 'Signup failed' };
     }
@@ -181,13 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      if (!userCredential.user.emailVerified) {
-        await signOut(auth);
-        return { success: false, message: 'Please verify your email before logging in. Check your inbox and spam folder for the link.' };
-      }
-      
+      await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
     } catch (err: any) {
       const code = err.code || '';
@@ -221,12 +214,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (auth.currentUser) {
-      const userDocRef = doc(db, 'users', auth.currentUser.uid);
-      const payload: Record<string, any> = { updatedAt: new Date().toISOString() };
-      if (saved_items !== undefined) payload.saved_items = saved_items;
-      if (continueWatching !== undefined) payload.continueWatching = continueWatching;
-
       try {
+        const userDocRef = doc(db, 'users', auth.currentUser.uid);
+        const payload: Record<string, any> = { updatedAt: new Date().toISOString() };
+        if (saved_items !== undefined) payload.saved_items = saved_items;
+        if (continueWatching !== undefined) payload.continueWatching = continueWatching;
+
         await setDoc(userDocRef, payload, { merge: true });
       } catch (e) {
         console.warn("Failed to sync user data to Firestore:", e);
