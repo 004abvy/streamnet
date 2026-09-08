@@ -421,6 +421,41 @@
   margin-top: 1px;
 }
 
+.shieldToggleBtn {
+  width: 40px;
+  height: 22px;
+  background: #252538;
+  border-radius: 9999px;
+  border: 1px solid #363650;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shieldToggleBtnActive {
+  background: #059669;
+  border-color: #10b981;
+}
+
+.shieldToggleThumb {
+  position: absolute;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.shieldToggleBtnActive .shieldToggleThumb {
+  transform: translateX(18px);
+}
+
 .shieldBadge {
   font-size: 0.75rem;
   font-weight: 700;
@@ -432,6 +467,16 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.activeBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 
 .blockedBadge {

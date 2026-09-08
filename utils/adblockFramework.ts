@@ -159,19 +159,21 @@ export function getServerAdPolicy(serverId: string): ServerAdPolicy {
 export function resolveServerIframeAttributes(
   serverId: string,
   rawUrl: string,
-  shieldEnabled: boolean = true,
-  ultraMode: boolean = false
+  sandboxActive: boolean = true
 ) {
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  let sandboxTokens = policy.sandboxTokens;
-  if (ultraMode && sandboxTokens) {
-    sandboxTokens = ULTRA_SANDBOX_TOKENS;
-  }
-
-  const sandbox = (sandboxTokens && sandboxTokens.length > 0)
-    ? sandboxTokens.join(' ')
+  /**
+   * The core engine from iFrame-ad-blocker Chrome extension:
+   * By setting sandbox without allow-popups and without allow-top-navigation:
+   * - Browser strictly FORBIDS any window.open() popup attempts.
+   * - Browser strictly FORBIDS any page redirect or window.top navigation on clicks.
+   * - allow-scripts & allow-same-origin allow video player JS and stream chunks.
+   * - allow-forms & allow-presentation ensure Cloudflare Turnstile and Fullscreen work.
+   */
+  const sandbox = sandboxActive
+    ? (policy.sandboxTokens ? policy.sandboxTokens.join(' ') : 'allow-scripts allow-same-origin allow-forms allow-presentation')
     : null;
 
   return {
@@ -179,7 +181,7 @@ export function resolveServerIframeAttributes(
     sandbox,
     referrerPolicy: policy.referrerPolicy,
     allow: policy.allowFeatures.join('; '),
-    protectionLevel: ultraMode ? ('ultra' as ShieldLevel) : policy.protectionLevel,
+    protectionLevel: sandboxActive ? ('maximum' as ShieldLevel) : ('standard' as ShieldLevel),
     policy,
   };
 }
@@ -212,8 +214,10 @@ export function setUltraShieldPreference(enabled: boolean): void {
 }
 
 /**
- * Intelligent runtime popup interceptor.
- * - Differentiates popups using size, dimensions, features, and target inspection.
+ * Intelligent runtime popup & page-redirect forbidder.
+ * - Forbids window.open calls to external domains.
+ * - Forbids top-level page redirects via Navigation API (Chromium / Edge / Brave).
+ * - Forbids click-jacking overlays, synthetic anchor clicks, and form popups.
  * - Employs a Z-Axis Defuser (MutationObserver) to instantly push rogue in-page popups/banners behind everything.
  */
 export function installAdblockProtection(
@@ -226,21 +230,42 @@ export function installAdblockProtection(
 
   const cleanups: Array<() => void> = [];
 
-  // 1. Differentiate window.open calls using size, features, and URL
+  // 1. Forbid any unauthorized top-level page redirect via Navigation API
+  if (typeof window !== 'undefined' && 'navigation' in window) {
+    const navHandler = (e: any) => {
+      const targetUrl = e.destination?.url || '';
+      if (
+        targetUrl &&
+        !targetUrl.includes(window.location.host) &&
+        !targetUrl.startsWith('about:blank') &&
+        !targetUrl.startsWith('javascript:')
+      ) {
+        console.warn('[StreamNet Shield] FORBADE external page redirect on click:', targetUrl);
+        e.preventDefault();
+        onBlockedAction?.('page_redirect_forbidden', targetUrl);
+      }
+    };
+    (window as any).navigation.addEventListener('navigate', navHandler);
+    cleanups.push(() => {
+      try {
+        (window as any).navigation.removeEventListener('navigate', navHandler);
+      } catch (err) {}
+    });
+  }
+
+  // 2. Forbid popup window.open calls
   const origOpen = window.open;
   window.open = function (...args: any[]) {
     const url = args[0] ? String(args[0]) : '';
     const target = args[1] ? String(args[1]) : '';
     const features = args[2] ? String(args[2]) : '';
 
-    // Differentiate: detect popup sizing, coordinates, and stripped window features
-    const hasPopupDimensions = /width\s*=\s*\d+|height\s*=\s*\d+|left\s*=\s*-?\d+|top\s*=\s*-?\d+/i.test(features);
-    const hasStrippedUI = /menubar\s*=\s*(0|no)|toolbar\s*=\s*(0|no)|status\s*=\s*(0|no)|popup\s*=\s*(1|yes)/i.test(features);
-    const isBlank = !url || url === 'about:blank';
-    const isExternal = url.startsWith('http') && !url.includes(window.location.host);
+    const isInternal =
+      (url.includes(window.location.host) || url.startsWith('/') || url.startsWith('#')) &&
+      target !== '_blank';
 
-    if (hasPopupDimensions || hasStrippedUI || isBlank || (target === '_blank' && isExternal)) {
-      console.warn('[StreamNet Popup Shield] Neutralized popup by signature:', { url: url || 'about:blank', features, target });
+    if (!isInternal || !url || url === 'about:blank') {
+      console.warn('[StreamNet Shield] FORBADE popup window.open attempt:', { url: url || 'about:blank', features, target });
       onBlockedAction?.('popup_blocked', url || 'about:blank');
       return null;
     }
@@ -302,11 +327,31 @@ export function installAdblockProtection(
     });
   }
 
-  // 5. Intercept transparent click-jacking overlays
+  // 5. Intercept transparent click-jacking overlays and external ad click redirects
   if (typeof window !== 'undefined') {
     const handleClickCapture = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
+
+      // Forbid any external link clicks attempting to spawn tabs or redirect
+      let curr: HTMLElement | null = target;
+      while (curr && curr !== document.body) {
+        if (curr.tagName === 'A') {
+          const anchor = curr as HTMLAnchorElement;
+          const href = anchor.href || '';
+          const targetAttr = anchor.target || '';
+          const isExternal = href.startsWith('http') && !href.includes(window.location.host);
+          if (targetAttr === '_blank' || isExternal) {
+            console.warn('[StreamNet Shield] FORBADE external ad link click:', href);
+            e.stopPropagation();
+            e.preventDefault();
+            onBlockedAction?.('external_click_forbidden', href);
+            return;
+          }
+        }
+        curr = curr.parentElement;
+      }
+
       if (
         target.closest('[class*="VideoPlayer"]') ||
         target.closest('[class*="Navbar"]') ||

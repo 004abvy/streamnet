@@ -6,6 +6,8 @@ import { SERVERS, getLastUsedServerId, setLastUsedServerId } from '../../utils/s
 import {
   resolveServerIframeAttributes,
   installAdblockProtection,
+  getAdShieldPreference,
+  setAdShieldPreference,
 } from '../../utils/adblockFramework';
 
 interface VideoPlayerProps {
@@ -32,13 +34,23 @@ export default function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [activeServerId, setActiveServerId] = useState(SERVERS[0].id);
   const [showServerModal, setShowServerModal] = useState(false);
+  const [sandboxEnabled, setSandboxEnabled] = useState(true);
   const [blockedCount, setBlockedCount] = useState(0);
 
   useEffect(() => {
     setActiveServerId(getLastUsedServerId());
+    setSandboxEnabled(getAdShieldPreference());
   }, []);
 
-  // Hardened automatic popup & ad defense (Zero configuration required by user)
+  const toggleSandbox = () => {
+    setSandboxEnabled((prev) => {
+      const next = !prev;
+      setAdShieldPreference(next);
+      return next;
+    });
+  };
+
+  // Hardened automatic popup, redirect, and click-jack defense
   useEffect(() => {
     if (!isPlaying) return;
     return installAdblockProtection(true, (_type, _target) => {
@@ -77,7 +89,7 @@ export default function VideoPlayer({
   const activeServer = SERVERS.find((s) => s.id === activeServerId) || SERVERS[0];
   const rawVideoUrl = activeServer.getUrl(tmdbId, type, season, episode, imdbId);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
-  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, true, false);
+  const iframeConfig = resolveServerIframeAttributes(activeServer.id, rawVideoUrl, sandboxEnabled);
 
   const handleServerChange = (id: string) => {
     if (id === activeServerId) {
@@ -121,13 +133,13 @@ export default function VideoPlayer({
                   Connecting to {activeServer.name}...
                 </span>
                 <span className={styles.loadingSubText}>
-                  {activeServer.quality || '4K UHD'} • StreamNet AdShield™ Active
+                  {activeServer.quality || '4K UHD'} • {sandboxEnabled ? 'iFrame Sandbox Active' : 'Direct Stream'}
                 </span>
               </div>
             )}
 
             <iframe
-              key={`${iframeConfig.src}-${activeServerId}`}
+              key={`${iframeConfig.src}-${activeServerId}-${sandboxEnabled}`}
               className={styles.iframe}
               src={iframeConfig.src}
               {...(iframeConfig.sandbox ? { sandbox: iframeConfig.sandbox } : {})}
@@ -196,7 +208,7 @@ export default function VideoPlayer({
                 })}
               </div>
 
-              {/* Luxury AdShield VIP Status (Zero user configuration needed) */}
+              {/* iFrame Ad Blocker Engine Controls (from iFrame Ad Blocker Extension) */}
               <div className={styles.shieldStatusCard}>
                 <div className={styles.shieldStatusLeft}>
                   <div className={styles.shieldStatusPulse}>
@@ -205,16 +217,30 @@ export default function VideoPlayer({
                   </div>
                   <div>
                     <div className={styles.shieldStatusTitle}>
-                      StreamNet AdShield™ Active
+                      iFrame Sandbox & Popup Shield
+                      <span className={styles.activeBadge}>
+                        {sandboxEnabled ? 'ENABLED' : 'DISABLED'}
+                      </span>
                       {blockedCount > 0 && (
-                        <span className={styles.blockedBadge}>{blockedCount} neutralized</span>
+                        <span className={styles.blockedBadge}>{blockedCount} blocked</span>
                       )}
                     </div>
                     <div className={styles.shieldStatusDesc}>
-                      Automatic zero-popup sandbox • 100% ad-free VIP cinema playback
+                      {sandboxEnabled
+                        ? 'Active • All popups, new tabs, and page redirects are strictly forbidden'
+                        : 'Disabled • Sandbox removed if an embed provider requests it'}
                     </div>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleSandbox}
+                  className={`${styles.shieldToggleBtn} ${sandboxEnabled ? styles.shieldToggleBtnActive : ''}`}
+                  title={sandboxEnabled ? 'Disable Sandbox' : 'Enable Sandbox'}
+                  aria-label="Toggle iFrame Sandbox Protection"
+                >
+                  <span className={styles.shieldToggleThumb} />
+                </button>
               </div>
             </div>
           </div>
@@ -241,8 +267,8 @@ export default function VideoPlayer({
           {activeServer.quality && (
             <span className={styles.qualityTag}>{activeServer.quality}</span>
           )}
-          <span className={styles.shieldBadge} title="StreamNet AdShield Active">
-            🛡️ Ad-Free VIP
+          <span className={styles.shieldBadge} title="iFrame Shield Status">
+            {sandboxEnabled ? '🛡️ Sandbox Active' : '⚡ Direct Mode'}
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
