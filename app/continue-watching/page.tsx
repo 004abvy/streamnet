@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
+import { saveContinueWatching } from '../../utils/userStorage';
 import styles from './continueWatching.module.css';
 
 interface MediaItem {
@@ -49,13 +50,13 @@ export default function ContinueWatchingPage() {
     e.stopPropagation();
     const updated = items.filter((item) => item.id !== id);
     setItems(updated);
-    localStorage.setItem('continueWatching', JSON.stringify(updated));
+    saveContinueWatching(updated);
   };
 
   const clearAll = () => {
     if (confirm('Are you sure you want to clear your continue watching history?')) {
       setItems([]);
-      localStorage.removeItem('continueWatching');
+      saveContinueWatching([]);
     }
   };
 

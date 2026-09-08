@@ -8,6 +8,7 @@ import TrendingSection from '../components/TrendingSection/TrendingSection';
 import ProvidersSection from '../components/ProvidersSection/ProvidersSection';
 import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplorerSection';
 import Footer from '../components/Footer/Footer';
+import { saveContinueWatching } from '../utils/userStorage';
 import styles from './page.module.css';
 
 interface HomeMediaItem {
@@ -63,7 +64,7 @@ export default function Home() {
 
   const handleClearContinueWatching = () => {
     if (confirm('Clear all continue watching history?')) {
-      localStorage.removeItem('continueWatching');
+      saveContinueWatching([]);
       setContinueWatching([]);
     }
   };
@@ -71,7 +72,7 @@ export default function Home() {
   const handleRemoveContinueWatchingItem = (id: number) => {
     const updated = continueWatching.filter((item) => item.id !== id);
     setContinueWatching(updated);
-    localStorage.setItem('continueWatching', JSON.stringify(updated));
+    saveContinueWatching(updated);
   };
 
   useEffect(() => {

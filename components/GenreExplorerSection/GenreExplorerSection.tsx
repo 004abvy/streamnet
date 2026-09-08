@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { saveWatchlist } from '../../utils/userStorage';
 import styles from './GenreExplorerSection.module.css';
 
 interface Genre {
@@ -68,8 +69,7 @@ export default function GenreExplorerSection() {
       const nextItems = updated.includes(item.id)
         ? [...savedItems.filter((saved: any) => saved.id !== item.id), { ...item, media_type: contentType }]
         : savedItems.filter((saved: any) => saved.id !== item.id);
-      localStorage.setItem('user_bookmarks', JSON.stringify(updated));
-      localStorage.setItem('saved_items', JSON.stringify(nextItems));
+      saveWatchlist(nextItems);
       return updated;
     });
   };

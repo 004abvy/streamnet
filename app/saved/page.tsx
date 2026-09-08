@@ -7,6 +7,7 @@ import Navbar from '../../components/Navbar/Navbar';
 import PosterGrid from '../../components/PosterGrid/PosterGrid';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { saveWatchlist } from '../../utils/userStorage';
 import styles from './saved.module.css';
 
 interface SavedItem {
@@ -71,8 +72,7 @@ export default function SavedPage() {
   const clearAll = () => {
     if (confirm('Are you sure you want to clear your saved collection?')) {
       setItems([]);
-      localStorage.setItem('saved_items', JSON.stringify([]));
-      localStorage.setItem('user_bookmarks', JSON.stringify([]));
+      saveWatchlist([]);
     }
   };
 
