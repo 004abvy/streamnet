@@ -91,8 +91,35 @@ export default function Navbar() {
   };
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMenuEnter = (menu: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredMenu(menu);
+  };
+
+  const handleMenuLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredMenu(null);
+    }, 280);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Close user menu and expanded navigation on click outside
   useEffect(() => {
@@ -102,6 +129,7 @@ export default function Navbar() {
       }
       if (navLinksRef.current && !navLinksRef.current.contains(event.target as Node)) {
         setExpandedMenu(null);
+        setHoveredMenu(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -164,13 +192,25 @@ export default function Navbar() {
           </Link>
 
           {/* Movies Mega Dropdown */}
-          <div className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${expandedMenu === 'movies' ? styles.expanded : ''}`}>
+          <div
+            className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${
+              expandedMenu === 'movies' || hoveredMenu === 'movies' ? styles.expanded : ''
+            } ${hoveredMenu === 'movies' ? styles.hoverActive : ''}`}
+            onMouseEnter={() => handleMenuEnter('movies')}
+            onMouseLeave={handleMenuLeave}
+          >
             <div className={styles.navLink} onClick={() => handleDropdownClick('movies')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
               Movies
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
             </div>
-            <div className={`${styles.dropdownMenu} ${styles.megaDropdownMenu}`}>
+            <div
+              className={`${styles.dropdownMenu} ${styles.megaDropdownMenu} ${
+                hoveredMenu === 'movies' ? styles.megaDropdownOpen : ''
+              }`}
+              onMouseEnter={() => handleMenuEnter('movies')}
+              onMouseLeave={handleMenuLeave}
+            >
               <div className={styles.megaHeader}>
                 <div className={styles.megaTitle}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
@@ -255,13 +295,25 @@ export default function Navbar() {
           </div>
 
           {/* TV Shows Mega Dropdown */}
-          <div className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${expandedMenu === 'tv' ? styles.expanded : ''}`}>
+          <div
+            className={`${styles.navLinkDropdown} ${styles.megaDropdownWrapper} ${
+              expandedMenu === 'tv' || hoveredMenu === 'tv' ? styles.expanded : ''
+            } ${hoveredMenu === 'tv' ? styles.hoverActive : ''}`}
+            onMouseEnter={() => handleMenuEnter('tv')}
+            onMouseLeave={handleMenuLeave}
+          >
             <div className={styles.navLink} onClick={() => handleDropdownClick('tv')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
               TV Shows
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
             </div>
-            <div className={`${styles.dropdownMenu} ${styles.megaDropdownMenu}`}>
+            <div
+              className={`${styles.dropdownMenu} ${styles.megaDropdownMenu} ${styles.tvMegaDropdown} ${
+                hoveredMenu === 'tv' ? styles.megaDropdownOpen : ''
+              }`}
+              onMouseEnter={() => handleMenuEnter('tv')}
+              onMouseLeave={handleMenuLeave}
+            >
               <div className={styles.megaHeader}>
                 <div className={styles.megaTitle}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>

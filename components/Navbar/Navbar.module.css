@@ -229,14 +229,13 @@
    MEGA MENU DROPDOWN (Movies & TV Shows)
    =================================================================== */
 .megaDropdownWrapper {
-  position: static;
+  position: relative;
 }
 
 .megaDropdownMenu {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(100% + 2px);
+  left: 0;
   width: min(580px, calc(100vw - 2rem));
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 85px);
@@ -252,9 +251,14 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.18s ease, visibility 0.18s ease;
+  transform: translateY(4px);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s ease;
   z-index: 400;
   box-sizing: border-box;
+}
+
+.tvMegaDropdown {
+  left: clamp(-80px, -5vw, 0px);
 }
 
 .megaDropdownMenu::-webkit-scrollbar {
@@ -266,13 +270,14 @@
   border-radius: 4px;
 }
 
+/* Invisible Hit-Bridge connecting nav button directly to the popup so cursor never leaves hover zone */
 .megaDropdownMenu::before {
   content: '';
   position: absolute;
-  top: -12px;
-  left: 0;
-  right: 0;
-  height: 12px;
+  top: -24px;
+  left: -20px;
+  right: -20px;
+  height: 28px;
   background: transparent;
 }
 
@@ -282,11 +287,13 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
 }
 
+.hoverActive > .megaDropdownMenu,
+.megaDropdownOpen,
 .navLinkDropdown:hover > .megaDropdownMenu {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  transform: translateX(-50%) !important;
+  transform: translateY(0) !important;
 }
 
 .megaHeader {
