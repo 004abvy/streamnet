@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import styles from './TrendingSection.module.css';
 
 interface TrendingItem {
@@ -26,6 +28,7 @@ interface TrendingSectionProps {
 
 export default function TrendingSection({ title, items, viewAllLink, isLoading }: TrendingSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [direction, setDirection] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
@@ -117,10 +120,12 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
   const heroGridItems = currentBatch.slice(5, 9);
 
   const handlePrevPage = () => {
+    setDirection(-1);
     setCurrentPage((prev) => Math.max(1, prev - 1));
   };
 
   const handleNextPage = () => {
+    setDirection(1);
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
@@ -264,17 +269,28 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
         </div>
       </div>
 
-      {/* Row 1: 5 Standard Vertical Poster Cards */}
-      <div className={styles.postersRow}>
-        {featuredPosters.map((item) => renderNormalPoster(item))}
+      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={currentPage}
+            custom={direction}
+            initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            style={{ width: '100%' }}
+          >
+            <div className={styles.postersRow}>
+              {featuredPosters.map((item) => renderNormalPoster(item))}
+            </div>
+            {heroGridItems.length > 0 && (
+              <div className={styles.heroGrid}>
+                {heroGridItems.map((item) => renderMiniHeroCard(item))}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
-
-      {/* Rows 2 & 3: 2-Column Grid with 4 Mini-Hero Cards */}
-      {heroGridItems.length > 0 && (
-        <div className={styles.heroGrid}>
-          {heroGridItems.map((item) => renderMiniHeroCard(item))}
-        </div>
-      )}
     </section>
   );
 }

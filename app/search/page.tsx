@@ -219,10 +219,8 @@ function SearchContent() {
         )}
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>Searching...</div>
-      ) : results.length > 0 ? (
-        <PosterGrid title={`Search Results for "${queryParam}"`} movies={results} />
+      {loading || results.length > 0 ? (
+        <PosterGrid title={queryParam ? `Search Results for "${queryParam}"` : ''} movies={results} isLoading={loading} />
       ) : queryParam ? (
         <div className={styles.emptyState}>
           <h2>No results found</h2>

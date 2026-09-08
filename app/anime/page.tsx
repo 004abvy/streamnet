@@ -55,16 +55,20 @@ function AnimeContent() {
         </p>
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>Loading Popular Anime...</div>
+      {shows.length === 0 && !loading ? (
+        <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
+          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No anime found for this filter or genre.</p>
+        </div>
       ) : (
         <>
-          <PosterGrid title="" movies={shows} />
-          <Pagination
-            currentPage={pageParam}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+          <PosterGrid title="" movies={shows} isLoading={loading} />
+          {!loading && totalPages > 1 && (
+            <Pagination
+              currentPage={pageParam}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          )}
         </>
       )}
     </div>

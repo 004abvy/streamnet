@@ -165,9 +165,7 @@ function TvContent() {
         </div>
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>Loading TV Shows...</div>
-      ) : shows.length === 0 ? (
+      {shows.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
           <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No TV shows found for this filter or genre.</p>
           <button
@@ -187,12 +185,14 @@ function TvContent() {
         </div>
       ) : (
         <>
-          <PosterGrid title="" movies={shows} />
-          <Pagination
-            currentPage={pageParam}
-            totalPages={totalPages}
-            onPageChange={(p) => updateQueryParams(undefined, undefined, p)}
-          />
+          <PosterGrid title="" movies={shows} isLoading={loading} />
+          {!loading && totalPages > 1 && (
+            <Pagination
+              currentPage={pageParam}
+              totalPages={totalPages}
+              onPageChange={(p) => updateQueryParams(undefined, undefined, p)}
+            />
+          )}
         </>
       )}
     </div>

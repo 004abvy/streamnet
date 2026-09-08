@@ -176,12 +176,9 @@ function MoviesContent() {
               {g.name}
             </button>
           ))}
-        </div>
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>Loading Movies...</div>
-      ) : movies.length === 0 ? (
+      {movies.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
           <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No movies found for this filter or genre.</p>
           <button
@@ -201,12 +198,14 @@ function MoviesContent() {
         </div>
       ) : (
         <>
-          <PosterGrid title="" movies={movies} />
-          <Pagination
-            currentPage={pageParam}
-            totalPages={totalPages}
-            onPageChange={(p) => updateQueryParams(undefined, undefined, p)}
-          />
+          <PosterGrid title="" movies={movies} isLoading={loading} />
+          {!loading && totalPages > 1 && (
+            <Pagination
+              currentPage={pageParam}
+              totalPages={totalPages}
+              onPageChange={(p) => updateQueryParams(undefined, undefined, p)}
+            />
+          )}
         </>
       )}
     </div>

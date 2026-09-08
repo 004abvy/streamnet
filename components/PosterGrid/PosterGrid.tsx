@@ -19,9 +19,10 @@ interface PosterGridProps {
   movies: Movie[];
   gridColumns?: number;
   square?: boolean;
+  isLoading?: boolean;
 }
 
-export default function PosterGrid({ title, movies, gridColumns, square = false }: PosterGridProps) {
+export default function PosterGrid({ title, movies, gridColumns, square = false, isLoading }: PosterGridProps) {
   const [savedIds, setSavedIds] = useState<number[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -31,8 +32,6 @@ export default function PosterGrid({ title, movies, gridColumns, square = false 
       return [];
     }
   });
-
-  if (!movies || movies.length === 0) return null;
 
   const toggleSaved = (event: React.MouseEvent, movie: Movie) => {
     event.preventDefault();
@@ -48,6 +47,21 @@ export default function PosterGrid({ title, movies, gridColumns, square = false 
     localStorage.setItem('saved_items', JSON.stringify(nextItems));
     localStorage.setItem('user_bookmarks', JSON.stringify(nextIds));
   };
+
+  if (isLoading) {
+    return (
+      <section className={styles.container}>
+        <h2 className={styles.title}>{title}</h2>
+        <div className={styles.grid}>
+          {[...Array(10)].map((_, i) => (
+            <div key={`skel-${i}`} className={styles.skeletonCard} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!movies || movies.length === 0) return null;
 
   return (
     <div className={styles.container}>
