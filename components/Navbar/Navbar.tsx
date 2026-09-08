@@ -503,7 +503,17 @@ export default function Navbar() {
             {(suggestions.length > 0 || loadingSuggestions) && (
               <div className={styles.suggestionsDropdown}>
                 {loadingSuggestions && suggestions.length === 0 ? (
-                  <div className={styles.suggestionLoading}>Searching...</div>
+                  <div className={styles.suggestionSkeletons}>
+                    {[1, 2, 3].map((i) => (
+                      <div key={`skel-sug-${i}`} className={styles.suggestionSkeletonItem}>
+                        <div className={styles.suggestionSkeletonPoster} />
+                        <div className={styles.suggestionSkeletonInfo}>
+                          <div className={styles.suggestionSkeletonTitle} />
+                          <div className={styles.suggestionSkeletonMeta} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <>
                     {suggestions.map((item) => {

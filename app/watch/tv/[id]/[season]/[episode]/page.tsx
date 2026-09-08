@@ -104,8 +104,74 @@ export default function WatchTvPage() {
 
       <div className="w-full max-w-[1050px] mt-2">
         {loading ? (
-          <div className="w-full aspect-video flex items-center justify-center text-neutral-500 bg-neutral-900 rounded-xl">
-            Loading player...
+          <div className="w-full flex flex-col gap-6">
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col justify-between p-6">
+              {/* Shimmer sweep */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(110deg, transparent 0%, transparent 35%, rgba(255,255,255,0.06) 50%, transparent 65%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                }}
+              />
+              {/* Ambient Theater Glow */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-40"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.15) 0%, transparent 65%)',
+                  animation: 'sleekPulse 3s ease-in-out infinite',
+                }}
+              />
+
+              {/* Top Bar Skeleton */}
+              <div className="relative z-10 flex items-center justify-between w-full opacity-60">
+                <div className="h-4 w-36 rounded-full bg-neutral-800" />
+                <div className="h-4 w-24 rounded-full bg-neutral-800" />
+              </div>
+
+              {/* Center Glowing Play Ring */}
+              <div className="relative z-10 flex flex-col items-center justify-center gap-3">
+                <div className="w-16 h-16 rounded-full bg-white/5 border border-amber-500/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.3)] animate-pulse">
+                  <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-amber-400 ml-1" />
+                </div>
+                <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">
+                  Preparing Episode Stream...
+                </span>
+              </div>
+
+              {/* Bottom Scrubber & Controls Skeleton */}
+              <div className="relative z-10 flex flex-col gap-3 w-full bg-gradient-to-t from-black/80 to-transparent -mx-6 -mb-6 p-6">
+                <div className="w-full h-1.5 rounded-full bg-neutral-800 relative overflow-hidden">
+                  <div
+                    className="h-full w-1/3 bg-amber-500/60 rounded-full"
+                    style={{
+                      animation: 'sleekPulse 2s ease-in-out infinite',
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between opacity-50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-6 h-6 rounded bg-neutral-700" />
+                    <div className="w-6 h-6 rounded bg-neutral-700" />
+                    <div className="w-16 h-3 rounded bg-neutral-700" />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-6 h-6 rounded bg-neutral-700" />
+                    <div className="w-6 h-6 rounded bg-neutral-700" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Below Player Metadata Skeleton */}
+            <div className="w-full flex flex-col gap-3 pt-2">
+              <div className="h-8 w-1/2 rounded-lg bg-neutral-800/80 animate-pulse" />
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-24 rounded-md bg-neutral-800/60" />
+                <div className="h-5 w-20 rounded-md bg-neutral-800/60" />
+              </div>
+            </div>
           </div>
         ) : show ? (
           <>

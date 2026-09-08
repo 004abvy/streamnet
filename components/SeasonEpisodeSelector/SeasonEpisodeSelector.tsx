@@ -199,7 +199,22 @@ export default function SeasonEpisodeSelector({
       </div>
 
       {loading ? (
-        <div className={styles.loading}>Loading episodes...</div>
+        <div className={styles.episodeGrid} aria-label="Loading episodes">
+          {[...Array(6)].map((_, i) => (
+            <div key={`skel-ep-${i}`} className={styles.skeletonEpisodeCard}>
+              <div className={styles.skeletonThumbnailWrapper}>
+                <div className={styles.skeletonShimmer} />
+                <div className={styles.skeletonPlayIcon} />
+                <div className={styles.skeletonEpisodeNumberBadge} />
+              </div>
+              <div className={styles.skeletonEpisodeInfo}>
+                <div className={styles.skeletonEpisodeTitle} />
+                <div className={styles.skeletonEpisodeDescLine} style={{ width: '100%' }} />
+                <div className={styles.skeletonEpisodeDescLine} style={{ width: '75%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className={styles.episodeGrid}>
           {filteredAndSortedEpisodes.length === 0 ? (

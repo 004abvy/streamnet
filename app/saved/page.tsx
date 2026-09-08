@@ -242,7 +242,9 @@ export default function SavedPage() {
           )}
         </div>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <PosterGrid title="" movies={[]} isLoading={true} />
+        ) : items.length === 0 ? (
           <div className={styles.emptyContainer}>
             <div className={styles.emptyIconWrapper}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -42,7 +42,44 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
 
   // Handle Loading State
   if (isLoading) {
-    return <div className={styles.skeletonHero} />;
+    return (
+      <div className={styles.skeletonHero} aria-label="Loading featured spotlight">
+        <div className={styles.skeletonBackdropShimmer} />
+        <div className={styles.skeletonAmbientGlow} />
+        <div className={styles.skeletonOverlay} />
+        <div className={styles.skeletonBottomFade} />
+        <div className={styles.skeletonContent}>
+          <div className={styles.skeletonBadge} />
+          <div className={styles.skeletonTitle} />
+          <div className={styles.skeletonTitleSecondary} />
+          <div className={styles.skeletonMetaRow}>
+            <div className={styles.skeletonPill} style={{ width: '56px' }} />
+            <div className={styles.skeletonPill} style={{ width: '74px' }} />
+            <div className={styles.skeletonPill} style={{ width: '64px' }} />
+            <div className={styles.skeletonPill} style={{ width: '48px' }} />
+          </div>
+          <div className={styles.skeletonDescLine} style={{ width: '90%' }} />
+          <div className={styles.skeletonDescLine} style={{ width: '70%' }} />
+          <div className={styles.skeletonActions}>
+            <div className={styles.skeletonBtnPrimary}>
+              <span className={styles.skeletonPlayIcon} />
+              <span className={styles.skeletonBtnText} style={{ width: '78px' }} />
+            </div>
+            <div className={styles.skeletonBtnSecondary}>
+              <span className={styles.skeletonBtnText} style={{ width: '92px' }} />
+            </div>
+          </div>
+        </div>
+        <div className={styles.skeletonIndicators}>
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={`skel-dot-${i}`}
+              className={`${styles.skeletonDot} ${i === 0 ? styles.skeletonDotActive : ''}`}
+            />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (loopMovies.length === 0) return null;

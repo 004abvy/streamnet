@@ -350,17 +350,90 @@
 
 .cardSkeleton {
   flex: 0 0 calc((100% - (1.1rem * 4)) / 5);
+  position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  background: #161622;
-  border-radius: 12px;
-  animation: pulseSkeleton 1.5s infinite;
+  background: var(--skeleton-base, #13131c);
+  border-radius: var(--poster-radius, 12px);
+  overflow: hidden;
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.75rem;
 }
 
-@keyframes pulseSkeleton {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.4; }
+.skeletonShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+    var(--skeleton-shimmer-highlight, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.skeletonTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.skeletonBadge {
+  width: 36px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonBookmark {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonBottomInfo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  background: linear-gradient(to top, rgba(10, 10, 15, 0.9) 0%, transparent 100%);
+  margin: -0.75rem;
+  padding: 1.5rem 0.75rem 0.75rem;
+}
+
+.skeletonTitle {
+  width: 78%;
+  height: 14px;
+  border-radius: 5px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonMeta {
+  width: 40%;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--skeleton-highlight, #1e1e2d);
+  opacity: 0.8;
 }
 
 @media (max-width: 1300px) {

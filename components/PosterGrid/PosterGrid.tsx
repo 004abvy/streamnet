@@ -58,10 +58,22 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
   if (isLoading) {
     return (
       <section className={styles.container}>
-        <h2 className={styles.title}>{title}</h2>
-        <div className={styles.grid}>
-          {[...Array(10)].map((_, i) => (
-            <div key={`skel-${i}`} className={styles.skeletonCard} />
+        {title ? <h2 className={styles.title}>{title}</h2> : null}
+        <div
+          className={`${styles.grid} ${gridColumns === 4 ? styles.grid4 : ''} ${gridColumns === 2 ? styles.grid2 : ''}`}
+        >
+          {[...Array(gridColumns === 4 ? 8 : 10)].map((_, i) => (
+            <div key={`skel-${i}`} className={`${styles.skeletonCard} ${square ? styles.squareCard : ''}`}>
+              <div className={styles.skeletonShimmerWave} />
+              <div className={styles.skeletonTopRow}>
+                <div className={styles.skeletonBadge} />
+                <div className={styles.skeletonBookmark} />
+              </div>
+              <div className={styles.skeletonCardOverlay}>
+                <div className={styles.skeletonCardTitle} />
+                <div className={styles.skeletonCardMeta} />
+              </div>
+            </div>
           ))}
         </div>
       </section>

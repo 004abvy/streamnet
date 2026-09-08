@@ -69,7 +69,68 @@ export default function MovieDetailsPage({
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading...</div>;
+    return (
+      <main className={styles.container} aria-label="Loading movie details">
+        <Navbar />
+
+        {/* Backdrop Skeleton */}
+        <div className={styles.skeletonBackdropWrapper}>
+          <div className={styles.skeletonShimmer} />
+          <div className={styles.backdropOverlay} />
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className={styles.mainContainer}>
+          <div className={styles.topSection}>
+            {/* Left Poster Column Skeleton */}
+            <div className={styles.posterCol}>
+              <div className={styles.skeletonPoster}>
+                <div className={styles.skeletonShimmer} />
+              </div>
+              <div className={styles.skeletonPlayBtn} />
+              <div className={styles.skeletonWatchlistBtn} />
+            </div>
+
+            {/* Right Info Column Skeleton */}
+            <div className={styles.infoCol}>
+              <div className={styles.skeletonBackBtn} />
+
+              <div className={styles.skeletonTitle} />
+              <div className={styles.skeletonSubtitle} />
+
+              <div className={styles.skeletonRatingRow}>
+                <div className={styles.skeletonBadge} style={{ width: '64px' }} />
+                <div className={styles.skeletonBadge} style={{ width: '84px' }} />
+                <div className={styles.skeletonBadge} style={{ width: '72px' }} />
+              </div>
+
+              <div className={styles.skeletonGenresRow}>
+                <div className={styles.skeletonGenrePill} />
+                <div className={styles.skeletonGenrePill} />
+                <div className={styles.skeletonGenrePill} />
+              </div>
+
+              <div className={styles.skeletonTagline} />
+
+              <div className={styles.skeletonOverviewSection}>
+                <div className={styles.skeletonSectionHeader} />
+                <div className={styles.skeletonOverviewLine} style={{ width: '100%' }} />
+                <div className={styles.skeletonOverviewLine} style={{ width: '94%' }} />
+                <div className={styles.skeletonOverviewLine} style={{ width: '82%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className={styles.skeletonTabs}>
+            <div className={styles.skeletonTab} style={{ width: '96px' }} />
+            <div className={styles.skeletonTab} style={{ width: '80px' }} />
+            <div className={styles.skeletonTab} style={{ width: '90px' }} />
+            <div className={styles.skeletonTab} style={{ width: '110px' }} />
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!movie || !movie.id) {

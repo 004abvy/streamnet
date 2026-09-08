@@ -190,18 +190,95 @@
 }
 
 /* ==========================================================================
-   LOADING SKELETONS
+   LOADING SKELETONS (CINEMATIC SHIMMER)
    ========================================================================== */
 .skeletonCard {
+  position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  background: #161622;
-  border-radius: 12px;
-  animation: pulseSkeleton 1.5s infinite;
+  background: var(--skeleton-base, #13131c);
+  border-radius: var(--poster-radius, 12px);
+  overflow: hidden;
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.75rem;
 }
 
-@keyframes pulseSkeleton {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.4; }
+.skeletonCard.squareCard {
+  aspect-ratio: 1 / 1;
 }
+
+.skeletonShimmerWave {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+    var(--skeleton-shimmer-highlight, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.skeletonTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.skeletonBadge {
+  width: 38px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonBookmark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonCardOverlay {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  background: linear-gradient(to top, rgba(10, 10, 15, 0.85) 0%, transparent 100%);
+  margin: -0.75rem;
+  padding: 1.5rem 0.75rem 0.75rem;
+}
+
+.skeletonCardTitle {
+  width: 78%;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonCardMeta {
+  width: 45%;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--skeleton-highlight, #1e1e2d);
+  opacity: 0.8;
+}
+

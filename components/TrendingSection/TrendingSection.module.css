@@ -277,29 +277,219 @@
 }
 
 /* ==========================================================================
-   LOADING SKELETONS
+   LOADING SKELETONS (CINEMATIC SHIMMER)
    ========================================================================== */
-.skeletonCard {
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  background: #161622;
-  border-radius: 12px;
-  animation: pulseSkeleton 1.5s infinite;
+.skeletonViewAll {
+  width: 90px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--skeleton-highlight, #1e1e2e);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2s ease-in-out infinite;
 }
 
-.skeletonHero {
+.skeletonPosterCard {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  background: var(--skeleton-base, #13131c);
+  border-radius: var(--poster-radius, 12px);
+  overflow: hidden;
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.75rem;
+}
+
+.skeletonShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+    var(--skeleton-shimmer-highlight, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.skeletonPosterTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.skeletonRankBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+  font-size: 0.8rem;
+  font-weight: 800;
+  opacity: 0.6;
+}
+
+.skeletonBookmark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonPosterInfo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  background: linear-gradient(to top, rgba(10, 10, 15, 0.9) 0%, transparent 100%);
+  margin: -0.75rem;
+  padding: 1.6rem 0.75rem 0.75rem;
+}
+
+.skeletonRatingBadge {
+  width: 36px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonPosterTitle {
+  width: 80%;
+  height: 14px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonPosterYear {
+  width: 42%;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--skeleton-highlight, #1e1e2d);
+  opacity: 0.8;
+}
+
+/* Mini Hero Skeleton */
+.skeletonHeroCard {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #161622;
+  background: var(--skeleton-base, #13131c);
   border-radius: 14px;
-  animation: pulseSkeleton 1.5s infinite;
+  overflow: hidden;
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
   min-height: max(290px, max-content);
 }
 
-@keyframes pulseSkeleton {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.4; }
+.skeletonHeroTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.skeletonLivePill {
+  width: 70px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+}
+
+.skeletonHeroCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.skeletonPlayCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  animation: sleekPulse 2.5s ease-in-out infinite;
+}
+
+.skeletonHeroBottom {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  background: linear-gradient(to top, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.7) 60%, transparent 100%);
+  margin: -1.25rem;
+  padding: 2rem 1.25rem 1.25rem;
+}
+
+.skeletonHeroTitle {
+  width: 65%;
+  height: 20px;
+  border-radius: 8px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonHeroDesc {
+  width: 88%;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #1e1e2d);
+  opacity: 0.75;
+}
+
+.skeletonHeroActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.skeletonMiniBtnPrimary {
+  width: 110px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(245, 158, 11, 0.5));
+  animation: sleekPulse 2.2s ease-in-out infinite;
+}
+
+.skeletonMiniBtnSecondary {
+  width: 90px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .miniYear {
@@ -458,7 +648,7 @@
   }
 
 
-  .heroCard, .skeletonHero {
+  .heroCard, .skeletonHero, .skeletonHeroCard {
     min-height: max(250px, max-content);
   }
 }
@@ -503,7 +693,7 @@
     display: none;
   }
 
-  .posterCard {
+  .posterCard, .skeletonPosterCard {
     flex: 0 0 44%;
     scroll-snap-align: center;
   }
@@ -516,7 +706,7 @@
     gap: 0.85rem;
   }
 
-  .heroCard, .skeletonHero {
+  .heroCard, .skeletonHero, .skeletonHeroCard {
     min-height: max-content;
     aspect-ratio: auto;
     padding: 1.5rem 0.75rem;

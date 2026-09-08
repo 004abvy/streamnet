@@ -177,7 +177,17 @@ export default function GenreExplorerSection() {
       {loading ? (
         <div className={styles.loadingGrid}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className={styles.cardSkeleton}></div>
+            <div key={i} className={styles.cardSkeleton}>
+              <div className={styles.skeletonShimmer} />
+              <div className={styles.skeletonTopRow}>
+                <div className={styles.skeletonBadge} />
+                <div className={styles.skeletonBookmark} />
+              </div>
+              <div className={styles.skeletonBottomInfo}>
+                <div className={styles.skeletonTitle} />
+                <div className={styles.skeletonMeta} />
+              </div>
+            </div>
           ))}
         </div>
       ) : (

@@ -27,9 +27,10 @@ interface PosterCarouselProps {
   onClear?: () => void;
   onRemoveItem?: (id: number) => void;
   isContinueWatching?: boolean;
+  isLoading?: boolean;
 }
 
-export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem, isContinueWatching }: PosterCarouselProps) {
+export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem, isContinueWatching, isLoading }: PosterCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -103,6 +104,33 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
       carouselRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.container} aria-label={`Loading ${title}`}>
+        <div className={styles.header}>
+          <div className={styles.titleWrapper}>
+            <h2 className={styles.title}>{title}</h2>
+          </div>
+        </div>
+        <div className={styles.carousel} style={{ overflow: 'hidden' }}>
+          {[...Array(6)].map((_, i) => (
+            <div key={`skel-carousel-${i}`} className={styles.skeletonCard}>
+              <div className={styles.skeletonShimmer} />
+              <div className={styles.skeletonTopRow}>
+                <div className={styles.skeletonBadge} />
+                <div className={styles.skeletonBookmark} />
+              </div>
+              <div className={styles.skeletonBottomInfo}>
+                <div className={styles.skeletonTitle} />
+                <div className={styles.skeletonMeta} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!movies || movies.length === 0) return null;
 

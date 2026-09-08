@@ -95,10 +95,31 @@ export default function MoviePlayer({ movieId }: { movieId: string }) {
       {/* Metadata Section */}
       <div className="w-full max-w-6xl mt-8 text-left">
         {loading ? (
-          <div className="animate-pulse flex flex-col gap-4">
-            <div className="h-8 bg-neutral-800 rounded w-1/3"></div>
-            <div className="h-4 bg-neutral-800 rounded w-1/4"></div>
-            <div className="h-24 bg-neutral-800 rounded w-full mt-4"></div>
+          <div className="flex flex-col gap-4">
+            <div
+              className="h-9 rounded-xl w-1/3 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(110deg, #1c1c28 0%, #2a2a3e 50%, #1c1c28 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'sleekShimmer 2s linear infinite',
+              }}
+            />
+            <div
+              className="h-5 rounded-lg w-1/4 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(110deg, #1c1c28 0%, #2a2a3e 50%, #1c1c28 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'sleekShimmer 2s linear infinite',
+              }}
+            />
+            <div
+              className="h-24 rounded-xl w-full mt-2 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(110deg, #161622 0%, #242436 50%, #161622 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'sleekShimmer 2.2s linear infinite',
+              }}
+            />
           </div>
         ) : movie && movie.id ? (
           <div className="flex flex-col gap-4">

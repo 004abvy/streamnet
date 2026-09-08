@@ -43,20 +43,53 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
 
   if (isLoading) {
     return (
-      <section className={styles.section}>
+      <section className={styles.section} aria-label={`Loading ${title}`}>
         <div className={styles.header}>
           <div className={styles.titleWrapper}>
             <h2 className={styles.title}>{title}</h2>
           </div>
+          <div className={styles.skeletonViewAll} />
         </div>
+
+        {/* 5 Sleek Poster Skeletons */}
         <div className={styles.postersRow}>
           {[...Array(5)].map((_, i) => (
-            <div key={`skel-row-${i}`} className={styles.skeletonCard} />
+            <div key={`skel-row-${i}`} className={styles.skeletonPosterCard}>
+              <div className={styles.skeletonShimmer} />
+              <div className={styles.skeletonPosterTop}>
+                <div className={styles.skeletonRankBadge}>{i + 1}</div>
+                <div className={styles.skeletonBookmark} />
+              </div>
+              <div className={styles.skeletonPosterInfo}>
+                <div className={styles.skeletonRatingBadge} />
+                <div className={styles.skeletonPosterTitle} />
+                <div className={styles.skeletonPosterYear} />
+              </div>
+            </div>
           ))}
         </div>
+
+        {/* 4 Sleek Mini Hero Skeletons */}
         <div className={styles.heroGrid}>
           {[...Array(4)].map((_, i) => (
-            <div key={`skel-hero-${i}`} className={styles.skeletonHero} />
+            <div key={`skel-hero-${i}`} className={styles.skeletonHeroCard}>
+              <div className={styles.skeletonShimmer} />
+              <div className={styles.skeletonHeroTop}>
+                <div className={styles.skeletonLivePill} />
+                <div className={styles.skeletonBookmark} />
+              </div>
+              <div className={styles.skeletonHeroCenter}>
+                <div className={styles.skeletonPlayCircle} />
+              </div>
+              <div className={styles.skeletonHeroBottom}>
+                <div className={styles.skeletonHeroTitle} />
+                <div className={styles.skeletonHeroDesc} />
+                <div className={styles.skeletonHeroActions}>
+                  <div className={styles.skeletonMiniBtnPrimary} />
+                  <div className={styles.skeletonMiniBtnSecondary} />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>

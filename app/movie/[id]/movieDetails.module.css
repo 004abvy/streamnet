@@ -230,3 +230,158 @@
   width: 100%;
   height: 100%;
 }
+
+/* ==========================================================================
+   CINEMATIC DETAIL SKELETON
+   ========================================================================== */
+.skeletonBackdropWrapper {
+  position: relative;
+  width: 100%;
+  height: 42vh;
+  min-height: 280px;
+  background: var(--skeleton-base, #111119);
+  overflow: hidden;
+}
+
+.skeletonShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+    var(--skeleton-shimmer-highlight, rgba(255, 255, 255, 0.08)) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.skeletonPoster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  background: var(--skeleton-base, #13131c);
+  border-radius: var(--poster-radius, 12px);
+  overflow: hidden;
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.skeletonPlayBtn {
+  width: 100%;
+  height: 46px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(245, 158, 11, 0.5));
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonWatchlistBtn {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.skeletonBackBtn {
+  width: 84px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.skeletonTitle {
+  width: min(85%, 460px);
+  height: clamp(2rem, 3vw, 3.2rem);
+  border-radius: 10px;
+  background: var(--skeleton-highlight, #222234);
+  animation: sleekPulse 2s ease-in-out infinite;
+}
+
+.skeletonSubtitle {
+  width: min(50%, 280px);
+  height: 20px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #1e1e2c);
+  margin-top: -0.5rem;
+}
+
+.skeletonRatingRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.skeletonBadge {
+  height: 24px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #222234);
+  border: 1px solid var(--skeleton-border, rgba(255, 255, 255, 0.06));
+}
+
+.skeletonGenresRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.skeletonGenrePill {
+  width: 72px;
+  height: 26px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.skeletonTagline {
+  width: 60%;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--skeleton-highlight, #1e1e2c);
+  opacity: 0.7;
+}
+
+.skeletonOverviewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.skeletonSectionHeader {
+  width: 110px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #222234);
+  margin-bottom: 0.25rem;
+}
+
+.skeletonOverviewLine {
+  height: 14px;
+  border-radius: 6px;
+  background: var(--skeleton-highlight, #1c1c28);
+}
+
+.skeletonTabs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 1.5rem;
+}
+
+.skeletonTab {
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

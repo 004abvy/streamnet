@@ -8,6 +8,21 @@
   --border-color: #222232;
   --text-muted: #aaaabb;
   --nav-bg: linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+
+  /* Cinematic Skeleton System */
+  --skeleton-base: #12121b;
+  --skeleton-highlight: #1f1f2e;
+  --skeleton-shimmer-highlight: #2c2c42;
+  --skeleton-border: rgba(255, 255, 255, 0.06);
+  --skeleton-subtle-border: rgba(255, 255, 255, 0.04);
+  --skeleton-shimmer: linear-gradient(
+    110deg,
+    var(--skeleton-base) 0%,
+    var(--skeleton-base) 35%,
+    var(--skeleton-shimmer-highlight) 50%,
+    var(--skeleton-base) 65%,
+    var(--skeleton-base) 100%
+  );
 }
 
 *, *::before, *::after {
@@ -27,6 +42,21 @@ html, body {
   --border-color: #e2e4ea;
   --text-muted: #6b7280;
   --nav-bg: linear-gradient(to bottom, rgba(244, 245, 248, 0.95) 0%, rgba(244, 245, 248, 0.6) 70%, transparent 100%);
+
+  /* Cinematic Skeleton System - Light */
+  --skeleton-base: #e4e7ed;
+  --skeleton-highlight: #d6d9e2;
+  --skeleton-shimmer-highlight: #f8fafc;
+  --skeleton-border: rgba(0, 0, 0, 0.06);
+  --skeleton-subtle-border: rgba(0, 0, 0, 0.03);
+  --skeleton-shimmer: linear-gradient(
+    110deg,
+    var(--skeleton-base) 0%,
+    var(--skeleton-base) 35%,
+    var(--skeleton-shimmer-highlight) 50%,
+    var(--skeleton-base) 65%,
+    var(--skeleton-base) 100%
+  );
 }
 
 @theme inline {
@@ -52,4 +82,43 @@ body {
 
 [data-theme="light"] p {
   color: #4b5563;
+}
+
+/* ==========================================================================
+   GLOBAL SKELETON ANIMATIONS & UTILITIES
+   ========================================================================== */
+@keyframes sleekShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes sleekPulse {
+  0%, 100% {
+    opacity: 0.96;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes sleekGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.22);
+  }
+}
+
+.sleekSkeletonBase {
+  background: var(--skeleton-shimmer);
+  background-size: 200% 100%;
+  animation: sleekShimmer 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite, sleekPulse 3s ease-in-out infinite;
+  border: 1px solid var(--skeleton-border);
+  position: relative;
+  overflow: hidden;
 }
