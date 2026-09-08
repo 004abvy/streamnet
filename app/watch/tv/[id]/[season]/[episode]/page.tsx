@@ -64,45 +64,15 @@ export default function WatchTvPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <span>Back to TV Details</span>
+          <span>Back to Details</span>
         </Link>
 
-        <div className="flex items-center gap-2.5">
-          {(season > 1 || episode > 1) && (
-            <button
-              onClick={() => {
-                if (episode > 1) {
-                  handleEpisodeChange(season, episode - 1);
-                } else if (season > 1) {
-                  handleEpisodeChange(season - 1, 1);
-                }
-              }}
-              className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 text-neutral-300 hover:text-white transition-all shadow-md"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M15 18l-6-6 6-6"/>
-              </svg>
-              <span>Prev Ep</span>
-            </button>
-          )}
-
-          <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-              <polyline points="17 2 12 7 7 2"/>
-            </svg>
-            <span>Season {season} • Episode {episode}</span>
-          </div>
-
-          <button
-            onClick={() => handleEpisodeChange(season, episode + 1)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black shadow-[0_4px_14px_rgba(245,158,11,0.3)] transition-all hover:scale-[1.03]"
-          >
-            <span>Next Ep</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-          </button>
+        <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+            <polyline points="17 2 12 7 7 2"/>
+          </svg>
+          <span>Season {season} • Episode {episode}</span>
         </div>
       </div>
 
