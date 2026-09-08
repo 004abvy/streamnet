@@ -92,12 +92,16 @@ export default function Navbar() {
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const navLinksRef = useRef<HTMLDivElement>(null);
 
-  // Close user menu on click outside
+  // Close user menu and expanded navigation on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (navLinksRef.current && !navLinksRef.current.contains(event.target as Node)) {
+        setExpandedMenu(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -128,7 +132,7 @@ export default function Navbar() {
         )}
       </button>
 
-      <div className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>
+      <div ref={navLinksRef} className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>
         
         {/* Bottom Sheet Header */}
         <div className={styles.bottomSheetHeader}>

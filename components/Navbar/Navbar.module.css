@@ -18,9 +18,7 @@
   gap: clamp(0.6rem, 1vw, 1.3rem);
   align-items: center;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: visible;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -108,7 +106,8 @@
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.navLinkDropdown:hover .chevron {
+.navLinkDropdown:hover .chevron,
+.navLinkDropdown.expanded .chevron {
   opacity: 1;
   transform: rotate(180deg);
 }
@@ -153,6 +152,7 @@
 }
 
 .navLinkDropdown:hover .dropdownMenu,
+.navLinkDropdown.expanded .dropdownMenu,
 .dropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
@@ -167,6 +167,7 @@
 }
 
 .navLinkDropdown:hover .userDropdownMenu,
+.navLinkDropdown.expanded .userDropdownMenu,
 .userDropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
@@ -230,17 +231,28 @@
   z-index: 400;
 }
 
+.megaDropdownMenu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
+}
+
 [data-theme="light"] .megaDropdownMenu {
   background: #ffffff;
   border-color: #e5e7eb;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
 }
 
-.navLinkDropdown:hover .megaDropdownMenu {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateX(-50%);
+.navLinkDropdown:hover .megaDropdownMenu,
+.navLinkDropdown.expanded .megaDropdownMenu {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) !important;
 }
 
 .megaHeader {
