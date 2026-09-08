@@ -130,12 +130,16 @@ export default function Navbar() {
         <div className={styles.menuBackdrop} onClick={() => setMobileMenuOpen(false)} />
       )}
 
-      <button className={styles.mobileMenuBtn} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
-        {mobileMenuOpen ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        ) : (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-        )}
+      <button
+        className={`${styles.mobileMenuBtn} ${mobileMenuOpen ? styles.mobileMenuBtnHidden : ''}`}
+        onClick={() => setMobileMenuOpen(true)}
+        aria-label="Open menu"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
 
       <div ref={navLinksRef} className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>

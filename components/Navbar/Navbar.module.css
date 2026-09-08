@@ -39,6 +39,12 @@
   cursor: pointer;
   padding: 0.5rem;
   z-index: 300;
+  transition: opacity 0.2s ease;
+}
+
+.mobileMenuBtnHidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 [data-theme="light"] .mobileMenuBtn {
