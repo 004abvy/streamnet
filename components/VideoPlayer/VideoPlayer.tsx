@@ -130,7 +130,7 @@ export default function VideoPlayer({
               key={`${iframeConfig.src}-${activeServerId}`}
               className={styles.iframe}
               src={iframeConfig.src}
-              sandbox={iframeConfig.sandbox}
+              {...(iframeConfig.sandbox ? { sandbox: iframeConfig.sandbox } : {})}
               allow={iframeConfig.allow}
               allowFullScreen={true}
               referrerPolicy={iframeConfig.referrerPolicy}

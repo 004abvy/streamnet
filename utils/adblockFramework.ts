@@ -17,7 +17,7 @@ export type ShieldLevel = 'ultra' | 'maximum' | 'standard';
 export interface ServerAdPolicy {
   serverId: string;
   name: string;
-  sandboxTokens: string[];
+  sandboxTokens: string[] | null;
   referrerPolicy: 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'strict-origin-when-cross-origin';
   allowFeatures: string[];
   cleanUrl?: (url: string) => string;
@@ -26,17 +26,7 @@ export interface ServerAdPolicy {
 }
 
 /**
- * Standard stream-safe sandbox baseline:
- * - 'allow-scripts': Runs player JS.
- * - 'allow-same-origin': Required for HLS blobs, decryptors, and CDN requests.
- * - 'allow-forms': Required for Cloudflare Turnstile verification.
- * - 'allow-presentation': Fullscreen and AirPlay.
- * 
- * STRICTLY OMITTED (The Popups & Redirects):
- * - NO 'allow-popups': Browser drops all window.open() popup attempts.
- * - NO 'allow-popups-to-escape-sandbox': Cannot escape sandboxing.
- * - NO 'allow-top-navigation': Cannot hijack or redirect StreamNet away.
- * - NO 'allow-top-navigation-by-user-activation': Cannot redirect on tap/click.
+ * Standard stream-safe sandbox tokens (for servers that do not block sandboxing)
  */
 const MAXIMUM_SANDBOX_TOKENS = [
   'allow-scripts',
@@ -63,16 +53,17 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidlink: {
     serverId: 'vidlink',
     name: 'VidLink Ultra',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    // VidLink includes an active anti-sandbox check (document.domain check) and is naturally ad-free.
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Premium VIP player. Zero popups, multi-language audio and subtitles.',
+    notes: 'Premium VIP player. Zero popups natively; sandbox omitted to prevent anti-sandbox alert.',
   },
   cinesrc: {
     serverId: 'cinesrc',
     name: 'CineSrc 4K',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -83,77 +74,79 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
       }
       return url;
     },
-    notes: 'Premium embed. Sandboxed with auto-next and ad-skip parameters.',
+    notes: 'Premium embed with auto-skip and auto-next.',
   },
   nxsha: {
     serverId: 'nxsha',
     name: 'Nxsha Cinema',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Clean stream. Sandboxed against popups while preserving CDN streams.',
+    notes: 'Clean 4K stream.',
   },
   vidrock: {
     serverId: 'vidrock',
     name: 'VidRock 4K',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    // VidRock has sbx.js anti-sandbox redirect; omit sandbox to allow playback.
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Fast stream. Sandboxed against popups on click.',
+    notes: 'Fast stream with sbx bypass.',
   },
   'vidsrc-me': {
     serverId: 'vidsrc-me',
     name: 'VidSrc Global',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    // VidSrc has sbx.js anti-sandbox redirect; omit sandbox to allow playback.
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Strict sandbox drops all popunder attempts.',
+    notes: 'Global mirror without sandbox restriction.',
   },
   'vidsrc-in': {
     serverId: 'vidsrc-in',
     name: 'VidSrc India',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Sandbox neutralizes popups while allowing video stream buffers.',
+    notes: 'Regional CDN.',
   },
   vidcore: {
     serverId: 'vidcore',
     name: 'VidCore Direct',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Fast stream with hardened playback permissions.',
+    notes: 'Direct pipeline.',
   },
   vidfast: {
     serverId: 'vidfast',
     name: 'VidFast Backup',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Lightweight embed with click popups defused.',
+    notes: 'Quick loading alternative.',
   },
   'vidsrc-io': {
     serverId: 'vidsrc-io',
     name: 'VidSrc.io Backup',
-    sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+    sandboxTokens: null,
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Pause/seek popup traps neutralized.',
+    notes: 'Alternative global mirror.',
   },
 };
 
 export const DEFAULT_SERVER_POLICY: ServerAdPolicy = {
   serverId: 'default',
   name: 'Default Streaming Server',
-  sandboxTokens: [...MAXIMUM_SANDBOX_TOKENS],
+  sandboxTokens: null,
   referrerPolicy: 'no-referrer-when-downgrade',
   allowFeatures: [...STANDARD_ALLOW_FEATURES],
   protectionLevel: 'maximum',
@@ -173,14 +166,17 @@ export function resolveServerIframeAttributes(
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
   let sandboxTokens = policy.sandboxTokens;
-  if (ultraMode) {
+  if (ultraMode && sandboxTokens) {
     sandboxTokens = ULTRA_SANDBOX_TOKENS;
   }
 
-  // Guarantee sandbox is ALWAYS present to block popups
+  const sandbox = (sandboxTokens && sandboxTokens.length > 0)
+    ? sandboxTokens.join(' ')
+    : null;
+
   return {
     src: cleanUrl,
-    sandbox: shieldEnabled ? sandboxTokens.join(' ') : MAXIMUM_SANDBOX_TOKENS.join(' '),
+    sandbox,
     referrerPolicy: policy.referrerPolicy,
     allow: policy.allowFeatures.join('; '),
     protectionLevel: ultraMode ? ('ultra' as ShieldLevel) : policy.protectionLevel,
@@ -381,20 +377,19 @@ export function installAdblockProtection(
       // 7. Automatic iFrame Ad Blocker: Restrict or eliminate rogue iframes
       if (tag === 'iframe') {
         const iframe = node as HTMLIFrameElement;
-        if (!iframe.closest('[class*="VideoPlayer"]')) {
-          // Third-party ad iframe injected outside our player
-          iframe.style.setProperty('z-index', '-99999', 'important');
-          iframe.style.setProperty('pointer-events', 'none', 'important');
-          iframe.style.setProperty('display', 'none', 'important');
-          try {
-            iframe.remove();
-          } catch (e) {}
-          onBlockedAction?.('rogue_iframe_blocked', iframe.src || 'unknown');
+        if (iframe.closest('[class*="VideoPlayer"]')) {
+          // This is our legitimate cinema player! Never touch or add sandbox to it!
           return;
-        } else if (!iframe.hasAttribute('sandbox')) {
-          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
-          onBlockedAction?.('iframe_sandboxed', iframe.src || 'player');
         }
+        // Third-party ad iframe injected outside our player
+        iframe.style.setProperty('z-index', '-99999', 'important');
+        iframe.style.setProperty('pointer-events', 'none', 'important');
+        iframe.style.setProperty('display', 'none', 'important');
+        try {
+          iframe.remove();
+        } catch (e) {}
+        onBlockedAction?.('rogue_iframe_blocked', iframe.src || 'unknown');
+        return;
       }
 
       let isSuspiciousZ = false;
@@ -428,8 +423,6 @@ export function installAdblockProtection(
       allIframes.forEach((iframe) => {
         if (!iframe.closest('[class*="VideoPlayer"]')) {
           iframe.remove();
-        } else if (!iframe.hasAttribute('sandbox')) {
-          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
         }
       });
     } catch (e) {}
