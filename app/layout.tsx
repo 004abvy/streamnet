@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { AuthProvider } from "../context/AuthContext";
 import ScrollToTopOnRefresh from "../components/ScrollToTopOnRefresh";
 import "./globals.css";
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full w-full antialiased`}
     >
       <head>
-        <script
+        <Script
+          id="scroll-restoration"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
