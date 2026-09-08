@@ -28,6 +28,19 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
+  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
+    if (typeof window === 'undefined') return [];
+
+    try {
+      const stored = localStorage.getItem('user_bookmarks');
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : [];
+    } catch (error) {
+      console.error('Failed to load bookmarks', error);
+      return [];
+    }
+  });
+
   // Handle Loading State
   if (isLoading) {
     return (
@@ -51,18 +64,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     );
   }
 
-  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return [];
-
-    try {
-      const stored = localStorage.getItem('user_bookmarks');
-      const parsed = stored ? JSON.parse(stored) : [];
-      return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : [];
-    } catch (error) {
-      console.error('Failed to load bookmarks', error);
-      return [];
-    }
-  });
+  if (!items || items.length === 0) return null;
 
   const toggleBookmark = (e: React.MouseEvent, item: TrendingItem) => {
     e.preventDefault();

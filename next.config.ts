@@ -8,6 +8,7 @@ const withPWA = withPWAInit({
   skipWaiting: true,
 });
 const nextConfig: NextConfig = {
+  turbopack: {},
   images: {
     remotePatterns: [
       {
