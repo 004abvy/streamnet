@@ -166,8 +166,7 @@
    ========================================================================== */
 .skeletonHero {
   width: 100%;
-  height: clamp(60vh, 50vw, 95vh);
-  min-height: 500px;
+  height: 100vh;
   background: #111118;
   position: relative;
   overflow: hidden;
