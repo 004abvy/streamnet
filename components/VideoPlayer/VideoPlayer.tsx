@@ -32,6 +32,7 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
   const [selectedSub, setSelectedSub] = useState<SubtitleTrack | null>(null);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<'fit' | 'zoom' | 'stretch'>('fit');
   const playerWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,24 +125,20 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     }
   };
 
+  const cycleAspect = () => {
+    setAspectRatio((prev) => (prev === 'fit' ? 'zoom' : prev === 'zoom' ? 'stretch' : 'fit'));
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.headerBar}>
         <h2 className={styles.title}>Now Watching: {title}</h2>
       </div>
 
-      <div className={styles.playerWrapper} ref={playerWrapperRef}>
-        {/* Mid-top Server Button on Player Viewport */}
-        <button
-          className={styles.midTopServerBtn}
-          onClick={() => setShowServerModal(true)}
-        >
-          <span>Server: {activeServer.name}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </button>
-
+      <div 
+        className={styles.playerWrapper} 
+        ref={playerWrapperRef}
+      >
         {!isPlaying ? (
           <div 
             className={styles.posterOverlay} 
@@ -161,6 +158,11 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
               key={videoUrl}
               className={styles.iframe}
               src={videoUrl}
+              style={{
+                transform: aspectRatio === 'zoom' ? 'scale(1.2)' : aspectRatio === 'stretch' ? 'scaleX(1.3)' : 'scale(1)',
+                transformOrigin: 'center center',
+                transition: 'transform 0.3s ease',
+              }}
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"
               allowFullScreen={true}
               referrerPolicy="no-referrer-when-downgrade"
@@ -261,29 +263,15 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
       </div>
 
       <div className={styles.toolbar}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
             className={styles.toolbarBtn}
             onClick={() => setShowServerModal(true)}
+            title="Change Streaming Server"
           >
-            Change Server
-          </button>
-
-          <button
-            className={styles.toolbarBtn}
-            onClick={() => setShowSubModal(true)}
-          >
-            CC / Subtitles {selectedSub ? `(${selectedSub.display || selectedSub.language})` : ''}
+            Server: {activeServer.name} ▾
           </button>
         </div>
-
-        <button
-          className={styles.toolbarBtn}
-          onClick={handleToggleFullscreen}
-          title="Toggle Fullscreen"
-        >
-          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        </button>
       </div>
     </div>
   );

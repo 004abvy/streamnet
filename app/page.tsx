@@ -56,9 +56,6 @@ export default function Home() {
     return () => {
       window.removeEventListener('focus', loadContinueWatching);
       window.removeEventListener('popstate', loadContinueWatching);
-      if (typeof window !== 'undefined') {
-        window.history.scrollRestoration = 'auto';
-      }
     };
   }, []);
 
@@ -103,6 +100,14 @@ export default function Home() {
       controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+      if (document.body) document.body.scrollTop = 0;
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+    }
+  }, [loading]);
 
   return (
     <main className={styles.main}>

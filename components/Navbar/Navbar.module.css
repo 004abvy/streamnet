@@ -92,34 +92,36 @@
 }
 
 .chevron {
-  opacity: 0.7;
+  opacity: 0.6;
   margin-left: 0.2rem;
-  transition: transform 0.2s;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .navLinkDropdown:hover .chevron {
+  opacity: 1;
   transform: rotate(180deg);
 }
 
 .dropdownMenu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: #12121a;
-  border: 1px solid #28283a;
-  border-radius: 12px;
-  padding: 0.5rem;
+  transform: translateX(-50%);
+  background: rgba(18, 18, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  min-width: 160px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+  gap: 0.15rem;
+  min-width: 150px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease-in-out;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
   pointer-events: none;
-  z-index: 200;
+  z-index: 300;
+  backdrop-filter: blur(12px);
 }
 
 /* Invisible hover bridge to prevent cursor from losing hover when moving over the gap */
@@ -136,28 +138,28 @@
 [data-theme="light"] .dropdownMenu {
   background: #ffffff;
   border-color: #e5e7eb;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
 }
 
 .navLinkDropdown:hover .dropdownMenu,
 .dropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
-  transform: translateX(-50%) translateY(0) !important;
+  transform: translateX(-50%) !important;
   pointer-events: auto !important;
 }
 
 .userDropdownMenu {
   right: 0 !important;
   left: auto !important;
-  transform: translateY(4px) !important;
+  transform: none !important;
 }
 
 .navLinkDropdown:hover .userDropdownMenu,
 .userDropdownMenuOpen {
   opacity: 1 !important;
   visibility: visible !important;
-  transform: translateY(0) !important;
+  transform: none !important;
   pointer-events: auto !important;
 }
 
@@ -209,6 +211,16 @@
   align-items: center;
   gap: 1.2rem;
   position: relative;
+}
+
+.userSymbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0.9;
+  cursor: default;
+  padding: 0.25rem;
 }
 
 .iconButton {
@@ -441,20 +453,115 @@
   }
 }
 
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 20;
+}
+
 .loginBtn {
-  background: #e50914;
-  color: #fff;
-  border-radius: 6px;
-  padding: clamp(0.5rem, 0.55vw, 1.5rem) clamp(1rem, 1.1vw, 3rem);
-  font-size: clamp(0.85rem, 0.95vw, 2.5rem);
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-size: clamp(0.8rem, 0.85vw, 1.1rem);
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .loginBtn:hover {
-  background: #f40612;
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.signupBtn {
+  background: #f59e0b;
+  color: #000000;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-size: clamp(0.8rem, 0.85vw, 1.1rem);
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.signupBtn:hover {
+  background: #d97706;
+  border-color: #d97706;
+  transform: translateY(-1px);
+}
+
+.mobileAuthRow {
+  display: none;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.75rem;
+}
+
+.mobileLoginBtn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.mobileSignupBtn {
+  flex: 1;
+  background: #f59e0b;
+  color: #000000;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.mobileUserMenu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mobileUserName {
+  font-size: 0.88rem;
+  color: #d1d5db;
+}
+
+.mobileLogoutBtn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .showOnMobile {
@@ -467,6 +574,10 @@
 
 /* --- Mobile Responsive --- */
 @media (max-width: 1200px) {
+  .mobileAuthRow {
+    display: flex;
+  }
+
   .navbar {
     padding: 1rem;
   }
@@ -639,6 +750,35 @@
     display: flex;
   }
 
+  /* Ensure user dropdown menu on header remains floating & accessible on mobile */
+  .userDropdownMenu {
+    position: absolute !important;
+    top: calc(100% + 10px) !important;
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important;
+    width: 200px !important;
+    max-height: none !important;
+    background: #14141d !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+    border-radius: 12px !important;
+    padding: 0.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: 500 !important;
+  }
+
+  .userDropdownMenuOpen {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    display: flex !important;
+  }
+
   .hideOnMobile {
     display: none !important;
   }
@@ -647,7 +787,6 @@
     display: flex !important;
   }
 
-  
   .rightSection {
     gap: 0.75rem;
   }

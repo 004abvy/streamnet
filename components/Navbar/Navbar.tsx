@@ -217,6 +217,38 @@ export default function Navbar() {
             <Link href="/movies?filter=now_playing" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>In Theaters</Link>
           </div>
         </div>
+
+        {/* Mobile Auth Section */}
+        <div className={styles.mobileAuthRow}>
+          {!user ? (
+            <>
+              <Link href="/login" className={styles.mobileLoginBtn} onClick={() => setMobileMenuOpen(false)}>
+                Sign In
+              </Link>
+              <Link href="/signup" className={styles.mobileSignupBtn} onClick={() => setMobileMenuOpen(false)}>
+                Sign Up
+              </Link>
+            </>
+          ) : (
+            <div className={styles.mobileUserMenu}>
+              <span className={styles.mobileUserName}>Logged in as <strong>{user.name}</strong></span>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className={styles.mobileLogoutBtn}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: '4px' }}>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.rightSection} ref={searchContainerRef}>
@@ -315,46 +347,20 @@ export default function Navbar() {
         </Link>
 
         {user ? (
-          <div className={styles.navLinkDropdown} ref={userMenuRef}>
-            <button
-              className={styles.iconButton}
-              aria-label="Account"
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-            >
-              <svg className={styles.navActionIcon} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-            </button>
-            <div
-              className={`${styles.dropdownMenu} ${styles.userDropdownMenu} ${userMenuOpen ? styles.userDropdownMenuOpen : ''}`}
-            >
-              <div
-                className={styles.dropdownItem}
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'default', fontWeight: 600, color: '#fff' }}
-              >
-                {user.name}
-              </div>
-              <button
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  logout();
-                }}
-                className={styles.dropdownItem}
-                style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: '#ff2e3a', outline: 'none' }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Logout
-              </button>
-            </div>
+          <div className={styles.userSymbol} title={`Logged in as ${user.name}`}>
+            <svg className={styles.navActionIcon} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
           </div>
         ) : (
-          <Link href="/login" className={styles.loginBtn}>
-            Sign In
-          </Link>
+          <div className={styles.authButtons}>
+            <Link href="/login" className={styles.loginBtn}>
+              Sign In
+            </Link>
+            <Link href="/signup" className={styles.signupBtn}>
+              Sign Up
+            </Link>
+          </div>
         )}
       </div>
     </nav>
