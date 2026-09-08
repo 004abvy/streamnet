@@ -37,7 +37,7 @@ export default function Footer() {
       <div className={styles.container}>
         <div className={styles.topSection}>
           <div className={styles.brand}>
-            <Link href="/" className={styles.logo}>
+            <Link href="/" prefetch={false} className={styles.logo}>
               <span className={styles.logoDot} />
               <span className={styles.logoText}>StreamFlix</span>
             </Link>
@@ -56,30 +56,30 @@ export default function Footer() {
             <div className={styles.infoColumn}>
               <h3 className={styles.sectionTitle}>Explore</h3>
               <ul className={styles.linkList}>
-                <li><Link href="/movies" className={styles.link}>Movies</Link></li>
-                <li><Link href="/tv" className={styles.link}>TV Series</Link></li>
-                <li><Link href="/anime" className={styles.link}>Anime</Link></li>
-                <li><Link href="/live-tv" className={styles.link}>Live TV</Link></li>
+                <li><Link href="/movies" prefetch={false} className={styles.link}>Movies</Link></li>
+                <li><Link href="/tv" prefetch={false} className={styles.link}>TV Series</Link></li>
+                <li><Link href="/anime" prefetch={false} className={styles.link}>Anime</Link></li>
+                <li><Link href="/live-tv" prefetch={false} className={styles.link}>Live TV</Link></li>
               </ul>
             </div>
 
             <div className={styles.infoColumn}>
               <h3 className={styles.sectionTitle}>Your space</h3>
               <ul className={styles.linkList}>
-                <li><Link href="/saved" className={styles.link}>Watchlist</Link></li>
-                <li><Link href="/continue-watching" className={styles.link}>Continue Watching</Link></li>
-                <li><Link href="/search" className={styles.link}>Search</Link></li>
-                <li><Link href="/live-sports" className={styles.link}>Live Sports</Link></li>
+                <li><Link href="/saved" prefetch={false} className={styles.link}>Watchlist</Link></li>
+                <li><Link href="/continue-watching" prefetch={false} className={styles.link}>Continue Watching</Link></li>
+                <li><Link href="/search" prefetch={false} className={styles.link}>Search</Link></li>
+                <li><Link href="/live-sports" prefetch={false} className={styles.link}>Live Sports</Link></li>
               </ul>
             </div>
 
             <div className={styles.infoColumn}>
               <h3 className={styles.sectionTitle}>Account</h3>
               <ul className={styles.linkList}>
-                <li><Link href="/login" className={styles.link}>Sign in</Link></li>
-                <li><Link href="/signup" className={styles.link}>Create account</Link></li>
-                <li><Link href="/reset-password" className={styles.link}>Reset password</Link></li>
-                <li><Link href="/" className={styles.link}>Support</Link></li>
+                <li><Link href="/login" prefetch={false} className={styles.link}>Sign in</Link></li>
+                <li><Link href="/signup" prefetch={false} className={styles.link}>Create account</Link></li>
+                <li><Link href="/reset-password" prefetch={false} className={styles.link}>Reset password</Link></li>
+                <li><Link href="/" prefetch={false} className={styles.link}>Support</Link></li>
               </ul>
             </div>
           </div>
@@ -93,11 +93,11 @@ export default function Footer() {
           </p>
 
           <div className={styles.secondaryLinks}>
-            <Link href="/movies?genre=16" className={styles.secLink}>Animation</Link>
+            <Link href="/movies?genre=16" prefetch={false} className={styles.secLink}>Animation</Link>
             <span className={styles.rule} aria-hidden="true" />
-            <Link href="/movies?genre=28" className={styles.secLink}>Action</Link>
+            <Link href="/movies?genre=28" prefetch={false} className={styles.secLink}>Action</Link>
             <span className={styles.rule} aria-hidden="true" />
-            <Link href="/movies?genre=878" className={styles.secLink}>Sci-Fi</Link>
+            <Link href="/movies?genre=878" prefetch={false} className={styles.secLink}>Sci-Fi</Link>
             <span className={styles.rule} aria-hidden="true" />
             <span className={styles.secText}>4K Ultra HD</span>
           </div>

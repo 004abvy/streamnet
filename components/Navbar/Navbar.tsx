@@ -106,7 +106,7 @@ export default function Navbar() {
 
   return (
     <nav className={styles.navbar}>
-      <Link href="/" className={styles.logo}>
+      <Link href="/" prefetch={false} className={styles.logo}>
         <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 3h18v4H3V3z" />
           <path d="M4 7l2 14h12l2-14" />
@@ -136,7 +136,7 @@ export default function Navbar() {
           <h3 className={styles.menuTitle}>Menu</h3>
         </div>
 
-        <Link href="/" className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/" prefetch={false} className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
           Home
         </Link>
@@ -149,13 +149,13 @@ export default function Navbar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/movies" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular</Link>
-            <Link href="/movies?filter=top_rated" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
-            <Link href="/movies?filter=4k" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/movies" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular</Link>
+            <Link href="/movies?filter=top_rated" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
+            <Link href="/movies?filter=4k" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>
               <span className={styles.badge4k}>4K</span> 4K Ultra HD
             </Link>
-            <Link href="/movies?filter=upcoming" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Upcoming</Link>
-            <Link href="/movies?filter=now_playing" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Now Playing</Link>
+            <Link href="/movies?filter=upcoming" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Upcoming</Link>
+            <Link href="/movies?filter=now_playing" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Now Playing</Link>
           </div>
         </div>
 
@@ -167,34 +167,34 @@ export default function Navbar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/tv" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular Shows</Link>
-            <Link href="/tv?filter=top_rated" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
-            <Link href="/tv?filter=on_the_air" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>On The Air</Link>
-            <Link href="/tv?filter=airing_today" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Airing Today</Link>
+            <Link href="/tv" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Popular Shows</Link>
+            <Link href="/tv?filter=top_rated" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Top Rated</Link>
+            <Link href="/tv?filter=on_the_air" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>On The Air</Link>
+            <Link href="/tv?filter=airing_today" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Airing Today</Link>
           </div>
         </div>
 
-        <Link href="/anime" className={`${styles.navLink} ${pathname === '/anime' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/anime" prefetch={false} className={`${styles.navLink} ${pathname === '/anime' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 17.5L3 6l4-4 11.5 11.5L21 16l-1 4-4 1-2.5-3.5z" /></svg>
           Anime
         </Link>
 
-        <Link href="/movies?filter=4k" className={`${styles.navLink} ${pathname === '/movies' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/movies?filter=4k" prefetch={false} className={`${styles.navLink} ${pathname === '/movies' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <span className={styles.badge4k}>4K</span>
           Movies
         </Link>
 
-        <Link href="/live-tv" className={`${styles.navLink} ${pathname === '/live-tv' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/live-tv" prefetch={false} className={`${styles.navLink} ${pathname === '/live-tv' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h4l2-9 4 18 2-9h4" /></svg>
           Live TV
         </Link>
 
-        <Link href="/android-app" className={`${styles.navLink} ${pathname === '/android-app' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/android-app" prefetch={false} className={`${styles.navLink} ${pathname === '/android-app' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 18h12v-6a6 6 0 0 0-12 0v6z" /><path d="M6 12h-2v6h2" /><path d="M18 12h2v6h-2" /><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><path d="M8 5l-2-2" /><path d="M16 5l2-2" /></svg>
           Android App
         </Link>
 
-        <Link href="/saved" className={`${styles.navLink} ${styles.showOnMobile}`} onClick={() => setMobileMenuOpen(false)}>
+        <Link href="/saved" prefetch={false} className={`${styles.navLink} ${styles.showOnMobile}`} onClick={() => setMobileMenuOpen(false)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
           Saved
         </Link>
@@ -212,9 +212,9 @@ export default function Navbar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.chevron}><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <div className={styles.dropdownMenu}>
-            <Link href="/anime" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Anime</Link>
-            <Link href="/live-tv" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Live TV</Link>
-            <Link href="/movies?filter=now_playing" className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>In Theaters</Link>
+            <Link href="/anime" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Anime</Link>
+            <Link href="/live-tv" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>Live TV</Link>
+            <Link href="/movies?filter=now_playing" prefetch={false} className={styles.dropdownItem} onClick={() => setMobileMenuOpen(false)}>In Theaters</Link>
           </div>
         </div>
 
@@ -222,10 +222,10 @@ export default function Navbar() {
         <div className={styles.mobileAuthRow}>
           {!user ? (
             <>
-              <Link href="/login" className={styles.mobileLoginBtn} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/login" prefetch={false} className={styles.mobileLoginBtn} onClick={() => setMobileMenuOpen(false)}>
                 Sign In
               </Link>
-              <Link href="/signup" className={styles.mobileSignupBtn} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/signup" prefetch={false} className={styles.mobileSignupBtn} onClick={() => setMobileMenuOpen(false)}>
                 Sign Up
               </Link>
             </>
@@ -340,7 +340,7 @@ export default function Navbar() {
           </button>
         )}
 
-        <Link href="/saved" className={`${styles.iconButton} ${styles.hideOnMobile}`} aria-label="Saved" title="Saved">
+        <Link href="/saved" prefetch={false} className={`${styles.iconButton} ${styles.hideOnMobile}`} aria-label="Saved" title="Saved">
           <svg className={styles.navActionIcon} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>
@@ -370,10 +370,10 @@ export default function Navbar() {
           </div>
         ) : (
           <div className={styles.authButtons}>
-            <Link href="/login" className={styles.loginBtn}>
+            <Link href="/login" prefetch={false} className={styles.loginBtn}>
               Sign In
             </Link>
-            <Link href="/signup" className={styles.signupBtn}>
+            <Link href="/signup" prefetch={false} className={styles.signupBtn}>
               Sign Up
             </Link>
           </div>
