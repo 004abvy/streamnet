@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar/Navbar';
+import PosterGrid from '../../components/PosterGrid/PosterGrid';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
 import styles from './saved.module.css';
@@ -66,15 +67,6 @@ export default function SavedPage() {
     window.addEventListener('storage', loadSavedItems);
     return () => window.removeEventListener('storage', loadSavedItems);
   }, []);
-
-  const removeItem = (id: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const next = items.filter((item) => item.id !== id);
-    setItems(next);
-    localStorage.setItem('saved_items', JSON.stringify(next));
-    localStorage.setItem('user_bookmarks', JSON.stringify(next.map((item) => item.id)));
-  };
 
   const clearAll = () => {
     if (confirm('Are you sure you want to clear your saved collection?')) {
@@ -147,32 +139,22 @@ export default function SavedPage() {
         {/* Header Section */}
         <div className={styles.header}>
           <div className={styles.headerTitleGroup}>
-            <div className={styles.badge}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-              YOUR COLLECTION
-            </div>
-            <h1 className={styles.pageTitle}>Saved Content</h1>
+            <h1 className={styles.pageTitle}>Saved</h1>
             <p className={styles.subtitle}>
-              Manage your personal watchlist of movies and TV series.
+              {items.length === 0
+                ? "Titles you bookmark will show up here."
+                : `${items.length} ${items.length === 1 ? 'title' : 'titles'} you've bookmarked to watch later.`}
             </p>
           </div>
 
-          <div className={styles.headerActions}>
-            <div className={styles.statChip}>
-              <span className={styles.statNum}>{items.length}</span>
-              <span className={styles.statLabel}>Total Saved</span>
-            </div>
-            {items.length > 0 && (
-              <button onClick={clearAll} className={styles.clearBtn} title="Clear collection">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                Clear All
-              </button>
-            )}
-          </div>
+          {items.length > 0 && (
+            <button onClick={clearAll} className={styles.clearBtn} title="Clear collection">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Clear All
+            </button>
+          )}
         </div>
 
         {items.length === 0 ? (
@@ -286,77 +268,7 @@ export default function SavedPage() {
                 </button>
               </div>
             ) : (
-              <div className={styles.grid}>
-                {filteredItems.map((item) => {
-                  const title = item.title || item.name || 'Untitled';
-                  const isTV = item.media_type === 'tv' || Boolean(item.name && !item.title);
-                  const href = isTV ? `/tv/${item.id}` : `/movie/${item.id}`;
-                  const watchHref = isTV ? `/watch/tv/${item.id}/1/1` : `/watch/${item.id}`;
-                  const date = item.release_date || item.first_air_date;
-                  const year = date ? date.split('-')[0] : '';
-                  const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
-
-                  return (
-                    <article className={styles.card} key={item.id}>
-                      <div className={styles.posterWrapper}>
-                        <Link href={href} className={styles.cardLink}>
-                          <img
-                            src={
-                              item.poster_path
-                                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                                : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop'
-                            }
-                            alt={title}
-                            className={styles.poster}
-                            loading="lazy"
-                          />
-                          <div className={styles.posterOverlay} />
-
-                          {/* Rating Badge */}
-                          {rating && (
-                            <div className={styles.ratingBadge}>
-                              ★ {rating}
-                            </div>
-                          )}
-
-                          {/* Type Badge */}
-                          <div className={styles.typeBadge}>
-                            {isTV ? 'SERIES' : 'MOVIE'}
-                          </div>
-                        </Link>
-
-                        <div className={styles.playOverlay}>
-                          <Link href={watchHref} className={styles.playIconCircle} aria-label={`Play ${title}`}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                              <polygon points="6 3 20 12 6 21 6 3" />
-                            </svg>
-                          </Link>
-                        </div>
-
-                        <button
-                          type="button"
-                          className={styles.removeBtn}
-                          onClick={(e) => removeItem(item.id, e)}
-                          title="Remove from saved"
-                          aria-label={`Remove ${title}`}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      <Link href={href} className={styles.cardInfo}>
-                        <h3 className={styles.itemTitle}>{title}</h3>
-                        <div className={styles.itemMeta}>
-                          {year && <span>{year}</span>}
-                          {isTV ? <span>• TV Series</span> : <span>• Movie</span>}
-                        </div>
-                      </Link>
-                    </article>
-                  );
-                })}
-              </div>
+              <PosterGrid title="" movies={filteredItems} />
             )}
           </section>
         )}

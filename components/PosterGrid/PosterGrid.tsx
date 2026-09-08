@@ -6,8 +6,8 @@ interface Movie {
   id: number;
   title?: string;
   name?: string;
-  poster_path: string;
-  vote_average: number;
+  poster_path?: string;
+  vote_average?: number;
   release_date?: string;
   first_air_date?: string;
   media_type?: string;
@@ -100,7 +100,7 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
               </button>
 
               <div className={styles.info}>
-                {movie.vote_average > 0 && (
+                {(movie.vote_average ?? 0) > 0 && (
                   <div className={styles.rating}>{rating}</div>
                 )}
                 <h3 className={styles.movieTitle}>{displayTitle}</h3>
