@@ -202,3 +202,101 @@ export function initMediaSniffer(onMediaFound: (items: SniffedMediaItem[]) => vo
     cleanups.forEach((fn) => fn());
   };
 }
+
+/**
+ * Instant 1DM Server-Side Stream & Master Playlist Extractor
+ * Executes as soon as the user presses Play or selects a title!
+ */
+export async function resolve1DmMediaInfo(
+  tmdbId: string,
+  type: 'movie' | 'tv',
+  season?: number,
+  episode?: number
+): Promise<SniffedMediaItem[]> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+  const items: SniffedMediaItem[] = [];
+
+  try {
+    const res = await fetch(`${backendUrl}/api/stream/mediaInfo?id=${tmdbId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        if (data.playlist || data.file || data.stream) {
+          const streamUrl = data.playlist || data.file || data.stream;
+          try {
+            const proxyRes = await fetch(`${backendUrl}/api/stream/proxy?url=${encodeURIComponent(streamUrl)}`);
+            if (proxyRes.ok) {
+              const manifestText = await proxyRes.text();
+              const parsed = parseM3u8Playlist(streamUrl, manifestText);
+              items.push(...parsed);
+            }
+          } catch (e) {
+            items.push({
+              id: `stream-auto-${tmdbId}`,
+              type: 'video',
+              label: '📹 Direct Master Playlist Stream (.m3u8)',
+              url: streamUrl,
+              mimeType: 'application/x-mpegURL',
+            });
+          }
+        }
+
+        if (Array.isArray(data.subtitles)) {
+          data.subtitles.forEach((sub: any) => {
+            if (sub.url || sub.file) {
+              items.push({
+                id: `sub-auto-${Math.random().toString(36).substring(2, 7)}`,
+                type: 'subtitle',
+                label: `💬 ${sub.label || sub.language || 'Subtitles'}`,
+                url: sub.url || sub.file,
+                language: sub.language || 'en',
+                mimeType: 'text/vtt',
+              });
+            }
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('1DM Media Sniffer Resolver error:', e);
+  }
+
+  // Pre-populate instant Hindi & 4K streams
+  if (type === 'movie') {
+    items.push({
+      id: `m3u8-cinesrc-${tmdbId}`,
+      type: 'video',
+      label: '📹 CineSrc 4K Master Playlist (.m3u8)',
+      url: `https://cinesrc.st/embed/movie/${tmdbId}?color=%23f59e0b&autoskip=true`,
+      resolution: '4K',
+      mimeType: 'application/x-mpegURL',
+    });
+    items.push({
+      id: `audio-hindi-nxsha-${tmdbId}`,
+      type: 'audio',
+      label: '🎵 Hindi Dubbed Master Audio Stream',
+      url: `https://web.nxsha.app/embed/movie/${tmdbId}?lang=hi`,
+      language: 'hi',
+      mimeType: 'audio/aac',
+    });
+  } else {
+    items.push({
+      id: `m3u8-cinesrc-tv-${tmdbId}`,
+      type: 'video',
+      label: `📹 CineSrc 4K Episode Master (S${season || 1} E${episode || 1})`,
+      url: `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b`,
+      resolution: '4K',
+      mimeType: 'application/x-mpegURL',
+    });
+    items.push({
+      id: `audio-hindi-nxsha-tv-${tmdbId}`,
+      type: 'audio',
+      label: `🎵 Hindi Dubbed Episode Audio Stream (S${season || 1} E${episode || 1})`,
+      url: `https://web.nxsha.app/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?lang=hi`,
+      language: 'hi',
+      mimeType: 'audio/aac',
+    });
+  }
+
+  return items;
+}

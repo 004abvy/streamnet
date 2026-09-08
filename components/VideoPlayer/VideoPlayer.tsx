@@ -18,7 +18,7 @@ import {
 import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
 import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
-import { initMediaSniffer, SniffedMediaItem } from '../../utils/mediaSniffer';
+import { initMediaSniffer, resolve1DmMediaInfo, SniffedMediaItem } from '../../utils/mediaSniffer';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -204,6 +204,17 @@ export default function VideoPlayer({
   const handleStartPlayback = () => {
     setIsPlaying(true);
     playbackManagerRef.current?.startPlayback();
+
+    // Instant 1DM Stream & Track Extraction on Play
+    resolve1DmMediaInfo(tmdbId, type, season, episode).then((items) => {
+      if (items && items.length > 0) {
+        setSniffedMedia((prev) => {
+          const existingUrls = new Set(prev.map((i) => i.url));
+          const filtered = items.filter((i) => !existingUrls.has(i.url));
+          return [...prev, ...filtered];
+        });
+      }
+    });
   };
 
   const handleServerChange = (provider: ProviderAdapter) => {
