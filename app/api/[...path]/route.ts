@@ -417,6 +417,120 @@ export async function GET(
       });
     }
 
+    // 17. /api/stream/sniff (Multi-Source Stream Sniffer & Master Playlist Resolver)
+    if (pathStr === 'stream/sniff') {
+      const id = searchParams.get('id');
+      const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
+      const season = searchParams.get('season') || '1';
+      const episode = searchParams.get('episode') || '1';
+
+      if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const baseUrl = `${protocol}://${host}`;
+
+      const mediaItems: Array<{
+        id: string;
+        type: 'video' | 'audio' | 'subtitle';
+        label: string;
+        url: string;
+        language?: string;
+        resolution?: string;
+        mimeType?: string;
+      }> = [];
+
+      try {
+        const infoRes = await fetch(`${baseUrl}/api/stream/mediaInfo?id=${id}`);
+        if (infoRes.ok) {
+          const info = await infoRes.json();
+          if (info && (info.playlist || info.file || info.stream)) {
+            const masterUrl = info.playlist || info.file || info.stream;
+            const proxiedMaster = `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(masterUrl)}`;
+
+            mediaItems.push({
+              id: `video-master-${id}`,
+              type: 'video',
+              label: '📹 Master Stream Playlist (.m3u8)',
+              url: proxiedMaster,
+              resolution: '1080p',
+              mimeType: 'application/x-mpegURL',
+            });
+
+            try {
+              const manifestRes = await fetch(proxiedMaster);
+              if (manifestRes.ok) {
+                const manifestText = await manifestRes.text();
+                const lines = manifestText.split('\n');
+
+                lines.forEach((line, idx) => {
+                  const trimmed = line.trim();
+
+                  if (trimmed.startsWith('#EXT-X-MEDIA:') && trimmed.includes('TYPE=AUDIO')) {
+                    const nameMatch = trimmed.match(/NAME="([^"]+)"/i);
+                    const langMatch = trimmed.match(/LANGUAGE="([^"]+)"/i);
+                    const uriMatch = trimmed.match(/URI="([^"]+)"/i);
+
+                    if (uriMatch && uriMatch[1]) {
+                      const fullAudioUrl = new URL(uriMatch[1], masterUrl).href;
+                      const lang = langMatch ? langMatch[1] : 'hi';
+                      const label = nameMatch ? nameMatch[1] : `Audio (${lang.toUpperCase()})`;
+                      mediaItems.push({
+                        id: `audio-${lang}-${idx}`,
+                        type: 'audio',
+                        label: `🎵 ${label}`,
+                        url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(fullAudioUrl)}`,
+                        language: lang,
+                        mimeType: 'audio/aac',
+                      });
+                    }
+                  }
+
+                  if (trimmed.startsWith('#EXT-X-STREAM-INF:')) {
+                    const resMatch = trimmed.match(/RESOLUTION=(\d+x\d+)/i);
+                    const resLabel = resMatch ? `${resMatch[1].split('x')[1]}p` : 'HD';
+                    const nextLine = lines[idx + 1]?.trim();
+
+                    if (nextLine && !nextLine.startsWith('#')) {
+                      const variantUrl = nextLine.startsWith('http') ? nextLine : new URL(nextLine, masterUrl).href;
+                      mediaItems.push({
+                        id: `video-${resLabel}-${idx}`,
+                        type: 'video',
+                        label: `📹 Stream Variant (${resLabel})`,
+                        url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(variantUrl)}`,
+                        resolution: resLabel,
+                        mimeType: 'application/x-mpegURL',
+                      });
+                    }
+                  }
+                });
+              }
+            } catch (e) {}
+          }
+
+          if (Array.isArray(info?.subtitles)) {
+            info.subtitles.forEach((sub: any, idx: number) => {
+              if (sub.url || sub.file) {
+                const subUrl = sub.url || sub.file;
+                mediaItems.push({
+                  id: `sub-${idx}`,
+                  type: 'subtitle',
+                  label: `💬 Subtitles (${sub.label || sub.language || 'en'})`,
+                  url: subUrl.startsWith('http') ? `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(subUrl)}` : subUrl,
+                  language: sub.language || 'en',
+                  mimeType: 'text/vtt',
+                });
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Sniffer Endpoint error:', e);
+      }
+
+      return NextResponse.json({ success: true, tmdbId: id, mediaItems });
+    }
+
     return NextResponse.json({ error: 'Endpoint not found' }, { status: 404 });
   } catch (error: any) {
     console.error('API Error:', error.message);

@@ -216,62 +216,30 @@ export async function resolve1DmMediaInfo(
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
   const items: SniffedMediaItem[] = [];
 
+  // Query /api/stream/sniff multi-source resolver
   try {
-    const res = await fetch(`${backendUrl}/api/stream/mediaInfo?id=${tmdbId}`);
+    const res = await fetch(`${backendUrl}/api/stream/sniff?id=${tmdbId}&type=${type}&season=${season || 1}&episode=${episode || 1}`);
     if (res.ok) {
       const data = await res.json();
-      if (data) {
-        if (data.playlist || data.file || data.stream) {
-          const streamUrl = data.playlist || data.file || data.stream;
-          try {
-            const proxyRes = await fetch(`${backendUrl}/api/stream/proxy?url=${encodeURIComponent(streamUrl)}`);
-            if (proxyRes.ok) {
-              const manifestText = await proxyRes.text();
-              const parsed = parseM3u8Playlist(streamUrl, manifestText);
-              items.push(...parsed);
-            }
-          } catch (e) {
-            items.push({
-              id: `stream-auto-${tmdbId}`,
-              type: 'video',
-              label: '📹 Direct Master Playlist Stream (.m3u8)',
-              url: streamUrl,
-              mimeType: 'application/x-mpegURL',
-            });
-          }
-        }
-
-        if (Array.isArray(data.subtitles)) {
-          data.subtitles.forEach((sub: any) => {
-            if (sub.url || sub.file) {
-              items.push({
-                id: `sub-auto-${Math.random().toString(36).substring(2, 7)}`,
-                type: 'subtitle',
-                label: `💬 ${sub.label || sub.language || 'Subtitles'}`,
-                url: sub.url || sub.file,
-                language: sub.language || 'en',
-                mimeType: 'text/vtt',
-              });
-            }
-          });
-        }
+      if (data && Array.isArray(data.mediaItems)) {
+        items.push(...data.mediaItems);
       }
     }
   } catch (e) {
     console.warn('1DM Media Sniffer Resolver error:', e);
   }
 
-  // Extract Nxsha Multi-Audio Languages for any movie or TV show
+  // Query Nxsha Language Extractor
   try {
     const nxshaRes = await fetch(`${backendUrl}/api/stream/nxsha-languages?id=${tmdbId}&type=${type}&season=${season || 1}&episode=${episode || 1}`);
     if (nxshaRes.ok) {
       const nxshaData = await nxshaRes.json();
-      if (nxshaData && Array.isArray(nxshaData.languages)) {
-        nxshaData.languages.forEach((lang: any) => {
+      if (nxshaData && Array.isArray(nxshaData.extractedAudioTracks)) {
+        nxshaData.extractedAudioTracks.forEach((lang: any) => {
           items.push({
             id: `nxsha-lang-${lang.code}-${tmdbId}`,
             type: 'audio',
-            label: `🎵 Nxsha Extracted Track: ${lang.name} ${lang.flag}`,
+            label: `🎵 Nxsha Audio Track: ${lang.name} ${lang.flag}`,
             url: lang.url,
             language: lang.code,
             mimeType: 'audio/aac',
