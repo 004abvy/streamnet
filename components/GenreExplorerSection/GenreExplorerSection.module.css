@@ -1,8 +1,9 @@
 .section {
-  max-width: 1550px;
-  margin: 3rem auto 2rem auto;
-  padding: 0 1.5rem;
+  width: 100%;
+  margin: clamp(2rem, 4vw, 5rem) auto;
+  padding: 0 clamp(1rem, 5vw, 6rem);
   color: #ffffff;
+  box-sizing: border-box;
 }
 
 /* Header Row */
@@ -20,7 +21,7 @@
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 1.5vw, 4rem);
   font-weight: 800;
   color: #ffffff;
   margin: 0;
@@ -28,7 +29,7 @@
 }
 
 .subtitle {
-  font-size: 0.95rem;
+  font-size: clamp(0.9rem, 1vw, 2.5rem);
   color: #9ca3af;
   margin: 0;
 }
@@ -47,8 +48,8 @@
   background: transparent;
   border: none;
   color: #9ca3af;
-  padding: 0.45rem 1.1rem;
-  font-size: 0.85rem;
+  padding: clamp(0.4rem, 0.5vw, 1rem) clamp(1rem, 1.1vw, 3rem);
+  font-size: clamp(0.85rem, 0.9vw, 2rem);
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;

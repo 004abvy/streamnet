@@ -21,8 +21,8 @@
   background: none;
   border: none;
   color: #888;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  padding: clamp(0.5rem, 0.55vw, 2.5rem) clamp(1rem, 1.1vw, 4rem);
+  font-size: clamp(0.9rem, 1vw, 2.8rem);
   font-weight: 600;
   cursor: pointer;
   border-radius: 4px;
@@ -60,14 +60,14 @@
   width: 30%;
   padding: 1.5rem 0;
   color: #888;
-  font-size: 0.9rem;
+  font-size: clamp(0.9rem, 1vw, 2.8rem);
   font-weight: 500;
 }
 
 .infoValue {
   padding: 1.5rem 0;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: clamp(0.9rem, 1vw, 2.8rem);
   font-weight: 500;
 }
 

@@ -40,7 +40,7 @@
 }
 
 .logo {
-  font-size: 1.2rem;
+  font-size: clamp(1.2rem, 1.3vw, 4rem);
   font-weight: bold;
   color: #fff;
   text-decoration: none;
@@ -61,7 +61,7 @@
 .navLink {
   color: #ccc;
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 0.95vw, 2.5rem);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -164,7 +164,7 @@
 .dropdownItem {
   color: #ccc;
   text-decoration: none;
-  font-size: 0.82rem;
+  font-size: clamp(0.82rem, 0.9vw, 2.2rem);
   font-weight: 500;
   padding: 0.5rem 0.8rem;
   border-radius: 8px;
@@ -192,7 +192,7 @@
 .badge4k {
   background: #fff;
   color: #000;
-  font-size: 0.65rem;
+  font-size: clamp(0.65rem, 0.8vw, 1.2rem);
   font-weight: 800;
   padding: 1px 4px;
   border-radius: 4px;
@@ -270,7 +270,7 @@
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 0.95vw, 2.5rem);
   outline: none;
   width: 180px;
 }
@@ -366,7 +366,7 @@
 }
 
 .suggestionTitle {
-  font-size: 0.88rem;
+  font-size: clamp(0.88rem, 1vw, 2.5rem);
   font-weight: 600;
   color: #fff;
   white-space: nowrap;
@@ -382,7 +382,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: clamp(0.75rem, 1vw, 1.3rem);
   color: #aaa;
 }
 
@@ -445,8 +445,8 @@
   background: #e50914;
   color: #fff;
   border-radius: 6px;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
+  padding: clamp(0.5rem, 0.55vw, 1.5rem) clamp(1rem, 1.1vw, 3rem);
+  font-size: clamp(0.85rem, 0.95vw, 2.5rem);
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -466,7 +466,7 @@
 }
 
 /* --- Mobile Responsive --- */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .navbar {
     padding: 1rem;
   }
@@ -483,7 +483,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
+    width: 100%;
     height: 100vh;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
@@ -501,7 +501,7 @@
     bottom: 0;
     left: 0;
     top: auto;
-    width: 100vw;
+    width: 100%;
     height: auto;
     max-height: 90vh;
     border-top-left-radius: 20px;

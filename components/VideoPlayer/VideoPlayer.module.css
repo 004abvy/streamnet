@@ -18,7 +18,7 @@
 }
 
 .title {
-  font-size: 1.05rem;
+  font-size: clamp(1.05rem, 1.1vw, 2.5rem);
   font-weight: 700;
   color: #fff;
   margin: 0;
@@ -62,7 +62,7 @@
   color: #ffffff;
   padding: 0.35rem 0.9rem;
   border-radius: 16px;
-  font-size: 0.8rem;
+  font-size: clamp(0.8rem, 0.85vw, 2.2rem);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -148,7 +148,7 @@
   background: #1a1a24;
   border: 1px solid #2a2a3a;
   color: #e5e7eb;
-  font-size: 0.8rem;
+  font-size: clamp(0.8rem, 0.85vw, 2.2rem);
   font-weight: 600;
   padding: 0.35rem 0.8rem;
   border-radius: 6px;
@@ -201,7 +201,7 @@
 }
 
 .modalHeaderTitle {
-  font-size: 0.9rem;
+  font-size: clamp(0.9rem, 1vw, 2.5rem);
   font-weight: 700;
   color: #f59e0b;
 }
@@ -211,7 +211,7 @@
   border: none;
   color: #9ca3af;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: clamp(0.9rem, 1vw, 2.5rem);
   padding: 2px 6px;
   border-radius: 4px;
 }

@@ -11,8 +11,6 @@ export default function ProvidersSection() {
   const [activeProvider, setActiveProvider] = useState<any>(null);
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
   const [content, setContent] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
   useEffect(() => {
     const controller = new AbortController();
 
@@ -48,7 +46,6 @@ export default function ProvidersSection() {
     if (!activeProvider) return;
     
     const fetchContent = async () => {
-      setLoading(true);
       try {
         const res = await fetch(`/api/discover/provider/${activeProvider.provider_id}?type=${mediaType}`);
         if (!res.ok) throw new Error(`Provider content request failed with status ${res.status}`);
@@ -62,8 +59,6 @@ export default function ProvidersSection() {
         }
       } catch (err) {
         console.error('Failed to fetch provider content', err);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -77,7 +72,6 @@ export default function ProvidersSection() {
     .replace(' Plus', '+');
 
   const carouselTitle = `${shortName} ${mediaType === 'tv' ? 'TV Shows' : 'Movies'}`;
-  const browseText = `Browse top ${mediaType === 'tv' ? 'TV shows' : 'movies'} from ${shortName}`;
 
   return (
     <section className={styles.container}>
@@ -120,24 +114,16 @@ export default function ProvidersSection() {
             </button>
           ))}
         </div>
-        
-        <p className={styles.browseText}>
-          Browse top {mediaType === 'tv' ? 'TV shows' : 'movies'} from <strong>{shortName}</strong>
-        </p>
       </div>
 
       <div className={styles.contentSection}>
-        {loading ? (
-          <div className={styles.loading}>Loading...</div>
-        ) : content.length > 0 ? (
+        {content.length > 0 ? (
           <PosterCarousel 
             title={carouselTitle} 
             movies={content} 
             viewAllLink={`/provider/${activeProvider.provider_id}?type=${mediaType}&name=${encodeURIComponent(shortName)}`}
           />
-        ) : (
-          <div className={styles.loading}>No content found.</div>
-        )}
+        ) : null}
       </div>
     </section>
   );

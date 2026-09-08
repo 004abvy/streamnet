@@ -46,9 +46,10 @@
 }
 
 .container {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.25rem 1.5rem;
+  padding: clamp(2rem, 3vw, 4rem) clamp(1rem, 5vw, 6rem);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
