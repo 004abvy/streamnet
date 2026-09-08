@@ -218,7 +218,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithPopup(auth, provider);
       return { success: true };
     } catch (err: any) {
-      return { success: false, message: err.message || 'Google sign in failed' };
+      const code = err.code || '';
+      let message = err.message || 'Google sign-in failed.';
+      if (code === 'auth/unauthorized-domain') {
+        message = 'This domain is not authorized in Firebase Console. Please add your Vercel domain under Firebase Console -> Authentication -> Settings -> Authorized Domains.';
+      } else if (code === 'auth/operation-not-allowed') {
+        message = 'Google Sign-In is disabled in Firebase Console. Please enable "Google" under Firebase Console -> Authentication -> Sign-in method.';
+      }
+      return { success: false, message };
     }
   };
 
