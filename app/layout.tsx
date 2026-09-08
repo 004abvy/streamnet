@@ -22,9 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full w-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--background)] overflow-x-hidden">
+      <body className="min-h-full w-full flex flex-col bg-[var(--background)] overflow-x-hidden">
         <AuthProvider>
           {children}
         </AuthProvider>
