@@ -379,6 +379,12 @@
   .card, .cardSkeleton { flex: 0 0 calc((100% - 1.1rem) / 2); }
 }
 
+@media (max-width: 768px) {
+  .controlsRight {
+    display: none !important;
+  }
+}
+
 @media (max-width: 600px) {
   .section {
     padding: 1.5rem 1rem;
