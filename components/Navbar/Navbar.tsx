@@ -143,25 +143,17 @@ export default function Navbar() {
       </button>
 
       <div ref={navLinksRef} className={`${styles.navLinks} ${mobileMenuOpen ? styles.navLinksOpen : ''}`}>
-        
-        {/* Bottom Sheet Header with close button */}
-        <div className={styles.bottomSheetHeader}>
-          <div className={styles.dragHandle}></div>
-          <div className={styles.bottomSheetHeaderRow}>
-            <h3 className={styles.menuTitle}>Menu</h3>
-            <button
-              type="button"
-              className={styles.closeSheetBtn}
-              onClick={() => setMobileMenuOpen(false)}
-              aria-label="Close menu"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          className={styles.closeSheetBtn}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-label="Close menu"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
 
         <div className={styles.navLinksScroll}>
           <Link href="/" prefetch={false} className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`} onClick={() => setMobileMenuOpen(false)}>
