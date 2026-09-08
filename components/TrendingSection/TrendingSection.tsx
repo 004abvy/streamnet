@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
 import styles from './TrendingSection.module.css';
 
 interface TrendingItem {
@@ -27,8 +25,6 @@ interface TrendingSectionProps {
 }
 
 export default function TrendingSection({ title, items, viewAllLink, isLoading }: TrendingSectionProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [direction, setDirection] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
@@ -44,7 +40,6 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     }
   });
 
-  // Handle Loading State
   if (isLoading) {
     return (
       <section className={styles.section}>
@@ -110,24 +105,9 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     }
   };
 
-  if (!items || items.length === 0) return null;
-
-  const totalPages = Math.max(1, Math.ceil(items.length / ITEMS_PER_PAGE));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentBatch = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
+  const currentBatch = items.slice(0, ITEMS_PER_PAGE);
   const featuredPosters = currentBatch.slice(0, 5);
   const heroGridItems = currentBatch.slice(5, 9);
-
-  const handlePrevPage = () => {
-    setDirection(-1);
-    setCurrentPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setDirection(1);
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
 
   const renderNormalPoster = (item: TrendingItem) => {
     const displayTitle = item.title || item.name || 'Untitled';
@@ -237,59 +217,17 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
             </>
           )}
         </div>
-
-        <div className={styles.controls}>
-          <div className={styles.pageIndicator}>
-            <span>{currentPage}</span> / {totalPages}
-          </div>
-          <div className={styles.buttonGroup}>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-              aria-label="Previous Page"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className={styles.controlBtn}
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              aria-label="Next Page"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
-          </div>
-        </div>
       </div>
 
       <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={currentPage}
-            custom={direction}
-            initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            style={{ width: '100%' }}
-          >
-            <div className={styles.postersRow}>
-              {featuredPosters.map((item) => renderNormalPoster(item))}
-            </div>
-            {heroGridItems.length > 0 && (
-              <div className={styles.heroGrid}>
-                {heroGridItems.map((item) => renderMiniHeroCard(item))}
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+        <div className={styles.postersRow}>
+          {featuredPosters.map((item) => renderNormalPoster(item))}
+        </div>
+        {heroGridItems.length > 0 && (
+          <div className={styles.heroGrid}>
+            {heroGridItems.map((item) => renderMiniHeroCard(item))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -51,7 +51,7 @@ function AnimeContent() {
           Popular Anime
         </h1>
         <p style={{ color: '#888', fontSize: '1rem', margin: 0 }}>
-          Explore trending Japanese anime series and feature films.
+          Discover and stream the most popular anime series.
         </p>
       </div>
 

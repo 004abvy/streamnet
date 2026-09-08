@@ -176,6 +176,7 @@ function MoviesContent() {
               {g.name}
             </button>
           ))}
+        </div>
       </div>
 
       {movies.length === 0 && !loading ? (
