@@ -610,3 +610,77 @@ a, button {
     overflow: hidden;
   }
 }
+
+/* ===================================================================
+   6. LOW-RAM, SMART TV & HARDWARE PERFORMANCE ACCELERATION ENGINE
+   =================================================================== */
+
+/* A. Virtual Layout Isolation & Rendering Deferral */
+/* Skips expensive style, layout, and painting for offscreen sections until needed */
+[class*="GenreExplorerSection_section"],
+[class*="TrendingSection_container"],
+[class*="ProvidersSection_section"],
+[class*="ProvidersSection_container"],
+[class*="PosterGrid_container"],
+[class*="Footer_footer"] {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 450px;
+}
+
+/* B. Hardware Layer Promotion (GPU Compositing instead of CPU repaint) */
+[class*="HeroCarousel_track"],
+[class*="PosterCarousel_carousel"],
+[class*="TrendingSection_scrollTrack"],
+[class*="PosterGrid_card"],
+[class*="PosterCarousel_card"],
+[class*="TrendingSection_posterCard"],
+[class*="TrendingSection_heroCard"] {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* C. Card & Poster Paint Containment */
+[class*="PosterGrid_card"],
+[class*="PosterCarousel_card"],
+[class*="TrendingSection_posterCard"] {
+  contain: layout style paint;
+}
+
+/* D. Smooth Scrolling on TV & Touch */
+[class*="PosterCarousel_carousel"],
+[class*="TrendingSection_scrollTrack"],
+[class*="GenreExplorerSection_genresList"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* E. Low-Cost Shaders on TV & Low-Power Devices */
+/* Disables GPU-throttling 16px/32px backdrop blurs on TVs & low-spec browsers, using solid colors */
+@media (prefers-reduced-motion: reduce), (update: slow) {
+  [class*="backdrop-blur"],
+  [class*="modal"],
+  [class*="overlay"],
+  [class*="controlBtn"],
+  [class*="pageIndicator"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* F. Image Memory & Texture Optimization */
+img {
+  image-rendering: auto;
+  -webkit-user-drag: none;
+}
+
+/* G. Pause continuous decorative animations during battery save or reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -103,7 +103,7 @@ export default function VideoPlayer({ tmdbId, type, title, backdropPath, season,
     videoUrl += `${sep}sub_file=${encodeURIComponent(selectedSub.url)}&sub_label=${encodeURIComponent(selectedSub.display || selectedSub.language || 'English')}`;
   }
 
-  const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : '/fallback-backdrop.jpg';
+  const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
 
   const handleServerChange = (id: string) => {
     setActiveServerId(id);

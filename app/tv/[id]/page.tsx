@@ -83,9 +83,10 @@ export default function TVDetailsPage({
       
       <div className={styles.backdropWrapper}>
         <img 
-          src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`} 
+          src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`} 
           alt={movie.name || movie.title} 
           className={styles.backdrop}
+          decoding="async"
         />
         <div className={styles.backdropOverlay}></div>
       </div>

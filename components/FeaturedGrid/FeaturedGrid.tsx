@@ -35,9 +35,11 @@ export default function FeaturedGrid({ title, movies }: FeaturedGridProps) {
             <div key={movie.id} className="relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900 aspect-[16/9] md:aspect-[2/1] flex items-center justify-center group shadow-xl">
               {backdrop && (
                 <img
-                  src={`https://image.tmdb.org/t/p/original${backdrop}`}
+                  src={`https://image.tmdb.org/t/p/w1280${backdrop}`}
                   alt={displayTitle}
                   className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  decoding="async"
                 />
               )}
               <div className="absolute inset-0 bg-black/60"></div>

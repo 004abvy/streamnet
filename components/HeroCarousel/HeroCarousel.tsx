@@ -56,9 +56,11 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
         {loopMovies.map((movie, index) => (
           <div key={`${movie.id}-${index}`} className={styles.slide}>
             <img
-              src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+              src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
               alt={movie.title}
               className={styles.backdrop}
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
             />
             <div className={styles.overlay}></div>
             <div className={styles.bottomGradient}></div>
