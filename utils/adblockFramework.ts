@@ -823,6 +823,34 @@ export function installAdblockProtection(
     });
   }
 
+  // =========================================================================
+  // 13. Full-tab hijack guard (`beforeunload`) — cross-browser fallback for
+  // when an embedded provider's script redirects/replaces the ENTIRE
+  // top-level page (not just a window.open popup). The Navigation API
+  // scriptlet above (#4) only works in Chromium browsers and only catches
+  // non-gesture redirects; some ad scripts tie the redirect to a click on an
+  // invisible overlay INSIDE the iframe, which browsers treat as "user
+  // initiated" and let through. `beforeunload` works in every browser and
+  // forces a native "Leave site?" confirmation the user must explicitly
+  // accept before ANY navigation away from this page can actually happen —
+  // effectively blocking the redirect unless the user chooses to proceed.
+  // Client-side route changes (Next.js <Link>/router.push) never trigger
+  // this, since they don't unload the document; only real cross-origin
+  // navigations, full reloads, and tab closes do.
+  // =========================================================================
+  if (typeof window !== 'undefined') {
+    const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+      onBlockedAction?.('page_leave_intercepted');
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    cleanups.push(() => {
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+    });
+  }
+
   return () => {
     cleanups.forEach((cleanup) => {
       try {

@@ -47,6 +47,8 @@ function formatBlockedLabel(actionType: string): string {
       return '🚫 Ad popup neutralized';
     case 'notification_suppressed':
       return '🚫 Fake alert blocked';
+    case 'page_leave_intercepted':
+      return '🚫 Page-hijack redirect blocked';
     default:
       return '🚫 Threat blocked';
   }
