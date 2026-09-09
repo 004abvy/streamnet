@@ -19,6 +19,7 @@ interface VideoPlayerProps {
 
 interface ResolvedStream {
   streamUrl: string;
+  streamType?: 'hls' | 'mp4' | 'webm';
   provider?: string;
   quality?: string;
 }
