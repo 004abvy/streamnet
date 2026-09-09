@@ -1,30 +1,101 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-
-const SERVERS = [
-  { id: 'vidcore', name: 'Server 1 (VidCore)', getUrl: (id: string) => `https://vidcore.org/embed/movie/${id}` },
-  { id: 'vidlux', name: 'Server 2 (VidLux)', getUrl: (id: string) => `https://vidlux.xyz/embed/movie/${id}` },
-  { id: 'vidsrc-to', name: 'Server 3 (VidSrc.to)', getUrl: (id: string) => `https://vidsrc.to/embed/movie/${id}` },
-  { id: 'vidsrc-me', name: 'Server 4 (VidSrc.me)', getUrl: (id: string) => `https://vidsrcme.ru/embed/movie/${id}` },
-  { id: 'vidsrc-in', name: 'Server 5 (VidSrc.in)', getUrl: (id: string) => `https://vidsrc.in/embed/movie/${id}` },
-  { id: 'vidsrc-io', name: 'Server 6 (VidSrc.io)', getUrl: (id: string) => `https://vidsrc.io/embed/movie/${id}` },
-  { id: 'vsembed-ru', name: 'Server 7 (VSEmbed.ru)', getUrl: (id: string) => `https://vsembed.ru/embed/movie/${id}` },
-  { id: 'vid-src-top', name: 'Server 8 (Vid-Src.top)', getUrl: (id: string) => `https://vid-src.top/embed/movie/${id}` },
-  { id: '2embed', name: 'Server 9 (2Embed)', getUrl: (id: string) => `https://www.2embed.cc/embed/${id}` },
-  { id: 'superembed-std', name: 'Server 10 (SuperEmbed)', getUrl: (id: string) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-  { id: 'superembed-vip', name: 'Server 11 (SuperEmbed VIP)', getUrl: (id: string) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1` },
-  { id: 'moviesapi', name: 'Server 12 (MoviesAPI)', getUrl: (id: string) => `https://moviesapi.to/movie/${id}` },
-  { id: 'vidfast-vc', name: 'Server 13 (VidFast)', getUrl: (id: string) => `https://vidfast.vc/movie/${id}` },
-  { id: 'vidrock', name: 'Server 14 (VidRock)', getUrl: (id: string) => `https://vidrock.ru/movie/${id}` },
-  { id: 'vidflix', name: 'Server 15 (VidFlix)', getUrl: (id: string) => `https://vidflix.club/movie/${id}` }
-];
+import NativeHlsPlayer from './VideoPlayer/NativeHlsPlayer';
 
 export default function MoviePlayer({ movieId }: { movieId: string }) {
-  const [activeServer, setActiveServer] = useState(SERVERS[0]);
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sources, setSources] = useState<any[]>([]);
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
+  const [stream, setStream] = useState<any>(null);
+  const [isResolving, setIsResolving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch TMDB metadata (optional)
+  useEffect(() => {
+    if (!movieId) return;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+    fetch(`${backendUrl}/api/movies/${movieId}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        setMovie(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setMovie(null);
+        setLoading(false);
+      });
+  }, [movieId]);
+
+  // Resolve HLS sources on first play
+  const handleStart = async () => {
+    if (stream || isResolving) return;
+    setIsResolving(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ id: movieId, type: 'movie' });
+      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`);
+      const data = await res.json();
+      const resolved = Array.isArray(data?.sources) && data.sources.length > 0
+        ? data.sources
+        : data?.streamUrl
+        ? [{
+            streamUrl: data.streamUrl,
+            streamType: data.streamType || 'hls',
+            provider: data.provider || 'HLS Direct',
+            quality: data.quality || '1080p',
+          }]
+        : [];
+      if (resolved.length > 0) {
+        setSources(resolved);
+        setActiveSourceIndex(0);
+        setStream(resolved[0]);
+      } else {
+        setError('No HLS streams available.');
+      }
+    } catch (e) {
+      setError('Failed to resolve HLS stream.');
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  const handleHlsError = (msg?: string) => {
+    if (sources.length > 1 && activeSourceIndex < sources.length - 1) {
+      const next = activeSourceIndex + 1;
+      setActiveSourceIndex(next);
+      setStream(sources[next]);
+    } else {
+      setError(msg || 'All HLS streams failed.');
+    }
+  };
+
+  const posterUrl = movie?.poster_path ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}` : '/fallback-backdrop.jpg';
+
+  return (
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-neutral-800 relative">
+        {stream ? (
+          <NativeHlsPlayer
+            streamUrl={stream.streamUrl}
+            streamType={stream.streamType || 'hls'}
+            posterUrl={posterUrl}
+            title={movie?.title}
+            onError={handleHlsError}
+          />
+        ) : (
+          <div className="flex items-center justify-center w-full h-full cursor-pointer" onClick={handleStart}>
+            <button className="px-4 py-2 bg-amber-500 text-black rounded">Play Movie (HLS)</button>
+          </div>
+        )}
+      </div>
+
+      {/* Optional metadata display */}
+      <div className="w-full max-w-6xl mt-8 text-left">
+        {loading ? (
+          <p>Loading movie details…</p>
+  const [activeServer, setActiveServer] = useState(SERVERS[0]);
 
   // Fetch the TMDB metadata safely
   useEffect(() => {
