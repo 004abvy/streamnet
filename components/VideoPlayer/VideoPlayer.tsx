@@ -39,6 +39,8 @@ export default function VideoPlayer({
   const [showServerModal, setShowServerModal] = useState(false);
 
   const [stream, setStream] = useState<ResolvedStream | null>(null);
+  const [sources, setSources] = useState<ResolvedStream[]>([]);
+  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [isResolving, setIsResolving] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
 
@@ -63,18 +65,42 @@ export default function VideoPlayer({
       const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`);
       const data = await res.json();
 
-      if (data?.streamUrl) {
-        setStream({
-          streamUrl: data.streamUrl,
-          streamType: data.streamType || 'hls',
-          provider: data.provider || 'HLS Direct',
-          quality: data.quality || '1080p',
-        });
+      const resolvedSources = Array.isArray(data?.sources) && data.sources.length > 0
+        ? data.sources
+        : data?.streamUrl
+        ? [{
+            id: 'direct-hls',
+            streamUrl: data.streamUrl,
+            streamType: data.streamType || 'hls',
+            provider: data.provider || 'HLS Direct',
+            quality: data.quality || '1080p',
+          }]
+        : [];
+
+      if (resolvedSources.length > 0) {
+        setSources(resolvedSources);
+        setActiveSourceIndex(0);
+        setStream(resolvedSources[0]);
+      } else {
+        setPlayerMode('iframe');
       }
     } catch (e) {
       setStreamError('Connecting direct stream...');
+      setPlayerMode('iframe');
     } finally {
       setIsResolving(false);
+    }
+  };
+
+  const handleHlsError = (msg?: string) => {
+    if (sources.length > 1 && activeSourceIndex < sources.length - 1) {
+      const nextIndex = activeSourceIndex + 1;
+      setActiveSourceIndex(nextIndex);
+      setStream(sources[nextIndex]);
+      setStreamError(`⚡ Trying HLS Source ${nextIndex + 1} of ${sources.length} (${sources[nextIndex].provider || 'HLS Direct'})...`);
+    } else {
+      setStreamError('🌐 All HLS sources offline. Switched to Iframe mode.');
+      setPlayerMode('iframe');
     }
   };
 
@@ -104,9 +130,7 @@ export default function VideoPlayer({
             streamType={stream.streamType || 'hls'}
             posterUrl={posterUrl}
             title={title}
-            onError={(msg) => {
-              setStreamError(msg || 'Re-buffering stream...');
-            }}
+            onError={handleHlsError}
           />
         ) : playerMode === 'hls' && isResolving ? (
           <div className={styles.loadingOverlay}>

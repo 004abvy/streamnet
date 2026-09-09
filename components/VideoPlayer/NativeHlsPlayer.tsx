@@ -77,6 +77,12 @@ export default function NativeHlsPlayer({
     }
 
     if (Hls.isSupported()) {
+      let timeoutId: any = setTimeout(() => {
+        if (isLoading) {
+          fail('HLS connection timeout.');
+        }
+      }, 7000);
+
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: false,
@@ -94,6 +100,7 @@ export default function NativeHlsPlayer({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (timeoutId) clearTimeout(timeoutId);
         setIsLoading(false);
 
         // Map level options
@@ -132,10 +139,14 @@ export default function NativeHlsPlayer({
         })));
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) fail('Failed to load the direct HLS stream.');
+        if (data.fatal) {
+          if (timeoutId) clearTimeout(timeoutId);
+          fail('Failed to load the direct HLS stream.');
+        }
       });
 
       return () => {
+        if (timeoutId) clearTimeout(timeoutId);
         hls.destroy();
         hlsRef.current = null;
       };

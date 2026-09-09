@@ -624,31 +624,48 @@ export async function GET(
         console.warn('Auto-resolve error:', e);
       }
 
-      // Always return direct HLS stream proxy so NativeHlsPlayer stays in 0-Ad HLS Mode
+      // Return multi-source direct HLS stream proxies (CineSrc, YapGrid, Nxsha) for failover
       const currentUrl = new URL(request.url);
-      const fallbackDirectUrl = type === 'tv'
+      const sources: Array<{ id: string; provider: string; quality: string; streamType: string; streamUrl: string }> = [];
+
+      const cinesrcUrl = type === 'tv'
         ? `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}`
         : `https://cinesrc.st/embed/movie/${id}`;
+      sources.push({
+        id: 'cinesrc-hls',
+        provider: 'CineSrc 4K Direct',
+        quality: '1080p',
+        streamType: 'hls',
+        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(cinesrcUrl)}&manifest=1`,
+      });
 
-      const proxiedFallback = `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(fallbackDirectUrl)}&manifest=1`;
+      const yapgridUrl = type === 'tv'
+        ? `https://yapgrid.com/embed/tv/${id}/${season}/${episode}?autoplay=1&server=x`
+        : `https://yapgrid.com/embed/movie/${id}?autoplay=1&server=x`;
+      sources.push({
+        id: 'yapgrid-hls',
+        provider: 'YapGrid 4K Direct',
+        quality: '1080p',
+        streamType: 'hls',
+        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(yapgridUrl)}&manifest=1`,
+      });
+
+      const nxshaUrl = type === 'tv'
+        ? `https://web.nxsha.app/embed/tv/${id}/${season}/${episode}?lang=hi`
+        : `https://web.nxsha.app/embed/movie/${id}?lang=hi`;
+      sources.push({
+        id: 'nxsha-hls',
+        provider: 'Nxsha 4K Hindi Direct',
+        quality: '1080p',
+        streamType: 'hls',
+        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(nxshaUrl)}&manifest=1`,
+      });
 
       return NextResponse.json({
         success: true,
         tmdbId: id,
-        id: 'direct-hls',
-        provider: 'Direct HLS Stream',
-        quality: '1080p',
-        streamType: 'hls',
-        streamUrl: proxiedFallback,
-        sources: [
-          {
-            id: 'direct-hls',
-            provider: 'Direct HLS Stream',
-            quality: '1080p',
-            streamType: 'hls',
-            streamUrl: proxiedFallback,
-          }
-        ]
+        ...sources[0],
+        sources,
       });
     }
 
