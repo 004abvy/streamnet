@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import vpStyles from './VideoPlayer.module.css';
 
 interface VideoPlayerProps {
   /** TMDB ID of the movie or TV show */
@@ -71,13 +72,13 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language }:
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full flex flex-col items-center">
+    <div ref={containerRef} className={`w-full flex flex-col items-center ${vpStyles.embedPlayerContainer}`}>
       <iframe
         src={embedUrl}
         allowFullScreen
         sandbox="allow-scripts allow-same-origin allow-forms"
         allow="autoplay; fullscreen; picture-in-picture"
-        className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0"
+        className={`w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0 ${vpStyles.embedIframe}`}
         title="Video Player"
       />
     </div>

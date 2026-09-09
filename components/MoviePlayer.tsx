@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import vpStyles from './VideoPlayer/VideoPlayer.module.css';
 
 interface MoviePlayerProps {
   /** TMDB ID of the movie */
@@ -51,13 +52,13 @@ export default function MoviePlayer({ movieId, language }: MoviePlayerProps) {
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full flex flex-col items-center">
+    <div ref={containerRef} className={`w-full flex flex-col items-center ${vpStyles.embedPlayerContainer}`}>
       <iframe
         src={embedUrl}
         allowFullScreen
         sandbox="allow-scripts allow-same-origin allow-forms"
         allow="autoplay; fullscreen; picture-in-picture"
-        className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0"
+        className={`w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0 ${vpStyles.embedIframe}`}
         title="Movie Player"
       />
     </div>
