@@ -67,36 +67,6 @@ export const FORBIDDEN_SANDBOX_TOKENS = [
 
 export const PERFECT_SANDBOX_STRING = PERFECT_SANDBOX_TOKENS.join(' ');
 
-/**
- * Partial sandbox for providers that actively detect full sandboxing and
- * refuse to play ("please disable sandbox"). These checks almost always
- * just test whether `window.open()` succeeds, so we grant `allow-popups`
- * (satisfying the check, meaning basic popups from THESE providers are no
- * longer blocked by the browser) while still keeping the browser's hard
- * block on the more damaging vectors:
- * - `allow-top-navigation*` stays OMITTED: the embed can never hijack/redirect
- *   the whole tab to an ad page.
- * - `allow-modals` stays OMITTED: no fake virus/alert() scare dialogs.
- * - `allow-downloads` stays OMITTED: no drive-by forced downloads.
- * - `allow-pointer-lock` stays OMITTED: no cursor hijacking.
- * This is strictly weaker than PERFECT_SANDBOX_TOKENS for popups specifically,
- * but it is real, browser-enforced protection (unlike a same-origin JS shield,
- * which cannot reach into a cross-origin iframe's script context at all) and,
- * unlike proxying/rewriting the embed's HTML, it does not break the page's
- * own fetch/XHR calls to its own backend (those still run same-origin to the
- * provider, since we never change how/where the iframe is loaded from).
- */
-export const PARTIAL_SANDBOX_TOKENS = [
-  'allow-scripts',
-  'allow-same-origin',
-  'allow-forms',
-  'allow-presentation',
-  'allow-popups',
-  'allow-popups-to-escape-sandbox',
-] as const;
-
-export const PARTIAL_SANDBOX_STRING = PARTIAL_SANDBOX_TOKENS.join(' ');
-
 const STANDARD_ALLOW_FEATURES = [
   'autoplay',
   'fullscreen',
@@ -223,36 +193,6 @@ export const DEFAULT_SERVER_POLICY: ServerAdPolicy = {
   protectionLevel: 'maximum',
 };
 
-/**
- * Providers confirmed (by live testing) to actively detect a fully-locked-down
- * sandbox and refuse to play ("please disable sandbox"). Rewriting/proxying
- * their embed HTML was tried and rejected: once their own JS runs under OUR
- * origin, its fetch/XHR calls to their own backend get blocked by CORS,
- * breaking playback entirely ("failed to fetch"/"failed to reload").
- *
- * Instead these providers get PARTIAL_SANDBOX_TOKENS applied directly to the
- * real <iframe sandbox> attribute — still a genuine, browser-enforced
- * sandbox (their own page is untouched, loaded from its real origin, so its
- * own network calls keep working normally), just one that also grants
- * `allow-popups` so their sandbox-detection check passes. Top-navigation
- * hijacks, fake modals, forced downloads, and pointer-lock stay blocked.
- *
- * CineSrc is intentionally excluded: it has been confirmed to work fine
- * under the FULL sandbox (PERFECT_SANDBOX_TOKENS), which also blocks popups
- * and is strictly stronger.
- */
-export const SANDBOX_INCOMPATIBLE_SERVER_IDS: ReadonlySet<string> = new Set([
-  'yapgrid',
-  'vidlink',
-  'nxsha',
-  'vidrock',
-  'vidsrc-me',
-  'vidsrc-in',
-  'vidcore',
-  'vidfast',
-  'vidsrc-io',
-]);
-
 export function getServerAdPolicy(serverId: string): ServerAdPolicy {
   return SERVER_AD_POLICIES[serverId] || DEFAULT_SERVER_POLICY;
 }
@@ -265,33 +205,19 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  // Providers in SANDBOX_INCOMPATIBLE_SERVER_IDS get the PARTIAL sandbox
-  // (real <iframe sandbox>, just with allow-popups granted so their
-  // anti-sandbox check passes). Everyone else gets the FULL sandbox, which
-  // also blocks popups — the strongest option, used whenever a provider
-  // tolerates it. `sandboxTokens: null` remains a hard opt-out (no sandbox
-  // at all) for a provider confirmed broken even under the partial tier.
-  const tokens = policy.sandboxTokens;
-  const isPartial = SANDBOX_INCOMPATIBLE_SERVER_IDS.has(serverId);
-  const sandbox = !sandboxActive || tokens === null
-    ? null
-    : isPartial
-      ? PARTIAL_SANDBOX_STRING
-      : tokens.length > 0
-        ? tokens.join(' ')
-        : PERFECT_SANDBOX_STRING;
-
-  // The iframe always loads the provider's real URL directly — no HTML
-  // rewriting/proxying, so the embed's own fetch/XHR calls to its own
-  // backend keep working exactly as it expects.
-  const src = cleanUrl;
+  // Only CineSrc has been confirmed to tolerate the native <iframe sandbox>.
+  // Every other provider either refuses to play under it ("please disable
+  // sandbox") or breaks once its own network requests are routed through any
+  // kind of proxy/rewrite. So: full sandbox for CineSrc, no sandbox at all
+  // for everyone else — their real URL loads directly, exactly as before.
+  const sandbox = sandboxActive && serverId === 'cinesrc' ? PERFECT_SANDBOX_STRING : null;
 
   return {
-    src,
+    src: cleanUrl,
     sandbox,
     referrerPolicy: policy.referrerPolicy,
     allow: policy.allowFeatures.join('; '),
-    protectionLevel: sandboxActive ? ('maximum' as ShieldLevel) : ('standard' as ShieldLevel),
+    protectionLevel: sandbox ? ('maximum' as ShieldLevel) : ('standard' as ShieldLevel),
     policy,
   };
 }

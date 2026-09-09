@@ -14,9 +14,9 @@ export type { ProviderAdapter } from './providers/types';
  * Order defines default base priority before dynamic health scoring is applied
  */
 export const ALL_PROVIDERS: ProviderAdapter[] = [
+  cinesrcAdapter,
   yapgridAdapter,
   vidlinkAdapter,
-  cinesrcAdapter,
   nxshaAdapter,
   movieboxAdapter,
   ...genericAdapters,

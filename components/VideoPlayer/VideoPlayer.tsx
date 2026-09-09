@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import styles from './VideoPlayer.module.css';
-import NativeHlsPlayer from './NativeHlsPlayer';
 import { ALL_PROVIDERS, ProviderAdapter } from '../../utils/serverManager';
 import {
   installAdblockProtection,
@@ -20,13 +19,6 @@ interface VideoPlayerProps {
   episode?: number;
   imdbId?: string;
   onEpisodeChange?: (season: number, episode: number) => void;
-}
-
-interface ResolvedStream {
-  streamUrl: string;
-  streamType?: 'hls' | 'mp4' | 'webm';
-  provider?: string;
-  quality?: string;
 }
 
 /** Human-readable labels for AdShield block events, shown in the live toast. */
@@ -63,36 +55,26 @@ function formatBlockedLabel(actionType: string): string {
 export default function VideoPlayer({
   tmdbId,
   type,
-  title,
   backdropPath,
   season,
   episode,
   imdbId,
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playerMode, setPlayerMode] = useState<'hls' | 'iframe'>('hls');
   const [activeProvider, setActiveProvider] = useState<ProviderAdapter>(ALL_PROVIDERS[0]);
   const [showServerModal, setShowServerModal] = useState(false);
 
-  const [stream, setStream] = useState<ResolvedStream | null>(null);
-  const [sources, setSources] = useState<ResolvedStream[]>([]);
-  const [activeSourceIndex, setActiveSourceIndex] = useState(0);
-  const [isResolving, setIsResolving] = useState(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
-  const [allHlsFailed, setAllHlsFailed] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-
-  // --- AdShield: perfect iframe sandbox + parent-window popup/ad blocker ---
+  // --- AdShield: native sandbox on CineSrc + parent-window popup/ad blocker ---
   // Lazy initializer: safe because shieldActive only affects rendered output
-  // once playerMode switches to 'iframe', which never happens before hydration.
+  // once isPlaying is true, which never happens before hydration.
   const [shieldActive, setShieldActive] = useState<boolean>(() => getAdShieldPreference());
   const [blockedCount, setBlockedCount] = useState(0);
   const [blockToast, setBlockToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Install the full uBlock-style protection suite only while an embed iframe is live
+  // Install the full uBlock-style protection suite only while the embed is live
   useEffect(() => {
-    if (!isPlaying || playerMode !== 'iframe') return;
+    if (!isPlaying) return;
 
     const cleanup = installAdblockProtection(shieldActive, (actionType) => {
       setBlockedCount((count) => count + 1);
@@ -105,7 +87,7 @@ export default function VideoPlayer({
       cleanup();
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
-  }, [isPlaying, playerMode, shieldActive]);
+  }, [isPlaying, shieldActive]);
 
   const toggleShield = () => {
     setShieldActive((prev) => {
@@ -119,80 +101,53 @@ export default function VideoPlayer({
     ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
     : '/fallback-backdrop.jpg';
 
-  // `force` bypasses the "already have a stream" guard below. Without it,
-  // retrying after every source has already failed would do nothing: `stream`
-  // is left pointing at the last (failed) candidate rather than being reset to
-  // null, so the early return would silently swallow the retry attempt.
-  const handleStartPlayback = async (force: boolean = false) => {
-    setIsPlaying(true);
-    setAllHlsFailed(false);
-    if (!force && (stream || isResolving)) return;
-
-    setIsResolving(true);
-    setStreamError(null);
-
-    try {
-      const params = new URLSearchParams({
-        id: tmdbId,
-        type,
-        season: String(season || 1),
-        episode: String(episode || 1),
-      });
-      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`, {
-        cache: 'no-store',
-      });
-      const data = await res.json();
-
-      const resolvedSources = Array.isArray(data?.sources) && data.sources.length > 0
-        ? data.sources
-        : data?.streamUrl
-        ? [{
-            id: 'direct-hls',
-            streamUrl: data.streamUrl,
-            streamType: data.streamType || 'hls',
-            provider: data.provider || 'HLS Direct',
-            quality: data.quality || '1080p',
-          }]
-        : [];
-
-      if (resolvedSources.length > 0) {
-        setSources(resolvedSources);
-        setActiveSourceIndex(0);
-        setStream(resolvedSources[0]);
-        setStreamError(`⚡ Testing Direct HLS Server 1 of ${resolvedSources.length} (${resolvedSources[0].provider || 'HLS Direct'})...`);
-      } else {
-        setAllHlsFailed(true);
-      }
-    } catch {
-      setAllHlsFailed(true);
-    } finally {
-      setIsResolving(false);
-    }
-  };
-
-  const handleHlsError = () => {
-    if (sources.length > 1 && activeSourceIndex < sources.length - 1) {
-      const nextIndex = activeSourceIndex + 1;
-      setActiveSourceIndex(nextIndex);
-      setStream(sources[nextIndex]);
-      setStreamError(`⚡ Testing Direct HLS Server ${nextIndex + 1} of ${sources.length} (${sources[nextIndex].provider || 'HLS Direct'})...`);
-    } else {
-      setAllHlsFailed(true);
-      setStreamError(`⚠️ All ${sources.length || 3} Direct HLS Streams Are Offline`);
-    }
-  };
-
   const currentIframeUrl = activeProvider.buildUrl(type, tmdbId, season, episode, imdbId);
   const iframeSecurity = resolveServerIframeAttributes(activeProvider.id, currentIframeUrl, shieldActive);
 
   return (
     <div className={styles.container}>
+      {isPlaying && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.75rem',
+            padding: '0.6rem 0.9rem',
+            background: 'rgba(245, 158, 11, 0.08)',
+            borderBottom: '1px solid rgba(245, 158, 11, 0.25)',
+            fontSize: '0.8rem',
+            color: '#fbbf24',
+            fontWeight: 600,
+          }}
+        >
+          <span>⚠️ Video not loading, stuck, or showing ads? Try switching the server.</span>
+          <button
+            type="button"
+            onClick={() => setShowServerModal(true)}
+            style={{
+              flexShrink: 0,
+              background: '#f59e0b',
+              color: '#111',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '0.35rem 0.75rem',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+            }}
+          >
+            🔁 Change Server
+          </button>
+        </div>
+      )}
+
       <div className={styles.playerWrapper}>
         {!isPlaying ? (
           <div
             className={styles.posterOverlay}
             style={{ backgroundImage: `url(${posterUrl})` }}
-            onClick={() => handleStartPlayback()}
+            onClick={() => setIsPlaying(true)}
           >
             <div className={styles.posterGradient} />
             <button className={styles.playBtn} aria-label="Play video" type="button">
@@ -200,61 +155,6 @@ export default function VideoPlayer({
                 <path d="M8 5v14l11-7z" />
               </svg>
             </button>
-          </div>
-        ) : allHlsFailed ? (
-          <div className={styles.loadingOverlay} style={{ background: 'rgba(10, 10, 16, 0.96)', padding: '2rem' }}>
-            <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              ⚠️ All {sources.length || 3} Direct HLS Streams Are Currently Offline
-            </span>
-            <span className={styles.loadingSubText} style={{ textAlign: 'center', maxWidth: '400px', marginTop: '0.25rem' }}>
-              Would you like to switch to Iframe Embed Server Mode (YapGrid 4K / VidLink / CineSrc)?
-              {retryCount > 0 ? ` Retried ${retryCount}x already.` : ''}
-            </span>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button
-                type="button"
-                className={styles.oneDmBlockBtn}
-                style={{ background: '#059669', borderColor: '#10b981', color: '#fff', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-                onClick={() => {
-                  setAllHlsFailed(false);
-                  setPlayerMode('iframe');
-                }}
-              >
-                🖼️ Switch to Iframe Mode
-              </button>
-              <button
-                type="button"
-                className={styles.oneDmAllowBtn}
-                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-                onClick={() => {
-                  setRetryCount((count) => count + 1);
-                  setAllHlsFailed(false);
-                  setStream(null);
-                  setSources([]);
-                  setActiveSourceIndex(0);
-                  handleStartPlayback(true);
-                }}
-              >
-                🔄 Retry Direct HLS{retryCount > 0 ? ` (${retryCount})` : ''}
-              </button>
-            </div>
-          </div>
-        ) : playerMode === 'hls' && stream ? (
-          <NativeHlsPlayer
-            key={stream.streamUrl}
-            streamUrl={stream.streamUrl}
-            streamType={stream.streamType || 'hls'}
-            posterUrl={posterUrl}
-            title={title}
-            onError={handleHlsError}
-          />
-        ) : playerMode === 'hls' && isResolving ? (
-          <div className={styles.loadingOverlay}>
-            <div className={styles.spinnerRing} />
-            <span className={styles.loadingServerTitle}>
-              {streamError || `Testing Direct HLS Server ${activeSourceIndex + 1} of ${sources.length || 3}...`}
-            </span>
-            <span className={styles.loadingSubText}>0 Ads • 0 Popups • Direct Playback</span>
           </div>
         ) : (
           <div className={styles.iframeContainer} style={{ position: 'relative' }}>
@@ -313,14 +213,14 @@ export default function VideoPlayer({
 
               <div className={styles.modalServerGrid}>
                 {ALL_PROVIDERS.map((provider) => {
-                  const isActive = activeProvider.id === provider.id && playerMode === 'iframe';
+                  const isActive = activeProvider.id === provider.id;
                   return (
                     <button
                       key={provider.id}
                       className={`${styles.modalServerCard} ${isActive ? styles.activeModalServerCard : ''}`}
                       onClick={() => {
                         setActiveProvider(provider);
-                        setPlayerMode('iframe');
+                        setIsPlaying(true);
                         setShowServerModal(false);
                       }}
                       type="button"
@@ -357,7 +257,7 @@ export default function VideoPlayer({
                     </div>
                     <div className={styles.shieldStatusDesc}>
                       {shieldActive
-                        ? 'Blocking popups, redirects, overlays & ad scripts on all embeds'
+                        ? 'Blocking popups & redirects (native sandbox on CineSrc 4K, script shield elsewhere)'
                         : 'Protection disabled — embeds may show ads or popups'}
                     </div>
                   </div>
@@ -388,53 +288,27 @@ export default function VideoPlayer({
             title="Change Server"
             type="button"
           >
-            <span>{playerMode === 'hls' ? '⚡ Direct HLS' : `${activeProvider.flag || '🌐'} ${activeProvider.name}`}</span>
-            <span className={styles.qualityTag}>
-              {playerMode === 'hls' ? '1080p' : activeProvider.capabilities.quality}
-            </span>
+            <span>{activeProvider.flag || '🌐'} {activeProvider.name}</span>
+            <span className={styles.qualityTag}>{activeProvider.capabilities.quality}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
-
-          {/* Mode Switcher Pill: Direct HLS vs Embed */}
-          <div className={styles.modePillGroup}>
-            <button
-              className={`${styles.modePill} ${playerMode === 'hls' ? styles.activeModePill : ''}`}
-              onClick={() => setPlayerMode('hls')}
-              title="0 Ads Direct Playback"
-              type="button"
-            >
-              ⚡ HLS Direct
-            </button>
-            <button
-              className={`${styles.modePill} ${playerMode === 'iframe' ? styles.activeModePill : ''}`}
-              onClick={() => setPlayerMode('iframe')}
-              title="Embed Server iFrame"
-              type="button"
-            >
-              🖼️ iFrame
-            </button>
-          </div>
         </div>
 
         <div className={styles.toolbarRight}>
-          {playerMode === 'hls' ? (
-            <span className={styles.shieldBadge}>⚡ 0 Ads</span>
-          ) : (
-            <button
-              type="button"
-              className={styles.shieldBadge}
-              onClick={() => setShowServerModal(true)}
-              title={shieldActive ? 'AdShield is active — click for details' : 'AdShield is disabled — click to enable'}
-              style={{ cursor: 'pointer', border: 'none' }}
-            >
-              {shieldActive ? '🛡️ Shielded' : '⚠️ Unshielded'}
-              {blockedCount > 0 && (
-                <span className={styles.blockedBadge}>{blockedCount} Blocked</span>
-              )}
-            </button>
-          )}
+          <button
+            type="button"
+            className={styles.shieldBadge}
+            onClick={() => setShowServerModal(true)}
+            title={shieldActive ? 'AdShield is active — click for details' : 'AdShield is disabled — click to enable'}
+            style={{ cursor: 'pointer', border: 'none' }}
+          >
+            {shieldActive ? '🛡️ Shielded' : '⚠️ Unshielded'}
+            {blockedCount > 0 && (
+              <span className={styles.blockedBadge}>{blockedCount} Blocked</span>
+            )}
+          </button>
         </div>
       </div>
     </div>
