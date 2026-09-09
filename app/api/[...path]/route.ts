@@ -531,7 +531,7 @@ export async function GET(
       return NextResponse.json({ success: true, tmdbId: id, mediaItems });
     }
 
-    // 18. /api/stream/auto-resolve (Instant Direct HLS Stream Extractor)
+    // 18. /api/stream/auto-resolve (Resolve direct streams from the bundled TMDB Embed API)
     if (pathStr === 'stream/auto-resolve') {
       const id = searchParams.get('id');
       const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
@@ -540,23 +540,30 @@ export async function GET(
 
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-      const host = request.headers.get('host') || 'localhost:3000';
-      const protocol = request.headers.get('x-forwarded-proto') || 'https';
-      const baseUrl = `${protocol}://${host}`;
-
       try {
-        const infoRes = await fetch(`${baseUrl}/api/stream/mediaInfo?id=${id}`);
-        if (infoRes.ok) {
-          const info = await infoRes.json();
-          if (info && (info.playlist || info.file || info.stream)) {
-            const rawStreamUrl = info.playlist || info.file || info.stream;
-            const proxiedStreamUrl = `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(rawStreamUrl)}`;
+        const embedApiUrl = process.env.TMDB_EMBED_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8787';
+        const streamType = type === 'tv' ? 'series' : 'movie';
+        const query = new URLSearchParams({ season, episode });
+        const streamsResponse = await fetch(`${embedApiUrl}/api/streams/${streamType}/${encodeURIComponent(id)}?${query}`);
+
+        if (streamsResponse.ok) {
+          const payload = await streamsResponse.json();
+          const streams = Array.isArray(payload?.streams) ? payload.streams : [];
+          const directStreams = streams.filter((stream: any) => {
+            const url = typeof stream?.url === 'string' ? stream.url : '';
+            return /^https?:\/\//i.test(url)
+              && !/\/embed(?:\/|\?|$)/i.test(url)
+              && (/\.m3u8(?:\?|$)/i.test(url) || /\.(?:mp4|webm)(?:\?|$)/i.test(url) || /^(?:hls|mp4|webm)$/i.test(stream?.type || ''));
+          });
+          const selected = directStreams.find((stream: any) => /\.m3u8(?:\?|$)/i.test(stream.url)) || directStreams[0];
+
+          if (selected?.url) {
             return NextResponse.json({
               success: true,
               tmdbId: id,
-              streamUrl: proxiedStreamUrl,
-              rawStreamUrl,
-              subtitles: info.subtitles || [],
+              streamUrl: selected.url,
+              provider: selected.provider || selected.name || 'TMDB Embed API',
+              quality: selected.quality || null,
             });
           }
         }
@@ -564,15 +571,10 @@ export async function GET(
         console.warn('Auto-resolve error:', e);
       }
 
-      const fallbackUrl = type === 'tv'
-        ? `https://yapgrid.com/embed/tv/${id}/${season}/${episode}?autoplay=1&server=x`
-        : `https://yapgrid.com/embed/movie/${id}?autoplay=1&server=x`;
-
       return NextResponse.json({
         success: false,
         tmdbId: id,
-        fallbackUrl,
-        message: 'Using YapGrid 4K Ad-Free Server Fallback',
+        message: 'The TMDB Embed API did not return a direct HLS or MP4 stream.',
       });
     }
 

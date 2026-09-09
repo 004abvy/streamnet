@@ -9,13 +9,12 @@ import {
   setLastUsedServerId,
   ProviderAdapter,
 } from '../../utils/serverManager';
-import { resolveEmbedSecurity } from '../../utils/embedSecurity';
 import {
   calculateServerScore,
   isServerCircuitTripped,
   getBestAvailableProvider,
 } from '../../utils/serverHealth';
-import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
+import { PlaybackManager } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
 import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
 import { initMediaSniffer, resolve1DmMediaInfo, downloadMediaFile, SniffedMediaItem } from '../../utils/mediaSniffer';
@@ -62,8 +61,6 @@ export default function VideoPlayer({
   const [showServerModal, setShowServerModal] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('hi');
-  const [sandboxEnabled, setSandboxEnabled] = useState(false);
-  const [blockedCount, setBlockedCount] = useState(0);
   const [failoverToast, setFailoverToast] = useState<string | null>(null);
 
   // Active provider and playback session state
@@ -72,16 +69,9 @@ export default function VideoPlayer({
     return getProviderById(lastId);
   });
 
-  const [sessionState, setSessionState] = useState<PlaybackSession>({
-    state: 'idle',
-    currentProvider: activeProvider,
-    loadStartTime: 0,
-  });
-
   const playbackManagerRef = useRef<PlaybackManager | null>(null);
   const toastTimeoutRef = useRef<any>(null);
   const popupTimeoutRef = useRef<any>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [pending1DmPopup, setPending1DmPopup] = useState<InterceptedPopupInfo | null>(null);
   const [sniffedMedia, setSniffedMedia] = useState<SniffedMediaItem[]>([]);
@@ -91,6 +81,7 @@ export default function VideoPlayer({
 
   const [useNativeHlsMode, setUseNativeHlsMode] = useState(false);
   const [directHlsUrl, setDirectHlsUrl] = useState<string | null>(null);
+  const [directStreamError, setDirectStreamError] = useState<string | null>(null);
 
   const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -139,7 +130,6 @@ export default function VideoPlayer({
   // Initialize preferences and initial best server
   useEffect(() => {
     const prefs = getPlayerPreferences();
-    setSandboxEnabled(prefs.sandboxActive);
     if (prefs.preferredLanguage) {
       setSelectedLanguage(prefs.preferredLanguage);
     }
@@ -154,7 +144,6 @@ export default function VideoPlayer({
   // Initialize PlaybackManager instance
   useEffect(() => {
     const manager = new PlaybackManager(ALL_PROVIDERS, activeProvider, (session) => {
-      setSessionState(session);
       setActiveProvider(session.currentProvider);
       setLastUsedServerId(session.currentProvider.id);
 
@@ -179,16 +168,10 @@ export default function VideoPlayer({
   // Install parent-level uBlock & JS Injector protections during active playback
   useEffect(() => {
     if (!isPlaying) return;
-    if (typeof window !== 'undefined' && (window as any).__STREAMNET_BLOCKED_COUNT__) {
-      setBlockedCount((c) => Math.max(c, (window as any).__STREAMNET_BLOCKED_COUNT__));
-    }
     return installAdblockProtection(
       true,
-      (_type, _target) => {
-        setBlockedCount((c) => c + 1);
-      },
+      () => {},
       (popupInfo) => {
-        setBlockedCount((c) => c + 1);
         setPending1DmPopup(popupInfo);
         if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
         // Auto-dismiss 1DM prompt after 7 seconds (keeping it blocked by default)
@@ -241,6 +224,9 @@ export default function VideoPlayer({
 
   const handleStartPlayback = () => {
     setIsPlaying(true);
+    setUseNativeHlsMode(true);
+    setDirectHlsUrl(null);
+    setDirectStreamError(null);
     playbackManagerRef.current?.startPlayback();
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -251,11 +237,15 @@ export default function VideoPlayer({
       .then((data) => {
         if (data && data.success && data.streamUrl) {
           setDirectHlsUrl(data.streamUrl);
-          setUseNativeHlsMode(true);
           setFailoverToast('⚡ Zenith Direct HLS Mode Active (0 iFrames, 0 Popups, 0 Ads!)');
+        } else {
+          setDirectStreamError(data?.message || 'No direct stream was returned by the TMDB Embed API.');
         }
       })
-      .catch((err) => console.warn('Auto-resolve stream error:', err));
+      .catch((err) => {
+        console.warn('Auto-resolve stream error:', err);
+        setDirectStreamError('The direct stream resolver is unavailable.');
+      });
 
     // 2. Instant 1DM Stream & Track Extraction on Play
     resolve1DmMediaInfo(tmdbId, type, season, episode).then((items) => {
@@ -267,9 +257,9 @@ export default function VideoPlayer({
         });
 
         const m3u8Item = items.find((i) => i.url.includes('.m3u8') || i.mimeType?.includes('mpegURL'));
-        if (m3u8Item && !directHlsUrl) {
+        if (m3u8Item) {
           setDirectHlsUrl(m3u8Item.url);
-          setUseNativeHlsMode(true);
+          setDirectStreamError(null);
         }
       }
     });
@@ -283,42 +273,14 @@ export default function VideoPlayer({
     playbackManagerRef.current?.selectServer(provider);
   };
 
-  const toggleSandbox = () => {
-    setSandboxEnabled((prev) => {
-      const next = !prev;
-      updatePlayerPreferences({ sandboxActive: next });
-      return next;
-    });
-  };
-
   const handleLanguageChange = (code: string) => {
     setSelectedLanguage(code);
     updatePlayerPreferences({ preferredLanguage: code });
     setShowLangModal(false);
-
-    try {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          { type: 'SET_AUDIO_LANGUAGE', lang: code, language: code },
-          '*'
-        );
-        iframeRef.current.contentWindow.postMessage(
-          { type: 'SET_AUDIO_TRACK', lang: code, language: code },
-          '*'
-        );
-      }
-    } catch (e) {}
   };
 
-  const currentUrl = activeProvider.buildUrl(type, tmdbId, season, episode, imdbId, selectedLanguage);
   const posterUrl = backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : '/fallback-backdrop.jpg';
-  const securityAttributes = resolveEmbedSecurity(activeProvider, sandboxEnabled);
   const activeLangObj = AUDIO_LANGUAGES.find((l) => l.code === selectedLanguage) || AUDIO_LANGUAGES[0];
-
-  const isBufferingOrMounting =
-    isPlaying &&
-    (sessionState.state === 'mounting_iframe' ||
-      sessionState.state === 'idle');
 
   return (
     <div className={styles.container}>
@@ -404,40 +366,17 @@ export default function VideoPlayer({
             posterUrl={posterUrl}
             title={title}
             onError={() => {
-              setUseNativeHlsMode(false);
-              setFailoverToast('⚠️ Native stream error. Switched to Iframe mode.');
+              setDirectStreamError('The direct HLS stream could not be played. Try another source.');
             }}
           />
         ) : (
-          <div className={styles.iframeContainer}>
-            {/* Cinematic Loading Shield */}
-            {isBufferingOrMounting && (
-              <div className={styles.loadingOverlay}>
-                <div className={styles.spinnerRing}></div>
-                <span className={styles.loadingServerTitle}>
-                  Connecting to {activeProvider.name}...
-                </span>
-                <span className={styles.loadingSubText}>
-                  {activeProvider.capabilities.quality} • {securityAttributes.isSandboxed ? 'Strict Sandbox Active' : 'Direct Stream (uBlock Protected)'}
-                </span>
-              </div>
-            )}
-
-            <iframe
-              ref={iframeRef}
-              key={`${activeProvider.id}-${currentUrl}-${securityAttributes.isSandboxed}`}
-              className={styles.iframe}
-              src={currentUrl}
-              {...(securityAttributes.sandbox ? { sandbox: securityAttributes.sandbox } : {})}
-              allow={securityAttributes.allow}
-              allowFullScreen={true}
-              referrerPolicy={securityAttributes.referrerPolicy}
-              loading="eager"
-              onLoad={() => {
-                playbackManagerRef.current?.handleIframeLoad();
-                setSessionState((prev) => ({ ...prev, state: 'ready' }));
-              }}
-            ></iframe>
+          <div className={styles.loadingOverlay}>
+            <span className={styles.loadingServerTitle}>
+              {directStreamError || 'Resolving a direct HLS stream...'}
+            </span>
+            <span className={styles.loadingSubText}>
+              Only native HLS or MP4 sources are used. No embedded provider pages are loaded.
+            </span>
           </div>
         )}
 
@@ -552,40 +491,6 @@ export default function VideoPlayer({
                 })}
               </div>
 
-              {/* Security & Sandbox Controls */}
-              <div className={styles.shieldStatusCard}>
-                <div className={styles.shieldStatusLeft}>
-                  <div className={styles.shieldStatusPulse}>
-                    <span className={styles.shieldDot}></span>
-                    <span className={styles.shieldRing}></span>
-                  </div>
-                  <div>
-                    <div className={styles.shieldStatusTitle}>
-                      Iframe Sandbox & Popup Shield
-                      <span className={styles.activeBadge}>
-                        {securityAttributes.isSandboxed ? 'ENABLED' : 'DIRECT MODE'}
-                      </span>
-                      {blockedCount > 0 && (
-                        <span className={styles.blockedBadge}>{blockedCount} blocked</span>
-                      )}
-                    </div>
-                    <div className={styles.shieldStatusDesc}>
-                      {securityAttributes.isSandboxed
-                        ? 'Hardware-level Sandbox Active • Popups, redirects & new tabs strictly forbidden'
-                        : 'Direct Mode Active • Protected by parent-level JavaScript Injector'}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleSandbox}
-                  className={`${styles.shieldToggleBtn} ${sandboxEnabled ? styles.shieldToggleBtnActive : ''}`}
-                  title={sandboxEnabled ? 'Switch to Direct Mode' : 'Enable Strict Sandbox'}
-                  aria-label="Toggle Iframe Sandbox"
-                >
-                  <span className={styles.shieldToggleThumb} />
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -704,9 +609,7 @@ export default function VideoPlayer({
             {activeProvider.flag ? `${activeProvider.flag} ` : '✨ '}{activeProvider.name}
           </span>
           <span className={styles.qualityTag}>{activeProvider.capabilities.quality}</span>
-          <span className={styles.shieldBadge} title="Security Status">
-            {securityAttributes.isSandboxed ? '🛡️ Sandbox Active' : '🛡️ uBlock Shield'}
-          </span>
+          <span className={styles.shieldBadge} title="Native player status">🛡️ Native Player</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -759,26 +662,7 @@ export default function VideoPlayer({
           </button>
         )}
 
-        {/* Zenith Direct 0-Ad Native HLS Mode Toggle */}
-        <button
-          type="button"
-          className={styles.toolbarBtn}
-          style={useNativeHlsMode ? { background: '#059669', borderColor: '#10b981', color: '#ffffff' } : {}}
-          onClick={() => {
-            if (useNativeHlsMode) {
-              setUseNativeHlsMode(false);
-              setFailoverToast('🌐 Switched to Iframe Server Mode');
-            } else if (directHlsUrl) {
-              setUseNativeHlsMode(true);
-              setFailoverToast('⚡ Switched to Zenith Direct 0-Ad HLS Mode!');
-            } else {
-              setShowSnifferModal(true);
-            }
-          }}
-          title="Toggle 0-Ad Zenith Direct Native HLS Player Mode"
-        >
-          <span>{useNativeHlsMode ? '⚡ Zenith Direct: Active (0 Ads)' : '⚡ Zenith Direct 0-Ad Mode'}</span>
-        </button>
+        <span className={styles.activeServerBadge}>⚡ Native HLS / MP4 • No embedded pages</span>
       </div>
     </div>
   );
