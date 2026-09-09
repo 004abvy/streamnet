@@ -101,6 +101,20 @@
   display: block;
 }
 
+.iframeFit {
+  object-fit: contain;
+}
+
+.iframeZoom {
+  transform: scale(1.14);
+  transform-origin: center;
+}
+
+.iframeStretch {
+  transform: scaleX(1.14);
+  transform-origin: center;
+}
+
 .playerOptions {
   position: absolute;
   right: 1rem;

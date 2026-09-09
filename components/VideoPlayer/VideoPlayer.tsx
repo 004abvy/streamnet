@@ -8,6 +8,8 @@ import {
   resolveServerIframeAttributes,
 } from '../../utils/adblockFramework';
 
+type AspectMode = 'fit' | 'zoom' | 'stretch';
+
 interface VideoPlayerProps {
   tmdbId: string;
   type: 'movie' | 'tv';
@@ -64,6 +66,7 @@ export default function VideoPlayer({
   const [activeProvider, setActiveProvider] = useState<ProviderAdapter>(ALL_PROVIDERS[0]);
   const [showServerModal, setShowServerModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [aspectMode, setAspectMode] = useState<AspectMode>('fit');
 
   // AdShield (native sandbox + parent-window popup/ad blocker) always runs
   // while playing — not user-toggleable, no status UI shown for it anymore.
@@ -71,6 +74,7 @@ export default function VideoPlayer({
   const [blockedCount, setBlockedCount] = useState(0);
   const [blockToast, setBlockToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Install the full uBlock-style protection suite only while the embed is live
   useEffect(() => {
@@ -89,12 +93,53 @@ export default function VideoPlayer({
     };
   }, [isPlaying, shieldActive]);
 
+  useEffect(() => {
+    if (!isPlaying || activeProvider.id !== 'cinesrc') return;
+
+    let orientationLocked = false;
+    const handleFullscreenChange = () => {
+      const orientation = window.screen.orientation as ScreenOrientation & {
+        lock?: (orientation: 'landscape') => Promise<void>;
+      };
+      if (!orientation || typeof orientation.lock !== 'function') return;
+
+      if (document.fullscreenElement !== iframeRef.current) {
+        if (orientationLocked) {
+          orientation.unlock();
+          orientationLocked = false;
+        }
+        return;
+      }
+
+      orientation.lock('landscape').then(() => {
+        if (document.fullscreenElement === iframeRef.current) {
+          orientationLocked = true;
+        } else {
+          orientation.unlock();
+        }
+      }).catch(() => {
+        orientationLocked = false;
+      });
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (orientationLocked) window.screen.orientation.unlock();
+    };
+  }, [activeProvider.id, isPlaying]);
+
   const posterUrl = backdropPath
     ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
     : '/fallback-backdrop.jpg';
 
   const currentIframeUrl = activeProvider.buildUrl(type, tmdbId, season, episode, imdbId);
   const iframeSecurity = resolveServerIframeAttributes(activeProvider.id, currentIframeUrl, shieldActive);
+  const iframeModeClass = aspectMode === 'zoom'
+    ? styles.iframeZoom
+    : aspectMode === 'stretch'
+      ? styles.iframeStretch
+      : styles.iframeFit;
 
   return (
     <div className={styles.container}>
@@ -172,7 +217,8 @@ export default function VideoPlayer({
           <div className={styles.iframeContainer} style={{ position: 'relative' }}>
             <iframe
               key={`${activeProvider.id}-${iframeSecurity.src}`}
-              className={styles.iframe}
+              ref={iframeRef}
+              className={`${styles.iframe} ${iframeModeClass}`}
               src={iframeSecurity.src}
               {...(iframeSecurity.sandbox ? { sandbox: iframeSecurity.sandbox } : {})}
               allow={iframeSecurity.allow}
@@ -232,6 +278,7 @@ export default function VideoPlayer({
                       className={`${styles.modalServerCard} ${isActive ? styles.activeModalServerCard : ''}`}
                       onClick={() => {
                         setActiveProvider(provider);
+                        setAspectMode('fit');
                         setIsPlaying(true);
                         setShowServerModal(false);
                       }}
@@ -269,6 +316,23 @@ export default function VideoPlayer({
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
+
+          {activeProvider.id === 'cinesrc' && (
+            <div className={styles.modePillGroup} aria-label="Cinesrc aspect mode">
+              {(['fit', 'zoom', 'stretch'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  className={`${styles.modePill} ${aspectMode === mode ? styles.activeModePill : ''}`}
+                  onClick={() => setAspectMode(mode)}
+                  aria-pressed={aspectMode === mode}
+                  title={`${mode[0].toUpperCase()}${mode.slice(1)} video`}
+                  type="button"
+                >
+                  {mode[0].toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className={styles.toolbarRight}>
