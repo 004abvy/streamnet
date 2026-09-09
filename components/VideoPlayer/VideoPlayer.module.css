@@ -77,7 +77,7 @@
 @media (max-width: 640px) {
   .playerWrapper {
     aspect-ratio: auto;
-    height: 82vh;
+    height: 100vh;
     min-height: 320px;
   }
 }
@@ -1028,7 +1028,7 @@
 @media (max-width: 640px) {
   .embedIframe {
     aspect-ratio: auto !important;
-    height: 50vh !important;
+    height: 63vh !important;
     min-height: 300px;
   }
 }
@@ -1037,7 +1037,7 @@
 @media (min-width: 641px) and (max-width: 768px) {
   .embedIframe {
     aspect-ratio: auto !important;
-    height: 55vh !important;
+    height: 69vh !important;
     min-height: 340px;
   }
 }
