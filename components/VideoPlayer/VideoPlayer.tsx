@@ -6,8 +6,6 @@ import { ALL_PROVIDERS, ProviderAdapter } from '../../utils/serverManager';
 import {
   installAdblockProtection,
   resolveServerIframeAttributes,
-  getAdShieldPreference,
-  setAdShieldPreference,
 } from '../../utils/adblockFramework';
 
 interface VideoPlayerProps {
@@ -65,11 +63,11 @@ export default function VideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeProvider, setActiveProvider] = useState<ProviderAdapter>(ALL_PROVIDERS[0]);
   const [showServerModal, setShowServerModal] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  // --- AdShield: native sandbox on CineSrc + parent-window popup/ad blocker ---
-  // Lazy initializer: safe because shieldActive only affects rendered output
-  // once isPlaying is true, which never happens before hydration.
-  const [shieldActive, setShieldActive] = useState<boolean>(() => getAdShieldPreference());
+  // AdShield (native sandbox + parent-window popup/ad blocker) always runs
+  // while playing — not user-toggleable, no status UI shown for it anymore.
+  const shieldActive = true;
   const [blockedCount, setBlockedCount] = useState(0);
   const [blockToast, setBlockToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,14 +89,6 @@ export default function VideoPlayer({
     };
   }, [isPlaying, shieldActive]);
 
-  const toggleShield = () => {
-    setShieldActive((prev) => {
-      const next = !prev;
-      setAdShieldPreference(next);
-      return next;
-    });
-  };
-
   const posterUrl = backdropPath
     ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
     : '/fallback-backdrop.jpg';
@@ -108,7 +98,7 @@ export default function VideoPlayer({
 
   return (
     <div className={styles.container}>
-      {isPlaying && (
+      {isPlaying && !bannerDismissed && (
         <div
           style={{
             display: 'flex',
@@ -124,23 +114,43 @@ export default function VideoPlayer({
           }}
         >
           <span>⚠️ Video not loading, stuck, or showing ads? Try switching the server.</span>
-          <button
-            type="button"
-            onClick={() => setShowServerModal(true)}
-            style={{
-              flexShrink: 0,
-              background: '#f59e0b',
-              color: '#111',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '0.35rem 0.75rem',
-              fontWeight: 700,
-              fontSize: '0.78rem',
-              cursor: 'pointer',
-            }}
-          >
-            🔁 Change Server
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setShowServerModal(true)}
+              style={{
+                flexShrink: 0,
+                background: '#f59e0b',
+                color: '#111',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '0.35rem 0.75rem',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+              }}
+            >
+              Change Server
+            </button>
+            <button
+              type="button"
+              onClick={() => setBannerDismissed(true)}
+              aria-label="Dismiss"
+              title="Dismiss"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#fbbf24',
+                fontSize: '1rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                lineHeight: 1,
+                padding: '0.1rem 0.3rem',
+              }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -229,7 +239,6 @@ export default function VideoPlayer({
                     >
                       <div className={styles.cardTopRow}>
                         <span className={styles.serverCardName}>
-                          {provider.flag ? `${provider.flag} ` : ''}
                           {provider.name}
                           {isActive && <span className={styles.activeCheckIcon}>✓</span>}
                         </span>
@@ -241,39 +250,6 @@ export default function VideoPlayer({
                     </button>
                   );
                 })}
-              </div>
-
-              {/* AdShield VIP Status Card */}
-              <div className={styles.shieldStatusCard}>
-                <div className={styles.shieldStatusLeft}>
-                  <span className={styles.shieldStatusPulse}>
-                    <span className={styles.shieldDot} />
-                    {shieldActive && <span className={styles.shieldRing} />}
-                  </span>
-                  <div>
-                    <div className={styles.shieldStatusTitle}>
-                      🛡️ AdShield Protection
-                      {blockedCount > 0 && (
-                        <span className={styles.activeBadge}>{blockedCount} Blocked</span>
-                      )}
-                    </div>
-                    <div className={styles.shieldStatusDesc}>
-                      {shieldActive
-                        ? 'Blocking popups & redirects (native sandbox on CineSrc 4K, script shield elsewhere)'
-                        : 'Protection disabled — embeds may show ads or popups'}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className={`${styles.shieldToggleBtn} ${shieldActive ? styles.shieldToggleBtnActive : ''}`}
-                  onClick={toggleShield}
-                  aria-label="Toggle AdShield protection"
-                  aria-pressed={shieldActive}
-                  title={shieldActive ? 'Disable AdShield' : 'Enable AdShield'}
-                >
-                  <span className={styles.shieldToggleThumb} />
-                </button>
               </div>
             </div>
           </div>
@@ -290,7 +266,7 @@ export default function VideoPlayer({
             title="Change Server"
             type="button"
           >
-            <span>{activeProvider.flag || '🌐'} {activeProvider.name}</span>
+            <span>{activeProvider.name}</span>
             <span className={styles.qualityTag}>{activeProvider.capabilities.quality}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M6 9l6 6 6-6" />
@@ -299,18 +275,9 @@ export default function VideoPlayer({
         </div>
 
         <div className={styles.toolbarRight}>
-          <button
-            type="button"
-            className={styles.shieldBadge}
-            onClick={() => setShowServerModal(true)}
-            title={shieldActive ? 'AdShield is active — click for details' : 'AdShield is disabled — click to enable'}
-            style={{ cursor: 'pointer', border: 'none' }}
-          >
-            {shieldActive ? '🛡️ Shielded' : '⚠️ Unshielded'}
-            {blockedCount > 0 && (
-              <span className={styles.blockedBadge}>{blockedCount} Blocked</span>
-            )}
-          </button>
+          {blockedCount > 0 && (
+            <span className={styles.blockedBadge}>{blockedCount} Blocked</span>
+          )}
         </div>
       </div>
     </div>

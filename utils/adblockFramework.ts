@@ -205,12 +205,21 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  // Only CineSrc has been confirmed to tolerate the native <iframe sandbox>.
-  // Every other provider either refuses to play under it ("please disable
-  // sandbox") or breaks once its own network requests are routed through any
-  // kind of proxy/rewrite. So: full sandbox for CineSrc, no sandbox at all
-  // for everyone else — their real URL loads directly, exactly as before.
-  const sandbox = sandboxActive && serverId === 'cinesrc' ? PERFECT_SANDBOX_STRING : null;
+  // Opening a NEW TAB is exactly the `window.open()` vector. A parent-page
+  // script can never patch that away for a cross-origin iframe — each frame
+  // has its own separate `window`, and the browser enforces that boundary
+  // regardless of what JS runs in the top page. The ONLY thing that can
+  // actually block it is the native <iframe sandbox> attribute without
+  // `allow-popups`, so when AdShield is on, EVERY provider gets the full
+  // sandbox by default — not just CineSrc. Some providers (confirmed by
+  // testing: everything except CineSrc) actively detect this and refuse to
+  // play ("please disable sandbox"); when that happens the always-visible
+  // "Change Server" banner is the intended way out — pick a different
+  // provider (CineSrc is first/default) rather than silently losing
+  // popup protection. Turning AdShield off removes the sandbox entirely for
+  // maximum compatibility, at the cost of that provider being able to open
+  // new tabs again.
+  const sandbox = sandboxActive ? PERFECT_SANDBOX_STRING : null;
 
   return {
     src: cleanUrl,
