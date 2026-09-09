@@ -251,8 +251,16 @@ export async function resolve1DmMediaInfo(
     console.warn('Nxsha Language Sniffer error:', e);
   }
 
-  // Pre-populate instant Hindi & 4K streams
+  // Pre-populate instant YapGrid & CineSrc 4K streams
   if (type === 'movie') {
+    items.push({
+      id: `m3u8-yapgrid-${tmdbId}`,
+      type: 'video',
+      label: '📹 YapGrid 4K Ad-Free Master Stream',
+      url: `https://yapgrid.com/embed/movie/${tmdbId}?autoplay=1&server=x`,
+      resolution: '4K',
+      mimeType: 'application/x-mpegURL',
+    });
     items.push({
       id: `m3u8-cinesrc-${tmdbId}`,
       type: 'video',
@@ -262,6 +270,14 @@ export async function resolve1DmMediaInfo(
       mimeType: 'application/x-mpegURL',
     });
   } else {
+    items.push({
+      id: `m3u8-yapgrid-tv-${tmdbId}`,
+      type: 'video',
+      label: `📹 YapGrid 4K Episode Master (S${season || 1} E${episode || 1})`,
+      url: `https://yapgrid.com/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&server=x`,
+      resolution: '4K',
+      mimeType: 'application/x-mpegURL',
+    });
     items.push({
       id: `m3u8-cinesrc-tv-${tmdbId}`,
       type: 'video',

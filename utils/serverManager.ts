@@ -1,10 +1,11 @@
 import { ProviderAdapter } from './providers/types';
 import { vidlinkAdapter } from './providers/vidlink';
+import { yapgridAdapter } from './providers/yapgrid';
 import { cinesrcAdapter } from './providers/cinesrc';
 import { nxshaAdapter } from './providers/nxsha';
 import { genericAdapters } from './providers/generic';
 
-export { vidlinkAdapter, cinesrcAdapter, nxshaAdapter, genericAdapters };
+export { vidlinkAdapter, yapgridAdapter, cinesrcAdapter, nxshaAdapter, genericAdapters };
 export type { ProviderAdapter } from './providers/types';
 
 /**
@@ -12,6 +13,7 @@ export type { ProviderAdapter } from './providers/types';
  * Order defines default base priority before dynamic health scoring is applied
  */
 export const ALL_PROVIDERS: ProviderAdapter[] = [
+  yapgridAdapter,
   vidlinkAdapter,
   cinesrcAdapter,
   nxshaAdapter,

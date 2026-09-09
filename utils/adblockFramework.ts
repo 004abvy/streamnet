@@ -85,6 +85,15 @@ const STANDARD_ALLOW_FEATURES = [
  * popups, new tabs, and page redirects regardless of iframe sandbox state.
  */
 export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
+  yapgrid: {
+    serverId: 'yapgrid',
+    name: 'YapGrid 4K',
+    sandboxTokens: null,
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Clean ad-free VIP player. In-player subtitle upload and translation supported.',
+  },
   vidlink: {
     serverId: 'vidlink',
     name: 'VidLink Ultra',
