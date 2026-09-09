@@ -88,7 +88,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   yapgrid: {
     serverId: 'yapgrid',
     name: 'YapGrid 4K',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -97,16 +97,16 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidlink: {
     serverId: 'vidlink',
     name: 'VidLink Ultra',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
-    notes: 'Premium VIP player. Protected by uBlock Origin parent shield; sandbox omitted to prevent anti-sandbox alert.',
+    notes: 'Premium VIP player. Browser-enforced sandbox blocks popups/top-nav natively; parent uBlock shield adds defense-in-depth.',
   },
   cinesrc: {
     serverId: 'cinesrc',
     name: 'CineSrc 4K',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -122,7 +122,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   nxsha: {
     serverId: 'nxsha',
     name: 'Nxsha Cinema',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -131,7 +131,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidrock: {
     serverId: 'vidrock',
     name: 'VidRock 4K',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -140,7 +140,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   'vidsrc-me': {
     serverId: 'vidsrc-me',
     name: 'VidSrc Global',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -149,7 +149,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   'vidsrc-in': {
     serverId: 'vidsrc-in',
     name: 'VidSrc India',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -158,7 +158,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidcore: {
     serverId: 'vidcore',
     name: 'VidCore Direct',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -167,7 +167,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   vidfast: {
     serverId: 'vidfast',
     name: 'VidFast Backup',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -176,7 +176,7 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
   'vidsrc-io': {
     serverId: 'vidsrc-io',
     name: 'VidSrc.io Backup',
-    sandboxTokens: null,
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
     referrerPolicy: 'no-referrer-when-downgrade',
     allowFeatures: [...STANDARD_ALLOW_FEATURES],
     protectionLevel: 'maximum',
@@ -187,11 +187,21 @@ export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
 export const DEFAULT_SERVER_POLICY: ServerAdPolicy = {
   serverId: 'default',
   name: 'Default Streaming Server',
-  sandboxTokens: null,
+  sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
   referrerPolicy: 'no-referrer-when-downgrade',
   allowFeatures: [...STANDARD_ALLOW_FEATURES],
   protectionLevel: 'maximum',
 };
+
+/**
+ * Providers confirmed to actively detect and refuse to play inside a
+ * sandboxed iframe (showing a "please disable sandbox" prompt). Add a
+ * provider's serverId here ONLY once this is empirically confirmed —
+ * doing so removes the browser's native popup/redirect blocking for it,
+ * leaving it protected solely by the (weaker, same-context-only) parent
+ * window uBlock shield.
+ */
+export const SANDBOX_INCOMPATIBLE_SERVER_IDS: ReadonlySet<string> = new Set([]);
 
 export function getServerAdPolicy(serverId: string): ServerAdPolicy {
   return SERVER_AD_POLICIES[serverId] || DEFAULT_SERVER_POLICY;
@@ -205,15 +215,18 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  // `sandboxTokens: null` is an explicit opt-out (provider actively detects and
-  // refuses to play inside a sandboxed iframe). In that case we must NOT fall
-  // back to a default sandbox string, or every embed would trigger "please
-  // disable sandbox" prompts. Protection for these providers instead comes
-  // entirely from the parent-window uBlock-style shield (installAdblockProtection).
-  const sandbox = !sandboxActive || policy.sandboxTokens === null
+  // `sandboxTokens: null` (or a serverId listed in SANDBOX_INCOMPATIBLE_SERVER_IDS)
+  // is an explicit opt-out for providers confirmed to actively detect and refuse
+  // to play inside a sandboxed iframe. Everyone else gets the real, browser-enforced
+  // sandbox — this is the ONLY mechanism that can block popups/top-navigation
+  // triggered by the embedded provider's OWN script, since a parent-window JS
+  // shield cannot reach into a cross-origin iframe's execution context at all.
+  const tokens = policy.sandboxTokens;
+  const isOptedOut = tokens === null || SANDBOX_INCOMPATIBLE_SERVER_IDS.has(serverId);
+  const sandbox = !sandboxActive || isOptedOut || tokens === null
     ? null
-    : policy.sandboxTokens.length > 0
-      ? policy.sandboxTokens.join(' ')
+    : tokens.length > 0
+      ? tokens.join(' ')
       : PERFECT_SANDBOX_STRING;
 
   return {

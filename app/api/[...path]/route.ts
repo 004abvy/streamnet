@@ -309,16 +309,24 @@ export async function GET(
         upstreamHeaders = {};
       }
 
-      const response = await fetch(decodedUrl, {
-        cache: 'no-store',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': new URL(decodedUrl).origin,
-          ...upstreamHeaders,
-        }
-      });
+      let response: Response;
+      try {
+        response = await fetch(decodedUrl, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(15000),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': new URL(decodedUrl).origin,
+            ...upstreamHeaders,
+          }
+        });
+      } catch (err: any) {
+        console.error('[stream/proxy] upstream fetch failed:', decodedUrl, err?.name, err?.message);
+        return new NextResponse(`Proxy fetch failed: ${err?.name === 'TimeoutError' ? 'upstream timed out' : (err?.message || 'network error')}`, { status: 502 });
+      }
 
       if (!response.ok) {
+        console.warn('[stream/proxy] upstream returned', response.status, decodedUrl);
         return new NextResponse('Stream Fetch Error', { status: response.status });
       }
 

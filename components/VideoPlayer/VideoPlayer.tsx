@@ -80,6 +80,7 @@ export default function VideoPlayer({
   const [isResolving, setIsResolving] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [allHlsFailed, setAllHlsFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // --- AdShield: perfect iframe sandbox + parent-window popup/ad blocker ---
   // Lazy initializer: safe because shieldActive only affects rendered output
@@ -118,10 +119,14 @@ export default function VideoPlayer({
     ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
     : '/fallback-backdrop.jpg';
 
-  const handleStartPlayback = async () => {
+  // `force` bypasses the "already have a stream" guard below. Without it,
+  // retrying after every source has already failed would do nothing: `stream`
+  // is left pointing at the last (failed) candidate rather than being reset to
+  // null, so the early return would silently swallow the retry attempt.
+  const handleStartPlayback = async (force: boolean = false) => {
     setIsPlaying(true);
     setAllHlsFailed(false);
-    if (stream || isResolving) return;
+    if (!force && (stream || isResolving)) return;
 
     setIsResolving(true);
     setStreamError(null);
@@ -187,7 +192,7 @@ export default function VideoPlayer({
           <div
             className={styles.posterOverlay}
             style={{ backgroundImage: `url(${posterUrl})` }}
-            onClick={handleStartPlayback}
+            onClick={() => handleStartPlayback()}
           >
             <div className={styles.posterGradient} />
             <button className={styles.playBtn} aria-label="Play video" type="button">
@@ -203,6 +208,7 @@ export default function VideoPlayer({
             </span>
             <span className={styles.loadingSubText} style={{ textAlign: 'center', maxWidth: '400px', marginTop: '0.25rem' }}>
               Would you like to switch to Iframe Embed Server Mode (YapGrid 4K / VidLink / CineSrc)?
+              {retryCount > 0 ? ` Retried ${retryCount}x already.` : ''}
             </span>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
               <button
@@ -221,11 +227,15 @@ export default function VideoPlayer({
                 className={styles.oneDmAllowBtn}
                 style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
                 onClick={() => {
+                  setRetryCount((count) => count + 1);
                   setAllHlsFailed(false);
-                  handleStartPlayback();
+                  setStream(null);
+                  setSources([]);
+                  setActiveSourceIndex(0);
+                  handleStartPlayback(true);
                 }}
               >
-                🔄 Retry Direct HLS
+                🔄 Retry Direct HLS{retryCount > 0 ? ` (${retryCount})` : ''}
               </button>
             </div>
           </div>
