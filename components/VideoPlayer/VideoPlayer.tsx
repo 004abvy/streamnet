@@ -66,8 +66,18 @@ export default function VideoPlayer({
   const [activeProvider, setActiveProvider] = useState<ProviderAdapter>(ALL_PROVIDERS[0]);
   const [showServerModal, setShowServerModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [aspectMode, setAspectMode] = useState<AspectMode>('fit');
-  const [zoomScale, setZoomScale] = useState(1);
+  const [aspectMode, setAspectMode] = useState<AspectMode>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return 'zoom';
+    }
+    return 'fit';
+  });
+  const [zoomScale, setZoomScale] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return 1.15;
+    }
+    return 1;
+  });
 
   // AdShield (native sandbox + parent-window popup/ad blocker) always runs
   // while playing — not user-toggleable, no status UI shown for it anymore.

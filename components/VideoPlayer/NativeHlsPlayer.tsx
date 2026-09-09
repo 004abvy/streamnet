@@ -39,6 +39,10 @@ export default function NativeHlsPlayer({
   const [selectedQuality, setSelectedQuality] = useState(-1);
   const [subtitles, setSubtitles] = useState<SubtitleOption[]>([]);
   const [selectedSubtitle, setSelectedSubtitle] = useState(-1);
+  const [isZoomed, setIsZoomed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= 768;
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -206,15 +210,32 @@ export default function NativeHlsPlayer({
       )}
       <video
         ref={videoRef}
-        className={styles.iframe}
+        className={`${styles.iframe} ${isZoomed ? styles.zoomedMedia : ''}`}
         controls
         playsInline
         poster={posterUrl}
         onEnded={onEnded}
-        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        style={{ width: '100%', height: '100%', objectFit: isZoomed ? 'cover' : 'contain' }}
       />
-      {!isLoading && !errorState && (qualities.length > 0 || subtitles.length > 0) && (
+      {!isLoading && !errorState && (
         <div className={styles.playerOptions}>
+          <button
+            type="button"
+            className={styles.playerOption}
+            onClick={() => setIsZoomed((prev) => !prev)}
+            style={{
+              background: isZoomed ? '#f59e0b' : '#161622',
+              color: isZoomed ? '#000' : '#fff',
+              padding: '0.25rem 0.55rem',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              border: 'none',
+              fontWeight: 700,
+            }}
+            title="Toggle Mobile Zoom-to-Fill"
+          >
+            {isZoomed ? '🔍 Zoomed' : '📐 Fit'}
+          </button>
           {qualities.length > 0 && (
             <label className={styles.playerOption}>
               <span>Quality</span>

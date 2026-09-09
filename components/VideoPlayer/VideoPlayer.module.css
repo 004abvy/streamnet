@@ -130,6 +130,8 @@
 .iframeContainer {
   width: 100%;
   height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .iframe {
@@ -137,7 +139,29 @@
   height: 100%;
   border: none;
   display: block;
+  object-fit: contain;
   transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), object-fit 0.3s ease;
+}
+
+/* Mobile Zoom-to-Fill Mode (0 Black Bars) */
+.zoomedMedia {
+  object-fit: cover !important;
+  transform: scale(1.08) !important;
+}
+
+@media (max-width: 768px) {
+  .playerWrapper {
+    aspect-ratio: auto;
+    height: 56vh;
+    min-height: 280px;
+  }
+  .iframe {
+    object-fit: cover !important;
+  }
+  .iframeFit {
+    transform: scale(1.15) !important;
+  }
 }
 
 .iframeFit {
