@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'a4e8c9bd39aadd7d67d8f0736c7a882a';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -307,6 +310,7 @@ export async function GET(
       }
 
       const response = await fetch(decodedUrl, {
+        cache: 'no-store',
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Referer': new URL(decodedUrl).origin,
@@ -357,7 +361,10 @@ export async function GET(
         return new NextResponse(rewritten, {
           headers: {
             'Content-Type': 'application/vnd.apple.mpegurl',
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
           }
         });
       } else {
@@ -366,7 +373,10 @@ export async function GET(
         return new NextResponse(arrayBuffer, {
           headers: {
             'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
           }
         });
       }
@@ -659,6 +669,12 @@ export async function GET(
         tmdbId: id,
         sources: [],
         message: 'No direct HLS streams could be resolved. Try iframe mode.',
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        }
       });
     }
 

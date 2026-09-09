@@ -77,8 +77,9 @@ export default function NativeHlsPlayer({
     }
 
     if (Hls.isSupported()) {
-      let timeoutId: any = setTimeout(() => {
-        if (isLoading) {
+      let settled = false;
+      const timeoutId = setTimeout(() => {
+        if (!settled) {
           fail('HLS connection timeout.');
         }
       }, 7000);
@@ -100,6 +101,7 @@ export default function NativeHlsPlayer({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        settled = true;
         if (timeoutId) clearTimeout(timeoutId);
         setIsLoading(false);
 
@@ -140,6 +142,7 @@ export default function NativeHlsPlayer({
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
+          settled = true;
           if (timeoutId) clearTimeout(timeoutId);
           fail('Failed to load the direct HLS stream.');
         }

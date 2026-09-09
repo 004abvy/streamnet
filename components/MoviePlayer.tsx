@@ -35,7 +35,9 @@ export default function MoviePlayer({ movieId }: { movieId: string }) {
     setError(null);
     try {
       const params = new URLSearchParams({ id: movieId, type: 'movie' });
-      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`);
+      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`, {
+        cache: 'no-store',
+      });
       const data = await res.json();
       const resolved = Array.isArray(data?.sources) && data.sources.length > 0
         ? data.sources
@@ -54,7 +56,7 @@ export default function MoviePlayer({ movieId }: { movieId: string }) {
       } else {
         setError('No HLS streams available.');
       }
-    } catch (e) {
+    } catch {
       setError('Failed to resolve HLS stream.');
     } finally {
       setIsResolving(false);

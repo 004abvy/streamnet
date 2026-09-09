@@ -64,7 +64,9 @@ export default function VideoPlayer({
         season: String(season || 1),
         episode: String(episode || 1),
       });
-      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`);
+      const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`, {
+        cache: 'no-store',
+      });
       const data = await res.json();
 
       const resolvedSources = Array.isArray(data?.sources) && data.sources.length > 0
@@ -87,14 +89,14 @@ export default function VideoPlayer({
       } else {
         setAllHlsFailed(true);
       }
-    } catch (e) {
+    } catch {
       setAllHlsFailed(true);
     } finally {
       setIsResolving(false);
     }
   };
 
-  const handleHlsError = (msg?: string) => {
+  const handleHlsError = () => {
     if (sources.length > 1 && activeSourceIndex < sources.length - 1) {
       const nextIndex = activeSourceIndex + 1;
       setActiveSourceIndex(nextIndex);
