@@ -326,27 +326,32 @@ export default function VideoPlayer({
           </button>
 
           {activeProvider.id === 'cinesrc' && (
-            <div className={styles.modePillGroup} aria-label="Cinesrc aspect mode">
-              {(['fit', 'zoom', 'stretch'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  className={`${styles.modePill} ${aspectMode === mode ? styles.activeModePill : ''}`}
-                  onClick={() => {
-                    setAspectMode(mode);
-                    setZoomScale(1);
-                  }}
-                  aria-pressed={aspectMode === mode}
-                  title={`${mode[0].toUpperCase()}${mode.slice(1)} video`}
-                  type="button"
-                >
-                  {mode[0].toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
+            <div className={styles.playerControlGroup}>
+              <span className={styles.controlGroupLabel}>View</span>
+              <div className={styles.modePillGroup} aria-label="Cinesrc aspect mode">
+                {(['fit', 'zoom', 'stretch'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    className={`${styles.modePill} ${aspectMode === mode ? styles.activeModePill : ''}`}
+                    onClick={() => {
+                      setAspectMode(mode);
+                      setZoomScale(1);
+                    }}
+                    aria-pressed={aspectMode === mode}
+                    title={`${mode[0].toUpperCase()}${mode.slice(1)} video`}
+                    type="button"
+                  >
+                    {mode[0].toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
           {activeProvider.id === 'cinesrc' && (
-            <div className={styles.zoomControls} aria-label="Cinesrc zoom controls">
+            <div className={styles.playerControlGroup}>
+              <span className={styles.controlGroupLabel}>Zoom</span>
+              <div className={styles.zoomControls} aria-label="Cinesrc zoom controls">
               <button
                 className={styles.zoomButton}
                 onClick={() => updateZoom(zoomScale - 0.1)}
@@ -366,6 +371,7 @@ export default function VideoPlayer({
                 value={zoomScale}
                 onChange={(event) => updateZoom(Number(event.target.value))}
                 aria-label="Zoom level"
+                aria-valuetext={`${Math.round(zoomScale * 100)} percent`}
               />
               <button
                 className={styles.zoomButton}
@@ -385,6 +391,7 @@ export default function VideoPlayer({
               >
                 {Math.round(zoomScale * 100)}%
               </button>
+              </div>
             </div>
           )}
         </div>
