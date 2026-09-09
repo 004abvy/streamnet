@@ -28,22 +28,50 @@
   overflow: hidden;
 }
 
-.playerWrapper:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
-  aspect-ratio: auto;
-  border-radius: 0;
-  background: #000;
+.playerWrapper:fullscreen,
+.container:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
 }
 
-.playerWrapper:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
-  aspect-ratio: auto;
-  border-radius: 0;
-  background: #000;
+.playerWrapper:-webkit-full-screen,
+.container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .container {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+  .playerWrapper {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    aspect-ratio: auto !important;
+  }
 }
 
 @media (max-width: 640px) {
