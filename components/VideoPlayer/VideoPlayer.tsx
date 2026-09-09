@@ -16,6 +16,7 @@ interface VideoPlayerProps {
 }
 
 interface ResolvedStream {
+  id?: string;
   streamUrl: string;
   streamType: 'hls' | 'mp4' | 'webm';
   provider?: string;
@@ -32,6 +33,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [stream, setStream] = useState<ResolvedStream | null>(null);
+  const [sources, setSources] = useState<ResolvedStream[]>([]);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
   const posterUrl = backdropPath
@@ -62,12 +64,16 @@ export default function VideoPlayer({
         throw new Error(data?.message || 'No direct HLS or video stream was returned.');
       }
 
-      setStream({
+      const resolvedSources = Array.isArray(data.sources) ? data.sources : [];
+      const resolvedStream = {
+        id: data.id,
         streamUrl: data.streamUrl,
         streamType: data.streamType,
         provider: data.provider,
         quality: data.quality,
-      });
+      } satisfies ResolvedStream;
+      setSources(resolvedSources.length > 0 ? resolvedSources : [resolvedStream]);
+      setStream(resolvedStream);
     } catch (error) {
       setStreamError(error instanceof Error ? error.message : 'The direct stream could not be resolved.');
     } finally {
@@ -93,6 +99,7 @@ export default function VideoPlayer({
           </div>
         ) : stream ? (
           <NativeHlsPlayer
+            key={stream.streamUrl}
             streamUrl={stream.streamUrl}
             streamType={stream.streamType}
             posterUrl={posterUrl}
@@ -114,6 +121,28 @@ export default function VideoPlayer({
         <span className={styles.activeServerBadge}>
           {stream ? `${stream.provider || 'TMDB Embed API'}${stream.quality ? ` • ${stream.quality}` : ''}` : 'Direct HLS / M3U8 player'}
         </span>
+        {sources.length > 1 && (
+          <label className={styles.serverSelector}>
+            <span>Change server</span>
+            <select
+              value={stream?.id || ''}
+              onChange={(event) => {
+                const nextSource = sources.find((source) => source.id === event.target.value);
+                if (nextSource) {
+                  setStream(nextSource);
+                  setStreamError(null);
+                }
+              }}
+              aria-label="Change direct stream server"
+            >
+              {sources.map((source, index) => (
+                <option key={source.id || `${source.streamUrl}-${index}`} value={source.id}>
+                  {source.provider || 'Direct source'}{source.quality ? ` • ${source.quality}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className={styles.shieldBadge} title="Native player status">No embedded pages</span>
       </div>
     </div>

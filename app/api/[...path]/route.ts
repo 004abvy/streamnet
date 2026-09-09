@@ -570,7 +570,14 @@ export async function GET(
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
       try {
-        const embedApiUrl = process.env.TMDB_EMBED_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8787';
+        const embedApiUrl = process.env.TMDB_EMBED_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8787' : '');
+        if (!embedApiUrl) {
+          return NextResponse.json({
+            success: false,
+            tmdbId: id,
+            message: 'TMDB_EMBED_API_URL is not configured. Deploy the TMDB Embed API and add its public URL to Vercel environment variables.',
+          }, { status: 503 });
+        }
         const streamType = type === 'tv' ? 'series' : 'movie';
         const query = new URLSearchParams({ season, episode });
         const streamsResponse = await fetch(`${embedApiUrl}/api/streams/${streamType}/${encodeURIComponent(id)}?${query}`);
@@ -587,22 +594,29 @@ export async function GET(
           const selected = directStreams.find((stream: any) => /\.m3u8(?:\?|$)/i.test(stream.url)) || directStreams[0];
 
           if (selected?.url) {
-            const streamType = /\.m3u8(?:\?|$)/i.test(selected.url) || /^(?:hls|m3u8)$/i.test(selected.type || '') ? 'hls'
-              : /\.webm(?:\?|$)/i.test(selected.url) || selected.type === 'webm' ? 'webm' : 'mp4';
-            const streamHeaders = selected.headers || selected.requestHeaders || {};
             const currentUrl = new URL(request.url);
-            const proxyParams = new URLSearchParams({
-              url: selected.url,
-              headers: JSON.stringify(streamHeaders),
+            const sources = directStreams.map((source: any, index: number) => {
+              const mediaType = /\.m3u8(?:\?|$)/i.test(source.url) || /^(?:hls|m3u8)$/i.test(source.type || '') ? 'hls'
+                : /\.webm(?:\?|$)/i.test(source.url) || source.type === 'webm' ? 'webm' : 'mp4';
+              const proxyParams = new URLSearchParams({
+                url: source.url,
+                headers: JSON.stringify(source.headers || source.requestHeaders || {}),
+              });
+              if (mediaType === 'hls') proxyParams.set('manifest', '1');
+              return {
+                id: `${source.provider || source.name || 'source'}-${index}`,
+                provider: source.provider || source.name || 'TMDB Embed API',
+                quality: source.quality || source.resolution || null,
+                streamType: mediaType,
+                streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+              };
             });
-            if (streamType === 'hls') proxyParams.set('manifest', '1');
+            const selectedSource = sources[directStreams.indexOf(selected)] || sources[0];
             return NextResponse.json({
               success: true,
               tmdbId: id,
-              streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
-              streamType,
-              provider: selected.provider || selected.name || 'TMDB Embed API',
-              quality: selected.quality || null,
+              ...selectedSource,
+              sources,
             });
           }
         }

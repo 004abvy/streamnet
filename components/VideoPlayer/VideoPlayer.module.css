@@ -172,6 +172,25 @@
   font-weight: 700;
 }
 
+.serverSelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #d1d5db;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.serverSelector select {
+  max-width: 14rem;
+  padding: 0.35rem 0.45rem;
+  color: #f9fafb;
+  background: #161622;
+  border: 1px solid #3f3f50;
+  border-radius: 5px;
+  font-size: 0.75rem;
+}
+
 /* Ambient Stream Loading Overlay */
 .loadingOverlay {
   position: absolute;
