@@ -205,9 +205,16 @@ export function resolveServerIframeAttributes(
   const policy = getServerAdPolicy(serverId);
   const cleanUrl = policy.cleanUrl ? policy.cleanUrl(rawUrl) : rawUrl;
 
-  const sandbox = sandboxActive
-    ? (policy.sandboxTokens ? policy.sandboxTokens.join(' ') : PERFECT_SANDBOX_STRING)
-    : null;
+  // `sandboxTokens: null` is an explicit opt-out (provider actively detects and
+  // refuses to play inside a sandboxed iframe). In that case we must NOT fall
+  // back to a default sandbox string, or every embed would trigger "please
+  // disable sandbox" prompts. Protection for these providers instead comes
+  // entirely from the parent-window uBlock-style shield (installAdblockProtection).
+  const sandbox = !sandboxActive || policy.sandboxTokens === null
+    ? null
+    : policy.sandboxTokens.length > 0
+      ? policy.sandboxTokens.join(' ')
+      : PERFECT_SANDBOX_STRING;
 
   return {
     src: cleanUrl,
