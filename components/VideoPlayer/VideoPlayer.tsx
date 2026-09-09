@@ -243,7 +243,21 @@ export default function VideoPlayer({
     setIsPlaying(true);
     playbackManagerRef.current?.startPlayback();
 
-    // Instant 1DM Stream & Track Extraction on Play
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+
+    // 1. Auto-resolve direct decrypted HLS stream for 0-Ad Native Player
+    fetch(`${backendUrl}/api/stream/auto-resolve?id=${tmdbId}&type=${type}&season=${season || 1}&episode=${episode || 1}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && data.streamUrl) {
+          setDirectHlsUrl(data.streamUrl);
+          setUseNativeHlsMode(true);
+          setFailoverToast('⚡ Zenith Direct HLS Mode Active (0 iFrames, 0 Popups, 0 Ads!)');
+        }
+      })
+      .catch((err) => console.warn('Auto-resolve stream error:', err));
+
+    // 2. Instant 1DM Stream & Track Extraction on Play
     resolve1DmMediaInfo(tmdbId, type, season, episode).then((items) => {
       if (items && items.length > 0) {
         setSniffedMedia((prev) => {
@@ -253,10 +267,9 @@ export default function VideoPlayer({
         });
 
         const m3u8Item = items.find((i) => i.url.includes('.m3u8') || i.mimeType?.includes('mpegURL'));
-        if (m3u8Item) {
+        if (m3u8Item && !directHlsUrl) {
           setDirectHlsUrl(m3u8Item.url);
           setUseNativeHlsMode(true);
-          setFailoverToast('⚡ Zenith Direct HLS Mode Active (0 Ads & 0 Popups!)');
         }
       }
     });

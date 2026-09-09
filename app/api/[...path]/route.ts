@@ -531,6 +531,51 @@ export async function GET(
       return NextResponse.json({ success: true, tmdbId: id, mediaItems });
     }
 
+    // 18. /api/stream/auto-resolve (Instant Direct HLS Stream Extractor)
+    if (pathStr === 'stream/auto-resolve') {
+      const id = searchParams.get('id');
+      const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
+      const season = searchParams.get('season') || '1';
+      const episode = searchParams.get('episode') || '1';
+
+      if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const baseUrl = `${protocol}://${host}`;
+
+      try {
+        const infoRes = await fetch(`${baseUrl}/api/stream/mediaInfo?id=${id}`);
+        if (infoRes.ok) {
+          const info = await infoRes.json();
+          if (info && (info.playlist || info.file || info.stream)) {
+            const rawStreamUrl = info.playlist || info.file || info.stream;
+            const proxiedStreamUrl = `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(rawStreamUrl)}`;
+            return NextResponse.json({
+              success: true,
+              tmdbId: id,
+              streamUrl: proxiedStreamUrl,
+              rawStreamUrl,
+              subtitles: info.subtitles || [],
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Auto-resolve error:', e);
+      }
+
+      const fallbackUrl = type === 'tv'
+        ? `https://yapgrid.com/embed/tv/${id}/${season}/${episode}?autoplay=1&server=x`
+        : `https://yapgrid.com/embed/movie/${id}?autoplay=1&server=x`;
+
+      return NextResponse.json({
+        success: false,
+        tmdbId: id,
+        fallbackUrl,
+        message: 'Using YapGrid 4K Ad-Free Server Fallback',
+      });
+    }
+
     return NextResponse.json({ error: 'Endpoint not found' }, { status: 404 });
   } catch (error: any) {
     console.error('API Error:', error.message);
