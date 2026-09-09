@@ -661,6 +661,17 @@ export async function GET(
         streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(nxshaUrl)}&manifest=1`,
       });
 
+      const movieboxUrl = type === 'tv'
+        ? `https://www.moviebox.ph/detail/tv-${id}-s${season}-e${episode}`
+        : `https://www.moviebox.ph/detail/movie-${id}`;
+      sources.push({
+        id: 'moviebox-hls',
+        provider: 'MovieBox Direct',
+        quality: '1080p',
+        streamType: 'hls',
+        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(movieboxUrl)}&manifest=1`,
+      });
+
       return NextResponse.json({
         success: true,
         tmdbId: id,

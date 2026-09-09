@@ -3,9 +3,10 @@ import { vidlinkAdapter } from './providers/vidlink';
 import { yapgridAdapter } from './providers/yapgrid';
 import { cinesrcAdapter } from './providers/cinesrc';
 import { nxshaAdapter } from './providers/nxsha';
+import { movieboxAdapter } from './providers/moviebox';
 import { genericAdapters } from './providers/generic';
 
-export { vidlinkAdapter, yapgridAdapter, cinesrcAdapter, nxshaAdapter, genericAdapters };
+export { vidlinkAdapter, yapgridAdapter, cinesrcAdapter, nxshaAdapter, movieboxAdapter, genericAdapters };
 export type { ProviderAdapter } from './providers/types';
 
 /**
@@ -17,6 +18,7 @@ export const ALL_PROVIDERS: ProviderAdapter[] = [
   vidlinkAdapter,
   cinesrcAdapter,
   nxshaAdapter,
+  movieboxAdapter,
   ...genericAdapters,
 ];
 
