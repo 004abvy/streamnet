@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { KNOWN_AD_DOMAINS } from '../../../utils/adblockFramework';
+import { GET_INJECTABLE_UBLOCK_BUNDLE } from '../../../utils/javascriptInjector';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -309,20 +311,38 @@ export async function GET(
         upstreamHeaders = {};
       }
 
-      let response: Response;
-      try {
-        response = await fetch(decodedUrl, {
-          cache: 'no-store',
-          signal: AbortSignal.timeout(15000),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': new URL(decodedUrl).origin,
-            ...upstreamHeaders,
+      const proxyFetchHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': new URL(decodedUrl).origin,
+        ...upstreamHeaders,
+      };
+
+      let response: Response | null = null;
+      let lastErr: any = null;
+      // One retry on transient failures (timeouts / 5xx / rate-limits) — many
+      // scraped CDNs intermittently reject the first request under load.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const candidate = await fetch(decodedUrl, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(15000),
+            headers: proxyFetchHeaders,
+          });
+          if (candidate.ok || attempt === 1) {
+            response = candidate;
+            break;
           }
-        });
-      } catch (err: any) {
-        console.error('[stream/proxy] upstream fetch failed:', decodedUrl, err?.name, err?.message);
-        return new NextResponse(`Proxy fetch failed: ${err?.name === 'TimeoutError' ? 'upstream timed out' : (err?.message || 'network error')}`, { status: 502 });
+          console.warn(`[stream/proxy] attempt ${attempt + 1} got ${candidate.status}, retrying:`, decodedUrl);
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        } catch (err: any) {
+          lastErr = err;
+          console.error(`[stream/proxy] attempt ${attempt + 1} fetch failed:`, decodedUrl, err?.name, err?.message);
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
+      if (!response) {
+        return new NextResponse(`Proxy fetch failed: ${lastErr?.name === 'TimeoutError' ? 'upstream timed out' : (lastErr?.message || 'network error')}`, { status: 502 });
       }
 
       if (!response.ok) {
@@ -388,6 +408,79 @@ export async function GET(
           }
         });
       }
+    }
+
+    // 15b. /api/embed/proxy — "Clean embed" proxy for providers that refuse to
+    // play inside a sandboxed <iframe>. Fetches the provider's embed page
+    // server-side, strips known ad-network <script> tags, and injects the
+    // uBlock shield directly into the document. Because the response is
+    // served from OUR origin, the injected shield runs in the SAME realm as
+    // the provider's own scripts, so it can genuinely intercept
+    // window.open/click-hijacks instead of only watching the parent window.
+    if (pathStr === 'embed/proxy') {
+      const rawUrl = searchParams.get('url');
+      if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
+
+      const decodedUrl = decodeURIComponent(rawUrl);
+      let originUrl: URL;
+      try {
+        originUrl = new URL(decodedUrl);
+      } catch {
+        return new NextResponse('Invalid URL', { status: 400 });
+      }
+
+      let embedResponse: Response;
+      try {
+        embedResponse = await fetch(decodedUrl, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(15000),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,*/*',
+          },
+        });
+      } catch (err: any) {
+        console.error('[embed/proxy] upstream fetch failed:', decodedUrl, err?.name, err?.message);
+        return new NextResponse(`Embed fetch failed: ${err?.name === 'TimeoutError' ? 'upstream timed out' : (err?.message || 'network error')}`, { status: 502 });
+      }
+
+      if (!embedResponse.ok) {
+        console.warn('[embed/proxy] upstream returned', embedResponse.status, decodedUrl);
+        return new NextResponse('Embed Fetch Error', { status: embedResponse.status });
+      }
+
+      let html = await embedResponse.text();
+
+      // Strip <script src="..."> tags pointing at known ad/popup networks
+      html = html.replace(/<script\b[^>]*\bsrc\s*=\s*("([^"]+)"|'([^']+)')[^>]*>\s*<\/script\s*>/gi, (match, _q, dq, sq) => {
+        const src = (dq || sq || '').toLowerCase();
+        return KNOWN_AD_DOMAINS.some((domain) => src.includes(domain)) ? '' : match;
+      });
+
+      // <base> makes the page's relative asset/script/API paths resolve against
+      // the ORIGINAL provider origin, even though this document is served from ours.
+      const baseTag = `<base href="${originUrl.origin}/">`;
+      // Inserted first so it runs before any of the provider's own scripts,
+      // letting it patch window.open / addEventListener / fetch pre-emptively
+      // within this now-shared document context.
+      const shieldScript = `<script>${GET_INJECTABLE_UBLOCK_BUNDLE()}</script>`;
+
+      if (/<head[^>]*>/i.test(html)) {
+        html = html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}${shieldScript}`);
+      } else if (/<html[^>]*>/i.test(html)) {
+        html = html.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}${shieldScript}</head>`);
+      } else {
+        html = `${baseTag}${shieldScript}${html}`;
+      }
+
+      return new NextResponse(html, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
     }
 
     // 16. /api/stream/nxsha-languages (Nxsha Stream & Audio Extractor)

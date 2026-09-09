@@ -194,14 +194,32 @@ export const DEFAULT_SERVER_POLICY: ServerAdPolicy = {
 };
 
 /**
- * Providers confirmed to actively detect and refuse to play inside a
- * sandboxed iframe (showing a "please disable sandbox" prompt). Add a
- * provider's serverId here ONLY once this is empirically confirmed —
- * doing so removes the browser's native popup/redirect blocking for it,
- * leaving it protected solely by the (weaker, same-context-only) parent
- * window uBlock shield.
+ * Providers confirmed (by live testing) to actively detect and refuse to play
+ * inside a sandboxed iframe (showing a "please disable sandbox" prompt).
+ * These are routed through the HTML-sanitizing embed proxy (see
+ * `/api/embed/proxy` in app/api/[...path]/route.ts) instead of the raw
+ * <iframe sandbox>: we fetch their embed page server-side, strip known
+ * ad-network <script> tags, and inject the uBlock shield directly into
+ * that document. Because the proxied document is served from OUR origin,
+ * the injected shield runs in the SAME JavaScript realm as the provider's
+ * own scripts (not cross-origin isolated), so it can genuinely intercept
+ * window.open/click-hijacks instead of merely watching the parent window.
+ *
+ * CineSrc is intentionally excluded: it has been confirmed to work fine
+ * under the native sandbox, which is strictly stronger (browser-enforced,
+ * cannot be bypassed by the embedded page's own JS at all).
  */
-export const SANDBOX_INCOMPATIBLE_SERVER_IDS: ReadonlySet<string> = new Set([]);
+export const SANDBOX_INCOMPATIBLE_SERVER_IDS: ReadonlySet<string> = new Set([
+  'yapgrid',
+  'vidlink',
+  'nxsha',
+  'vidrock',
+  'vidsrc-me',
+  'vidsrc-in',
+  'vidcore',
+  'vidfast',
+  'vidsrc-io',
+]);
 
 export function getServerAdPolicy(serverId: string): ServerAdPolicy {
   return SERVER_AD_POLICIES[serverId] || DEFAULT_SERVER_POLICY;
@@ -229,8 +247,18 @@ export function resolveServerIframeAttributes(
       ? tokens.join(' ')
       : PERFECT_SANDBOX_STRING;
 
+  // Sandbox-incompatible providers get routed through our HTML-sanitizing
+  // embed proxy instead of loading their raw URL directly. That proxy strips
+  // known ad-network <script> tags and injects the uBlock shield into the
+  // (now same-origin) document, so they still get real popup/redirect
+  // protection without ever triggering their "please disable sandbox" check.
+  // Skipped entirely when the shield is off, to keep maximum compatibility.
+  const src = sandboxActive && isOptedOut
+    ? `/api/embed/proxy?url=${encodeURIComponent(cleanUrl)}`
+    : cleanUrl;
+
   return {
-    src: cleanUrl,
+    src,
     sandbox,
     referrerPolicy: policy.referrerPolicy,
     allow: policy.allowFeatures.join('; '),
@@ -257,7 +285,7 @@ export function setAdShieldPreference(enabled: boolean): void {
  * High-frequency ad networks and popup syndication domains
  * (uBlock filters & easylist popup blacklists)
  */
-const KNOWN_AD_DOMAINS = [
+export const KNOWN_AD_DOMAINS = [
   'popads.net',
   'popcash.net',
   'adsterra.com',
