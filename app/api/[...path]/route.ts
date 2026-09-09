@@ -560,7 +560,7 @@ export async function GET(
       return NextResponse.json({ success: true, tmdbId: id, mediaItems });
     }
 
-    // 18. /api/stream/auto-resolve (Resolve direct streams from the bundled TMDB Embed API)
+    // 18. /api/stream/auto-resolve (Resolve direct HLS streams via inline providers)
     if (pathStr === 'stream/auto-resolve') {
       const id = searchParams.get('id');
       const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
@@ -569,114 +569,96 @@ export async function GET(
 
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
+      const currentUrl = new URL(request.url);
+
+      // Try the external TMDB Embed API first if configured
       try {
         const embedApiUrl = process.env.TMDB_EMBED_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8787' : '');
-        if (!embedApiUrl) {
-          return NextResponse.json({
-            success: false,
-            tmdbId: id,
-            message: 'TMDB_EMBED_API_URL is not configured. Deploy the TMDB Embed API and add its public URL to Vercel environment variables.',
-          }, { status: 503 });
-        }
-        const streamType = type === 'tv' ? 'series' : 'movie';
-        const query = new URLSearchParams({ season, episode });
-        const streamsResponse = await fetch(`${embedApiUrl}/api/streams/${streamType}/${encodeURIComponent(id)}?${query}`);
+        if (embedApiUrl) {
+          const streamType = type === 'tv' ? 'series' : 'movie';
+          const query = new URLSearchParams({ season, episode });
+          const streamsResponse = await fetch(`${embedApiUrl}/api/streams/${streamType}/${encodeURIComponent(id)}?${query}`);
 
-        if (streamsResponse.ok) {
-          const payload = await streamsResponse.json();
-          const streams = Array.isArray(payload?.streams) ? payload.streams : [];
-          const directStreams = streams.filter((stream: any) => {
-            const url = typeof stream?.url === 'string' ? stream.url : '';
-            return /^https?:\/\//i.test(url)
-              && !/\/embed(?:\/|\?|$)/i.test(url)
-              && (/\.m3u8(?:\?|$)/i.test(url) || /\.(?:mp4|webm)(?:\?|$)/i.test(url) || /^(?:hls|mp4|webm)$/i.test(stream?.type || '') || stream?.requestHeaders || stream?.headers);
-          });
-          const selected = directStreams.find((stream: any) => /\.m3u8(?:\?|$)/i.test(stream.url)) || directStreams[0];
+          if (streamsResponse.ok) {
+            const payload = await streamsResponse.json();
+            const streams = Array.isArray(payload?.streams) ? payload.streams : [];
+            const directStreams = streams.filter((stream: any) => {
+              const url = typeof stream?.url === 'string' ? stream.url : '';
+              return /^https?:\/\//i.test(url)
+                && !/\/embed(?:\/|\?|$)/i.test(url)
+                && (/\.m3u8(?:\?|$)/i.test(url) || /\.(?:mp4|webm)(?:\?|$)/i.test(url) || /^(?:hls|mp4|webm)$/i.test(stream?.type || '') || stream?.requestHeaders || stream?.headers);
+            });
+            const selected = directStreams.find((stream: any) => /\.m3u8(?:\?|$)/i.test(stream.url)) || directStreams[0];
 
-          if (selected?.url) {
-            const currentUrl = new URL(request.url);
-            const sources = directStreams.map((source: any, index: number) => {
-              const mediaType = /\.m3u8(?:\?|$)/i.test(source.url) || /^(?:hls|m3u8)$/i.test(source.type || '') ? 'hls'
-                : /\.webm(?:\?|$)/i.test(source.url) || source.type === 'webm' ? 'webm' : 'mp4';
-              const proxyParams = new URLSearchParams({
-                url: source.url,
-                headers: JSON.stringify(source.headers || source.requestHeaders || {}),
+            if (selected?.url) {
+              const sources = directStreams.map((source: any, index: number) => {
+                const mediaType = /\.m3u8(?:\?|$)/i.test(source.url) || /^(?:hls|m3u8)$/i.test(source.type || '') ? 'hls'
+                  : /\.webm(?:\?|$)/i.test(source.url) || source.type === 'webm' ? 'webm' : 'mp4';
+                const proxyParams = new URLSearchParams({
+                  url: source.url,
+                  headers: JSON.stringify(source.headers || source.requestHeaders || {}),
+                });
+                if (mediaType === 'hls') proxyParams.set('manifest', '1');
+                return {
+                  id: `${source.provider || source.name || 'source'}-${index}`,
+                  provider: source.provider || source.name || 'TMDB Embed API',
+                  quality: source.quality || source.resolution || null,
+                  streamType: mediaType,
+                  streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+                };
               });
-              if (mediaType === 'hls') proxyParams.set('manifest', '1');
-              return {
-                id: `${source.provider || source.name || 'source'}-${index}`,
-                provider: source.provider || source.name || 'TMDB Embed API',
-                quality: source.quality || source.resolution || null,
-                streamType: mediaType,
-                streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
-              };
-            });
-            const selectedSource = sources[directStreams.indexOf(selected)] || sources[0];
-            return NextResponse.json({
-              success: true,
-              tmdbId: id,
-              ...selectedSource,
-              sources,
-            });
+              const selectedSource = sources[directStreams.indexOf(selected)] || sources[0];
+              return NextResponse.json({
+                success: true,
+                tmdbId: id,
+                ...selectedSource,
+                sources,
+              });
+            }
           }
         }
       } catch (e) {
-        console.warn('Auto-resolve error:', e);
+        console.warn('Embed API resolve error:', e);
       }
 
-      // Return multi-source direct HLS stream proxies (CineSrc, YapGrid, Nxsha) for failover
-      const currentUrl = new URL(request.url);
-      const sources: Array<{ id: string; provider: string; quality: string; streamType: string; streamUrl: string }> = [];
+      // Fallback: resolve via inline providers (Videasy, VidLink, VixSrc, AutoEmbed)
+      try {
+        const { resolveAllStreams } = await import('../../../lib/providers/index');
+        const resolved = await resolveAllStreams(id, type, season, episode);
 
-      const cinesrcUrl = type === 'tv'
-        ? `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}`
-        : `https://cinesrc.st/embed/movie/${id}`;
-      sources.push({
-        id: 'cinesrc-hls',
-        provider: 'CineSrc 4K Direct',
-        quality: '1080p',
-        streamType: 'hls',
-        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(cinesrcUrl)}&manifest=1`,
-      });
+        if (resolved.length > 0) {
+          const sources = resolved.map((stream, index) => {
+            const proxyParams = new URLSearchParams({
+              url: stream.url,
+              headers: JSON.stringify(stream.headers || {}),
+            });
+            if (stream.type === 'hls') proxyParams.set('manifest', '1');
+            return {
+              id: stream.id || `provider-${index}`,
+              provider: stream.provider,
+              quality: stream.quality || null,
+              streamType: stream.type,
+              streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+            };
+          });
 
-      const yapgridUrl = type === 'tv'
-        ? `https://yapgrid.com/embed/tv/${id}/${season}/${episode}?autoplay=1&server=x`
-        : `https://yapgrid.com/embed/movie/${id}?autoplay=1&server=x`;
-      sources.push({
-        id: 'yapgrid-hls',
-        provider: 'YapGrid 4K Direct',
-        quality: '1080p',
-        streamType: 'hls',
-        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(yapgridUrl)}&manifest=1`,
-      });
+          return NextResponse.json({
+            success: true,
+            tmdbId: id,
+            ...sources[0],
+            sources,
+          });
+        }
+      } catch (e) {
+        console.warn('Inline provider resolve error:', e);
+      }
 
-      const nxshaUrl = type === 'tv'
-        ? `https://web.nxsha.app/embed/tv/${id}/${season}/${episode}?lang=hi`
-        : `https://web.nxsha.app/embed/movie/${id}?lang=hi`;
-      sources.push({
-        id: 'nxsha-hls',
-        provider: 'Nxsha 4K Hindi Direct',
-        quality: '1080p',
-        streamType: 'hls',
-        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(nxshaUrl)}&manifest=1`,
-      });
-
-      const movieboxUrl = type === 'tv'
-        ? `https://www.moviebox.ph/detail/tv-${id}-s${season}-e${episode}`
-        : `https://www.moviebox.ph/detail/movie-${id}`;
-      sources.push({
-        id: 'moviebox-hls',
-        provider: 'MovieBox Direct',
-        quality: '1080p',
-        streamType: 'hls',
-        streamUrl: `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(movieboxUrl)}&manifest=1`,
-      });
-
+      // All providers failed — return empty so UI can fall back to iframe mode
       return NextResponse.json({
-        success: true,
+        success: false,
         tmdbId: id,
-        ...sources[0],
-        sources,
+        sources: [],
+        message: 'No direct HLS streams could be resolved. Try iframe mode.',
       });
     }
 
