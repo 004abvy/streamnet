@@ -19,6 +19,7 @@ import { PlaybackManager, PlaybackSession } from '../../utils/playbackManager';
 import { getPlayerPreferences, updatePlayerPreferences } from '../../utils/playerPreferences';
 import { installAdblockProtection, InterceptedPopupInfo } from '../../utils/adblockFramework';
 import { initMediaSniffer, resolve1DmMediaInfo, downloadMediaFile, SniffedMediaItem } from '../../utils/mediaSniffer';
+import NativeHlsPlayer from './NativeHlsPlayer';
 
 interface VideoPlayerProps {
   tmdbId: string;
@@ -87,6 +88,9 @@ export default function VideoPlayer({
   const [showSnifferModal, setShowSnifferModal] = useState(false);
   const [copiedMediaId, setCopiedMediaId] = useState<string | null>(null);
   const [isDownloadingId, setIsDownloadingId] = useState<string | null>(null);
+
+  const [useNativeHlsMode, setUseNativeHlsMode] = useState(false);
+  const [directHlsUrl, setDirectHlsUrl] = useState<string | null>(null);
 
   const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
   const customAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -247,6 +251,13 @@ export default function VideoPlayer({
           const filtered = items.filter((i) => !existingUrls.has(i.url));
           return [...prev, ...filtered];
         });
+
+        const m3u8Item = items.find((i) => i.url.includes('.m3u8') || i.mimeType?.includes('mpegURL'));
+        if (m3u8Item) {
+          setDirectHlsUrl(m3u8Item.url);
+          setUseNativeHlsMode(true);
+          setFailoverToast('⚡ Zenith Direct HLS Mode Active (0 Ads & 0 Popups!)');
+        }
       }
     });
   };
@@ -374,6 +385,16 @@ export default function VideoPlayer({
               </svg>
             </button>
           </div>
+        ) : useNativeHlsMode && directHlsUrl ? (
+          <NativeHlsPlayer
+            streamUrl={directHlsUrl}
+            posterUrl={posterUrl}
+            title={title}
+            onError={() => {
+              setUseNativeHlsMode(false);
+              setFailoverToast('⚠️ Native stream error. Switched to Iframe mode.');
+            }}
+          />
         ) : (
           <div className={styles.iframeContainer}>
             {/* Cinematic Loading Shield */}
@@ -724,6 +745,27 @@ export default function VideoPlayer({
             <span style={{ fontWeight: 800 }}>✕ Reset</span>
           </button>
         )}
+
+        {/* Zenith Direct 0-Ad Native HLS Mode Toggle */}
+        <button
+          type="button"
+          className={styles.toolbarBtn}
+          style={useNativeHlsMode ? { background: '#059669', borderColor: '#10b981', color: '#ffffff' } : {}}
+          onClick={() => {
+            if (useNativeHlsMode) {
+              setUseNativeHlsMode(false);
+              setFailoverToast('🌐 Switched to Iframe Server Mode');
+            } else if (directHlsUrl) {
+              setUseNativeHlsMode(true);
+              setFailoverToast('⚡ Switched to Zenith Direct 0-Ad HLS Mode!');
+            } else {
+              setShowSnifferModal(true);
+            }
+          }}
+          title="Toggle 0-Ad Zenith Direct Native HLS Player Mode"
+        >
+          <span>{useNativeHlsMode ? '⚡ Zenith Direct: Active (0 Ads)' : '⚡ Zenith Direct 0-Ad Mode'}</span>
+        </button>
       </div>
     </div>
   );
