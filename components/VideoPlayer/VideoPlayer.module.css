@@ -145,9 +145,9 @@
 
 @media (max-width: 768px) {
   .playerWrapper {
-    aspect-ratio: auto;
-    height: 52vh;
-    min-height: 260px;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
   }
   .iframe {
     width: 100% !important;
