@@ -79,10 +79,10 @@ export default function WatchTvPage() {
   const similarShows = show?.similar?.results || show?.recommendations?.results || [];
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-4 md:p-8 pt-20 md:pt-24">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-0 md:p-8 pt-20 md:pt-24">
       <Navbar />
 
-      <div className="w-full max-w-full mb-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="w-full max-w-[1050px] px-4 md:px-0 mb-4 flex items-center justify-between flex-wrap gap-3">
         <Link
           href={`/tv/${id}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-300 hover:text-white bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 px-4 py-2 rounded-xl transition-all shadow-md"
@@ -102,7 +102,7 @@ export default function WatchTvPage() {
         </div>
       </div>
 
-      <div className="w-full max-w-full mt-2">
+      <div className="w-full max-w-[1050px] px-0 md:px-0 mt-2">
         {loading ? (
           <div className="w-full flex flex-col gap-6">
             <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center p-6">
