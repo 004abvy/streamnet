@@ -43,6 +43,7 @@ export default function VideoPlayer({
   const [activeSourceIndex, setActiveSourceIndex] = useState(0);
   const [isResolving, setIsResolving] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [allHlsFailed, setAllHlsFailed] = useState(false);
 
   const posterUrl = backdropPath
     ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
@@ -50,6 +51,7 @@ export default function VideoPlayer({
 
   const handleStartPlayback = async () => {
     setIsPlaying(true);
+    setAllHlsFailed(false);
     if (stream || isResolving) return;
 
     setIsResolving(true);
@@ -81,12 +83,12 @@ export default function VideoPlayer({
         setSources(resolvedSources);
         setActiveSourceIndex(0);
         setStream(resolvedSources[0]);
+        setStreamError(`⚡ Testing Direct HLS Server 1 of ${resolvedSources.length} (${resolvedSources[0].provider || 'HLS Direct'})...`);
       } else {
-        setPlayerMode('iframe');
+        setAllHlsFailed(true);
       }
     } catch (e) {
-      setStreamError('Connecting direct stream...');
-      setPlayerMode('iframe');
+      setAllHlsFailed(true);
     } finally {
       setIsResolving(false);
     }
@@ -97,10 +99,10 @@ export default function VideoPlayer({
       const nextIndex = activeSourceIndex + 1;
       setActiveSourceIndex(nextIndex);
       setStream(sources[nextIndex]);
-      setStreamError(`⚡ Trying HLS Source ${nextIndex + 1} of ${sources.length} (${sources[nextIndex].provider || 'HLS Direct'})...`);
+      setStreamError(`⚡ Testing Direct HLS Server ${nextIndex + 1} of ${sources.length} (${sources[nextIndex].provider || 'HLS Direct'})...`);
     } else {
-      setStreamError('🌐 All HLS sources offline. Switched to Iframe mode.');
-      setPlayerMode('iframe');
+      setAllHlsFailed(true);
+      setStreamError(`⚠️ All ${sources.length || 3} Direct HLS Streams Are Offline`);
     }
   };
 
@@ -123,6 +125,39 @@ export default function VideoPlayer({
               </svg>
             </button>
           </div>
+        ) : allHlsFailed ? (
+          <div className={styles.loadingOverlay} style={{ background: 'rgba(10, 10, 16, 0.96)', padding: '2rem' }}>
+            <span style={{ color: '#ef4444', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              ⚠️ All {sources.length || 3} Direct HLS Streams Are Currently Offline
+            </span>
+            <span className={styles.loadingSubText} style={{ textAlign: 'center', maxWidth: '400px', marginTop: '0.25rem' }}>
+              Would you like to switch to Iframe Embed Server Mode (YapGrid 4K / VidLink / CineSrc)?
+            </span>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className={styles.oneDmBlockBtn}
+                style={{ background: '#059669', borderColor: '#10b981', color: '#fff', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                onClick={() => {
+                  setAllHlsFailed(false);
+                  setPlayerMode('iframe');
+                }}
+              >
+                🖼️ Switch to Iframe Mode
+              </button>
+              <button
+                type="button"
+                className={styles.oneDmAllowBtn}
+                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
+                onClick={() => {
+                  setAllHlsFailed(false);
+                  handleStartPlayback();
+                }}
+              >
+                🔄 Retry Direct HLS
+              </button>
+            </div>
+          </div>
         ) : playerMode === 'hls' && stream ? (
           <NativeHlsPlayer
             key={stream.streamUrl}
@@ -135,8 +170,10 @@ export default function VideoPlayer({
         ) : playerMode === 'hls' && isResolving ? (
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerRing} />
-            <span className={styles.loadingServerTitle}>Connecting HLS Stream...</span>
-            <span className={styles.loadingSubText}>0 Ads • Direct Playback</span>
+            <span className={styles.loadingServerTitle}>
+              {streamError || `Testing Direct HLS Server ${activeSourceIndex + 1} of ${sources.length || 3}...`}
+            </span>
+            <span className={styles.loadingSubText}>0 Ads • 0 Popups • Direct Playback</span>
           </div>
         ) : (
           <div className={styles.iframeContainer}>
