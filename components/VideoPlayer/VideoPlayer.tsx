@@ -240,13 +240,10 @@ export default function VideoPlayer({
                       <div className={styles.cardTopRow}>
                         <span className={styles.serverCardName}>
                           {provider.name}
-                          {isActive && <span className={styles.activeCheckIcon}>✓</span>}
                         </span>
                         <span className={styles.qualityTag}>{provider.capabilities.quality}</span>
+                        {isActive && <span className={styles.activeCheckIcon}>✓</span>}
                       </div>
-                      {provider.description && (
-                        <span className={styles.serverCardDesc}>{provider.description}</span>
-                      )}
                     </button>
                   );
                 })}
