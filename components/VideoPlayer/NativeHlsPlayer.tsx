@@ -79,8 +79,15 @@ export default function NativeHlsPlayer({
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
+        lowLatencyMode: false,
+        backBufferLength: 120,
+        maxBufferLength: 60,              // Pre-buffer up to 60 seconds ahead
+        maxMaxBufferLength: 300,           // Allow pre-buffering up to 300s
+        maxBufferSize: 120 * 1024 * 1024,  // 120MB buffer allocation for 1080p/4K
+        startLevel: -1,                    // Start at highest available quality level
+        capLevelToPlayerSize: false,
+        abrEwmaDefaultEstimate: 10000000,  // Pre-estimate 10 Mbps bandwidth for instant 1080p
+        testBandwidth: true,
       });
       hlsRef.current = hls;
       hls.loadSource(streamUrl);
@@ -88,10 +95,28 @@ export default function NativeHlsPlayer({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setIsLoading(false);
-        setQualities(hls.levels.map((level, index) => ({
+
+        // Map level options
+        const mappedLevels = hls.levels.map((level, index) => ({
           id: index,
-          label: level.height ? `${level.height}p` : `Quality ${index + 1}`,
-        })));
+          label: level.height ? `${level.height}p HD` : `Quality ${index + 1}`,
+        }));
+        setQualities(mappedLevels);
+
+        // Force highest resolution level (1080p / 4K)
+        if (hls.levels && hls.levels.length > 0) {
+          let highestIndex = 0;
+          let maxHeight = 0;
+          hls.levels.forEach((level, idx) => {
+            if (level.height && level.height > maxHeight) {
+              maxHeight = level.height;
+              highestIndex = idx;
+            }
+          });
+          hls.currentLevel = highestIndex; // Lock to highest quality
+          setSelectedQuality(highestIndex);
+        }
+
         setSubtitles(hls.subtitleTracks.map((track, index) => ({
           id: index,
           label: track.name || track.lang || `Subtitle ${index + 1}`,
