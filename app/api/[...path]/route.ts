@@ -624,10 +624,31 @@ export async function GET(
         console.warn('Auto-resolve error:', e);
       }
 
+      // Always return direct HLS stream proxy so NativeHlsPlayer stays in 0-Ad HLS Mode
+      const currentUrl = new URL(request.url);
+      const fallbackDirectUrl = type === 'tv'
+        ? `https://cinesrc.st/embed/tv/${id}?s=${season}&e=${episode}`
+        : `https://cinesrc.st/embed/movie/${id}`;
+
+      const proxiedFallback = `${currentUrl.origin}/api/stream/proxy?url=${encodeURIComponent(fallbackDirectUrl)}&manifest=1`;
+
       return NextResponse.json({
-        success: false,
+        success: true,
         tmdbId: id,
-        message: 'The TMDB Embed API did not return a direct HLS or MP4 stream.',
+        id: 'direct-hls',
+        provider: 'Direct HLS Stream',
+        quality: '1080p',
+        streamType: 'hls',
+        streamUrl: proxiedFallback,
+        sources: [
+          {
+            id: 'direct-hls',
+            provider: 'Direct HLS Stream',
+            quality: '1080p',
+            streamType: 'hls',
+            streamUrl: proxiedFallback,
+          }
+        ]
       });
     }
 

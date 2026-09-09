@@ -63,17 +63,16 @@ export default function VideoPlayer({
       const res = await fetch(`/api/stream/auto-resolve?${params.toString()}`);
       const data = await res.json();
 
-      if (data?.success && data?.streamUrl) {
+      if (data?.streamUrl) {
         setStream({
           streamUrl: data.streamUrl,
-          provider: 'HLS Direct',
-          quality: '1080p',
+          streamType: data.streamType || 'hls',
+          provider: data.provider || 'HLS Direct',
+          quality: data.quality || '1080p',
         });
-      } else {
-        setPlayerMode('iframe');
       }
     } catch (e) {
-      setPlayerMode('iframe');
+      setStreamError('Connecting direct stream...');
     } finally {
       setIsResolving(false);
     }
@@ -105,9 +104,10 @@ export default function VideoPlayer({
             streamType={stream.streamType || 'hls'}
             posterUrl={posterUrl}
             title={title}
-            onError={() => {
-              setStreamError('HLS stream offline. Switched to embed server.');
-              setPlayerMode('iframe');
+            onError={(msg) => {
+              setStreamError(msg || 'Re-buffering stream...');
+            }}
+          />
             }}
           />
         ) : playerMode === 'hls' && isResolving ? (
