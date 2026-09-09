@@ -12,6 +12,17 @@ interface NativeHlsPlayerProps {
   onError?: (error: string) => void;
 }
 
+interface QualityOption {
+  id: number;
+  label: string;
+}
+
+interface SubtitleOption {
+  id: number;
+  label: string;
+  language?: string;
+}
+
 export default function NativeHlsPlayer({
   streamUrl,
   streamType,
@@ -23,6 +34,10 @@ export default function NativeHlsPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorState, setErrorState] = useState<string | null>(null);
+  const [qualities, setQualities] = useState<QualityOption[]>([]);
+  const [selectedQuality, setSelectedQuality] = useState(-1);
+  const [subtitles, setSubtitles] = useState<SubtitleOption[]>([]);
+  const [selectedSubtitle, setSelectedSubtitle] = useState(-1);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -30,6 +45,10 @@ export default function NativeHlsPlayer({
 
     setIsLoading(true);
     setErrorState(null);
+    setQualities([]);
+    setSelectedQuality(-1);
+    setSubtitles([]);
+    setSelectedSubtitle(-1);
 
     const fail = (message: string) => {
       setIsLoading(false);
@@ -68,7 +87,23 @@ export default function NativeHlsPlayer({
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setIsLoading(false);
+        setQualities(hls.levels.map((level, index) => ({
+          id: index,
+          label: level.height ? `${level.height}p` : `Quality ${index + 1}`,
+        })));
+        setSubtitles(hls.subtitleTracks.map((track, index) => ({
+          id: index,
+          label: track.name || track.lang || `Subtitle ${index + 1}`,
+          language: track.lang,
+        })));
         video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_event, data) => {
+        setSubtitles(data.subtitleTracks.map((track, index) => ({
+          id: index,
+          label: track.name || track.lang || `Subtitle ${index + 1}`,
+          language: track.lang,
+        })));
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) fail('Failed to load the direct HLS stream.');
@@ -102,6 +137,16 @@ export default function NativeHlsPlayer({
     fail('This browser does not support HLS playback.');
   }, [onError, streamType, streamUrl]);
 
+  const handleQualityChange = (level: number) => {
+    setSelectedQuality(level);
+    if (hlsRef.current) hlsRef.current.currentLevel = level;
+  };
+
+  const handleSubtitleChange = (track: number) => {
+    setSelectedSubtitle(track);
+    if (hlsRef.current) hlsRef.current.subtitleTrack = track;
+  };
+
   return (
     <div className={styles.iframeContainer} style={{ background: '#000', position: 'relative' }}>
       {isLoading && (
@@ -128,6 +173,42 @@ export default function NativeHlsPlayer({
         onEnded={onEnded}
         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
       />
+      {!isLoading && !errorState && (qualities.length > 0 || subtitles.length > 0) && (
+        <div className={styles.playerOptions}>
+          {qualities.length > 0 && (
+            <label className={styles.playerOption}>
+              <span>Quality</span>
+              <select
+                value={selectedQuality}
+                onChange={(event) => handleQualityChange(Number(event.target.value))}
+                aria-label="Video quality"
+              >
+                <option value={-1}>Auto</option>
+                {qualities.map((quality) => (
+                  <option key={quality.id} value={quality.id}>{quality.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {subtitles.length > 0 && (
+            <label className={styles.playerOption}>
+              <span>Subtitles</span>
+              <select
+                value={selectedSubtitle}
+                onChange={(event) => handleSubtitleChange(Number(event.target.value))}
+                aria-label="Subtitles"
+              >
+                <option value={-1}>Off</option>
+                {subtitles.map((subtitle) => (
+                  <option key={subtitle.id} value={subtitle.id}>
+                    {subtitle.label}{subtitle.language ? ` (${subtitle.language.toUpperCase()})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
     </div>
   );
 }

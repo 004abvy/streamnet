@@ -93,6 +93,47 @@
   display: block;
 }
 
+.playerOptions {
+  position: absolute;
+  right: 1rem;
+  bottom: 3.5rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(10, 10, 16, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+.playerOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #d1d5db;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.playerOption select {
+  min-width: 5rem;
+  padding: 0.25rem 0.35rem;
+  color: #f9fafb;
+  background: #161622;
+  border: 1px solid #3f3f50;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 560px) {
+  .playerOptions {
+    right: 0.5rem;
+    bottom: 3rem;
+    max-width: calc(100% - 1rem);
+    flex-wrap: wrap;
+  }
+}
+
 /* Toolbar Below Player */
 .toolbar {
   background-color: #0e0e14;
