@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import styles from './VideoPlayer.module.css';
 import { ALL_PROVIDERS, ProviderAdapter } from '../../utils/serverManager';
 import {
@@ -67,6 +67,7 @@ export default function VideoPlayer({
   const [showServerModal, setShowServerModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [aspectMode, setAspectMode] = useState<AspectMode>('fit');
+  const [zoomScale, setZoomScale] = useState(1);
 
   // AdShield (native sandbox + parent-window popup/ad blocker) always runs
   // while playing — not user-toggleable, no status UI shown for it anymore.
@@ -140,6 +141,11 @@ export default function VideoPlayer({
     : aspectMode === 'stretch'
       ? styles.iframeStretch
       : styles.iframeFit;
+  const iframeStyle = { '--player-scale': zoomScale } as CSSProperties;
+
+  const updateZoom = (nextScale: number) => {
+    setZoomScale(Math.min(2.5, Math.max(1, Number(nextScale.toFixed(2)))));
+  };
 
   return (
     <div className={styles.container}>
@@ -219,6 +225,7 @@ export default function VideoPlayer({
               key={`${activeProvider.id}-${iframeSecurity.src}`}
               ref={iframeRef}
               className={`${styles.iframe} ${iframeModeClass}`}
+              style={iframeStyle}
               src={iframeSecurity.src}
               {...(iframeSecurity.sandbox ? { sandbox: iframeSecurity.sandbox } : {})}
               allow={iframeSecurity.allow}
@@ -279,6 +286,7 @@ export default function VideoPlayer({
                       onClick={() => {
                         setActiveProvider(provider);
                         setAspectMode('fit');
+                        setZoomScale(1);
                         setIsPlaying(true);
                         setShowServerModal(false);
                       }}
@@ -323,7 +331,10 @@ export default function VideoPlayer({
                 <button
                   key={mode}
                   className={`${styles.modePill} ${aspectMode === mode ? styles.activeModePill : ''}`}
-                  onClick={() => setAspectMode(mode)}
+                  onClick={() => {
+                    setAspectMode(mode);
+                    setZoomScale(1);
+                  }}
                   aria-pressed={aspectMode === mode}
                   title={`${mode[0].toUpperCase()}${mode.slice(1)} video`}
                   type="button"
@@ -331,6 +342,49 @@ export default function VideoPlayer({
                   {mode[0].toUpperCase() + mode.slice(1)}
                 </button>
               ))}
+            </div>
+          )}
+
+          {activeProvider.id === 'cinesrc' && (
+            <div className={styles.zoomControls} aria-label="Cinesrc zoom controls">
+              <button
+                className={styles.zoomButton}
+                onClick={() => updateZoom(zoomScale - 0.1)}
+                disabled={zoomScale <= 1}
+                aria-label="Zoom out"
+                title="Zoom out"
+                type="button"
+              >
+                −
+              </button>
+              <input
+                className={styles.zoomSlider}
+                type="range"
+                min="1"
+                max="2.5"
+                step="0.05"
+                value={zoomScale}
+                onChange={(event) => updateZoom(Number(event.target.value))}
+                aria-label="Zoom level"
+              />
+              <button
+                className={styles.zoomButton}
+                onClick={() => updateZoom(zoomScale + 0.1)}
+                disabled={zoomScale >= 2.5}
+                aria-label="Zoom in"
+                title="Zoom in"
+                type="button"
+              >
+                +
+              </button>
+              <button
+                className={styles.zoomValue}
+                onClick={() => updateZoom(1)}
+                title="Reset zoom"
+                type="button"
+              >
+                {Math.round(zoomScale * 100)}%
+              </button>
             </div>
           )}
         </div>
