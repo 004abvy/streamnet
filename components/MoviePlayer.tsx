@@ -91,152 +91,35 @@ export default function MoviePlayer({ movieId }: { movieId: string }) {
         )}
       </div>
 
-      {/* Optional metadata display */}
-      <div className="w-full max-w-6xl mt-8 text-left">
-        {loading ? (
-          <p>Loading movie details…</p>
-  const [activeServer, setActiveServer] = useState(SERVERS[0]);
-
-  // Fetch the TMDB metadata safely
-  useEffect(() => {
-    if (!movieId) return;
-    
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-
-    fetch(`${backendUrl}/api/movies/${movieId}`)
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then((data) => {
-        if (data && !data.error) {
-          setMovie(data);
-        } else {
-          setMovie(null);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.warn("Metadata fetch error:", err);
-        setMovie(null);
-        setLoading(false);
-      });
-  }, [movieId]);
-
-  return (
-    <div className="w-full flex flex-col items-center">
-      {/* Video Player Container */}
-      <div className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl bg-black border border-neutral-800 relative">
-        {movieId && (
-          <iframe
-            key={activeServer.id} 
-            src={activeServer.getUrl(movieId)}
-            className="w-full h-full border-0 absolute top-0 left-0"
-            allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          />
-        )}
-      </div>
-
-      {/* Server Switcher UI */}
-      <div className="w-full max-w-6xl mt-6 bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-neutral-400 mb-3 uppercase tracking-wider">
-          Source
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {SERVERS.map((server) => {
-            const isActive = activeServer.id === server.id;
-            return (
-              <button
-                key={server.id}
-                onClick={() => setActiveServer(server)}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.3)]'
-                    : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white'
-                }`}
-              >
-                {server.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Metadata Section */}
       <div className="w-full max-w-6xl mt-8 text-left">
         {loading ? (
-          <div className="flex flex-col gap-4">
-            <div
-              className="h-9 rounded-xl w-1/3 relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(110deg, #1c1c28 0%, #2a2a3e 50%, #1c1c28 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'sleekShimmer 2s linear infinite',
-              }}
-            />
-            <div
-              className="h-5 rounded-lg w-1/4 relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(110deg, #1c1c28 0%, #2a2a3e 50%, #1c1c28 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'sleekShimmer 2s linear infinite',
-              }}
-            />
-            <div
-              className="h-24 rounded-xl w-full mt-2 relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(110deg, #161622 0%, #242436 50%, #161622 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'sleekShimmer 2.2s linear infinite',
-              }}
-            />
-          </div>
+          <p>Loading movie details…</p>
         ) : movie && movie.id ? (
           <div className="flex flex-col gap-4">
-            <div>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">
-                {movie.title}
-              </h1>
-              {movie.tagline && (
-                <p className="text-lg text-neutral-400 italic">"{movie.tagline}"</p>
-              )}
-            </div>
-
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">{movie.title}</h1>
+            {movie.tagline && <p className="text-lg text-neutral-400 italic">"{movie.tagline}"</p>}
             <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-neutral-300">
-              <span className="flex items-center gap-1">
-                ⭐ {movie.vote_average?.toFixed(1)} / 10
-              </span>
+              <span className="flex items-center gap-1">⭐ {movie.vote_average?.toFixed(1)} / 10</span>
               <span>•</span>
               <span>{movie.release_date?.split('-')[0]}</span>
               <span>•</span>
               <span>{movie.runtime} min</span>
             </div>
-
             <div className="flex flex-wrap gap-2 mt-2">
-              {movie.genres?.map((genre: any) => (
-                <span
-                  key={genre.id}
-                  className="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded-full text-xs text-neutral-300"
-                >
+              {movie.genres?.map((genre:any) => (
+                <span key={genre.id} className="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded-full text-xs text-neutral-300">
                   {genre.name}
                 </span>
               ))}
             </div>
-
             <div className="mt-4">
-              <h3 className="text-xl font-semibold text-white mb-2 border-b border-neutral-800 pb-2">
-                Overview
-              </h3>
-              <p className="text-neutral-400 leading-relaxed max-w-4xl text-sm md:text-base">
-                {movie.overview}
-              </p>
+              <h3 className="text-xl font-semibold text-white mb-2 border-b border-neutral-800 pb-2">Overview</h3>
+              <p className="text-neutral-400 leading-relaxed max-w-4xl text-sm md:text-base">{movie.overview}</p>
             </div>
           </div>
         ) : (
-          <p className="text-neutral-500 bg-neutral-900 p-4 rounded-lg border border-neutral-800">
-            Movie details could not be loaded. Please ensure your backend is running.
-          </p>
+          <p className="text-neutral-500 bg-neutral-900 p-4 rounded-lg border border-neutral-800">Movie details could not be loaded. Please ensure your backend is running.</p>
         )}
       </div>
     </div>
