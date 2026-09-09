@@ -292,12 +292,25 @@ export async function GET(
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
       const decodedUrl = decodeURIComponent(rawUrl);
-      const isManifest = decodedUrl.includes('.m3u8');
+      const isManifest = searchParams.get('manifest') === '1' || decodedUrl.includes('.m3u8');
+      let upstreamHeaders: Record<string, string> = {};
+      try {
+        const serializedHeaders = searchParams.get('headers');
+        const parsedHeaders = serializedHeaders ? JSON.parse(serializedHeaders) : {};
+        if (parsedHeaders && typeof parsedHeaders === 'object') {
+          Object.entries(parsedHeaders).forEach(([key, value]) => {
+            if (typeof value === 'string' && !/^host$/i.test(key)) upstreamHeaders[key] = value;
+          });
+        }
+      } catch {
+        upstreamHeaders = {};
+      }
 
       const response = await fetch(decodedUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': new URL(decodedUrl).origin
+          'Referer': new URL(decodedUrl).origin,
+          ...upstreamHeaders,
         }
       });
 
@@ -307,20 +320,36 @@ export async function GET(
 
       if (isManifest) {
         const manifestText = await response.text();
-        const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf('/') + 1);
-
-        const lines = manifestText.split('\n');
         const host = request.headers.get('host') || 'localhost:3000';
         const protocol = request.headers.get('x-forwarded-proto') || 'https';
-
+        const proxyUrl = (targetUrl: string, manifest: boolean) => {
+          const params = new URLSearchParams({
+            url: targetUrl,
+            headers: JSON.stringify(upstreamHeaders),
+          });
+          if (manifest) params.set('manifest', '1');
+          return `${protocol}://${host}/api/stream/proxy?${params.toString()}`;
+        };
+        const lines = manifestText.split('\n');
         const rewritten = lines.map(line => {
+          const uriMatch = line.match(/URI="([^"]+)"/);
+          if (uriMatch) {
+            try {
+              const mediaUrl = new URL(uriMatch[1], decodedUrl).href;
+              return line.replace(uriMatch[1], proxyUrl(mediaUrl, /\.m3u8(?:\?|$)/i.test(mediaUrl)));
+            } catch {
+              return line;
+            }
+          }
+
           const trimmed = line.trim();
           if (trimmed && !trimmed.startsWith('#')) {
-            let fullChunkUrl = trimmed;
-            if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-              fullChunkUrl = new URL(trimmed, baseUrl).href;
+            try {
+              const fullChunkUrl = new URL(trimmed, decodedUrl).href;
+              return proxyUrl(fullChunkUrl, /\.m3u8(?:\?|$)/i.test(fullChunkUrl));
+            } catch {
+              return line;
             }
-            return `${protocol}://${host}/api/stream/proxy?url=${encodeURIComponent(fullChunkUrl)}`;
           }
           return line;
         }).join('\n');
@@ -553,15 +582,25 @@ export async function GET(
             const url = typeof stream?.url === 'string' ? stream.url : '';
             return /^https?:\/\//i.test(url)
               && !/\/embed(?:\/|\?|$)/i.test(url)
-              && (/\.m3u8(?:\?|$)/i.test(url) || /\.(?:mp4|webm)(?:\?|$)/i.test(url) || /^(?:hls|mp4|webm)$/i.test(stream?.type || ''));
+              && (/\.m3u8(?:\?|$)/i.test(url) || /\.(?:mp4|webm)(?:\?|$)/i.test(url) || /^(?:hls|mp4|webm)$/i.test(stream?.type || '') || stream?.requestHeaders || stream?.headers);
           });
           const selected = directStreams.find((stream: any) => /\.m3u8(?:\?|$)/i.test(stream.url)) || directStreams[0];
 
           if (selected?.url) {
+            const streamType = /\.m3u8(?:\?|$)/i.test(selected.url) || /^(?:hls|m3u8)$/i.test(selected.type || '') ? 'hls'
+              : /\.webm(?:\?|$)/i.test(selected.url) || selected.type === 'webm' ? 'webm' : 'mp4';
+            const streamHeaders = selected.headers || selected.requestHeaders || {};
+            const currentUrl = new URL(request.url);
+            const proxyParams = new URLSearchParams({
+              url: selected.url,
+              headers: JSON.stringify(streamHeaders),
+            });
+            if (streamType === 'hls') proxyParams.set('manifest', '1');
             return NextResponse.json({
               success: true,
               tmdbId: id,
-              streamUrl: selected.url,
+              streamUrl: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+              streamType,
               provider: selected.provider || selected.name || 'TMDB Embed API',
               quality: selected.quality || null,
             });
