@@ -14,7 +14,7 @@ const DEFAULT_PREFERENCES: PlayerPreferences = {
   autoplay: true,
   autoNext: true,
   skipIntro: true,
-  preferredServer: 'auto',
+  preferredServer: 'cinesrc',
   preferredLanguage: 'hi',
   useSafestServerFirst: true,
   sandboxActive: false,
