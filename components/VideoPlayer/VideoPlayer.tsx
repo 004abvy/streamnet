@@ -11,6 +11,10 @@ interface VideoPlayerProps {
   season?: number;
   /** Episode number (required for TV) */
   episode?: number;
+  // Optional extra props that other components may pass (ignored by the embed logic)
+  title?: string;
+  backdropPath?: string;
+  imdbId?: string;
 }
 
 /** Build Screenscape embed URL */
