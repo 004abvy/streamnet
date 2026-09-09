@@ -1,7 +1,8 @@
 // MoviePlayer using ScreenScape embed with sandbox to block ads
+// Auto-rotates to landscape on fullscreen (mobile)
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface MoviePlayerProps {
   /** TMDB ID of the movie */
@@ -20,9 +21,37 @@ function buildEmbedUrl(movieId: string, language?: string): string {
 
 export default function MoviePlayer({ movieId, language }: MoviePlayerProps) {
   const embedUrl = buildEmbedUrl(movieId, language);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fsElement = document.fullscreenElement;
+
+      if (fsElement && containerRef.current?.contains(fsElement)) {
+        // Entering fullscreen — lock to landscape
+        try {
+          (screen.orientation as any).lock('landscape').catch(() => {});
+        } catch {
+          // screen.orientation.lock not available
+        }
+      } else {
+        // Exiting fullscreen — unlock orientation
+        try {
+          screen.orientation.unlock();
+        } catch {
+          // Silently fail
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   return (
-    <div className="w-full flex flex-col items-center">
+    <div ref={containerRef} className="w-full flex flex-col items-center">
       <iframe
         src={embedUrl}
         allowFullScreen
