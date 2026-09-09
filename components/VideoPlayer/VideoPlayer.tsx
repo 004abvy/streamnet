@@ -101,6 +101,7 @@ export default function VideoPlayer({
           <NativeHlsPlayer
             key={stream.streamUrl}
             streamUrl={stream.streamUrl}
+            streamType={stream.streamType || 'hls'}
             posterUrl={posterUrl}
             title={title}
             onError={() => {

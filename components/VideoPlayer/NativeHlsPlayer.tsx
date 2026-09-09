@@ -6,8 +6,9 @@ import styles from './VideoPlayer.module.css';
 
 interface NativeHlsPlayerProps {
   streamUrl: string;
-  streamType: 'hls' | 'mp4' | 'webm';
+  streamType?: 'hls' | 'mp4' | 'webm';
   posterUrl?: string;
+  title?: string;
   onEnded?: () => void;
   onError?: (error: string) => void;
 }
@@ -25,7 +26,7 @@ interface SubtitleOption {
 
 export default function NativeHlsPlayer({
   streamUrl,
-  streamType,
+  streamType = 'hls',
   posterUrl,
   onEnded,
   onError,
@@ -153,7 +154,7 @@ export default function NativeHlsPlayer({
         <div className={styles.loadingOverlay}>
           <div className={styles.spinnerRing} />
           <span className={styles.loadingServerTitle}>
-            Loading direct {streamType.toUpperCase()} stream...
+            Loading direct {(streamType || 'hls').toUpperCase()} stream...
           </span>
           <span className={styles.loadingSubText}>Native HTML5 playback with no embedded pages</span>
         </div>
