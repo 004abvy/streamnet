@@ -108,8 +108,6 @@ export default function VideoPlayer({
               setStreamError(msg || 'Re-buffering stream...');
             }}
           />
-            }}
-          />
         ) : playerMode === 'hls' && isResolving ? (
           <div className={styles.loadingOverlay}>
             <div className={styles.spinnerRing} />
