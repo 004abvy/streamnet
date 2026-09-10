@@ -76,6 +76,7 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language }:
       <iframe
         src={embedUrl}
         allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-forms"
         allow="autoplay; fullscreen; picture-in-picture"
         className={`w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0 ${vpStyles.embedIframe}`}
         title="Video Player"
