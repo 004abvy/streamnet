@@ -267,28 +267,7 @@ export default function HlsPlayer({
     };
   }, [serverId, tmdbId, type, season, episode]);
 
-  // BACKGROUND PRE-FETCH: Pre-buffer alternative direct stream sources in browser cache for zero waiting time on switch
-  useEffect(() => {
-    if (!availableSources || availableSources.length <= 1) return;
 
-    availableSources.forEach((srcItem) => {
-      if (srcItem.url && srcItem.url !== streamData?.url) {
-        try {
-          const link = document.createElement('link');
-          link.rel = 'prefetch';
-          link.href = srcItem.url;
-          link.as = 'fetch';
-          link.crossOrigin = 'anonymous';
-          document.head.appendChild(link);
-        } catch {}
-
-        fetch(srcItem.url, {
-          headers: { Range: 'bytes=0-1048576' }, // 1MB pre-fetch for instant switch
-          mode: 'cors',
-        }).catch(() => {});
-      }
-    });
-  }, [availableSources, streamData?.url]);
 
   const switchDirectSource = (nextIdx: number) => {
     if (nextIdx >= 0 && nextIdx < availableSources.length) {

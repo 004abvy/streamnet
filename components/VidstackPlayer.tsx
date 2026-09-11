@@ -288,14 +288,8 @@ export default function VidstackPlayer({
         crossOrigin="anonymous"
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
         onError={() => {
-          const activeObj = availableDirectSources.find(s => s.url === src || s.name === serverName);
-          if (activeObj?.rawUrl && activeMediaSrc !== activeObj.rawUrl) {
-            console.log('[VidstackPlayer] Proxied stream blocked (403/429). Retrying direct client-side HLS URL...');
-            setActiveMediaSrc(activeObj.rawUrl);
-          } else {
-            console.warn('[VidstackPlayer] Stream loading error (403/429/network). Advancing source...');
-            onInvalidDuration?.(0);
-          }
+          console.warn('[VidstackPlayer] Stream error encountered. Advancing to next available stream source...');
+          onInvalidDuration?.(0);
         }}
         onEnded={() => {
           if (tmdbId) {
