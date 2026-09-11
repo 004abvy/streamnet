@@ -416,7 +416,7 @@ export async function GET(
       }
 
       const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
-      const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}`;
+      const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(upstreamHeaders))}`;
 
       let response: Response | null = null;
       let lastErr: any = null;

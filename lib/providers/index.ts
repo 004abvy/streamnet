@@ -25,10 +25,10 @@ export async function resolveAllStreams(
   episode: string = '1'
 ): Promise<ResolvedStream[]> {
   const resolvers = [
-    { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 8000) },
-    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 8000) },
     { name: 'VixSrc', fn: () => withTimeout(resolveVixSrc(tmdbId, mediaType, season, episode), 8000) },
     { name: 'AutoEmbed', fn: () => withTimeout(resolveAutoembed(tmdbId, mediaType, season, episode), 8000) },
+    { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 8000) },
+    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 8000) },
   ];
 
   const results = await Promise.allSettled(
