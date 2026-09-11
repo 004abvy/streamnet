@@ -276,7 +276,6 @@ export default function HlsPlayer({
         if (isMounted) {
           setError(err.message || 'Stream loading error');
           setLoading(false);
-          onNextServer?.();
         }
       }
     };
