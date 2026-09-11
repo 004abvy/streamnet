@@ -69,10 +69,13 @@ export default function HlsPlayer({
         triedIndicesRef.current.clear();
 
         const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+        const port = typeof window !== 'undefined' ? (window.location.port ? `:${window.location.port}` : '') : '';
+        
         const omssUrl =
           type === 'movie'
-            ? `http://${hostname}:4000/v1/movies/${tmdbId}`
-            : `http://${hostname}:4000/v1/tv/${tmdbId}/seasons/${season}/episodes/${episode}`;
+            ? `${protocol}//${hostname}${port}/api/direct/movie/${tmdbId}`
+            : `${protocol}//${hostname}${port}/api/direct/tv/${tmdbId}/${season}/${episode}`;
 
         // 0ms INSTANT MEMORY CACHE CHECK
         const cached = streamMemoryCache.get(omssUrl);

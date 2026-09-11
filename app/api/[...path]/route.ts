@@ -254,7 +254,36 @@ export async function GET(
       return NextResponse.json(data);
     }
 
-    // 13. /api/subtitles
+    // 13. /api/direct
+    if (pathStr.startsWith('direct/')) {
+      const parts = pathStr.split('/');
+      const mediaType = parts[1]; // movie or tv
+      const tmdbId = parts[2];
+      
+      let upstreamUrl = '';
+      if (mediaType === 'movie') {
+        upstreamUrl = `http://localhost:4000/v1/movies/${tmdbId}`;
+      } else if (mediaType === 'tv') {
+        const season = parts[3];
+        const episode = parts[4];
+        upstreamUrl = `http://localhost:4000/v1/tv/${tmdbId}/seasons/${season}/episodes/${episode}`;
+      }
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const fetchUrl = backendUrl 
+        ? `${backendUrl}/v1/${mediaType === 'movie' ? 'movies' : 'tv'}/${tmdbId}${mediaType === 'tv' ? `/seasons/${parts[3]}/episodes/${parts[4]}` : ''}`
+        : upstreamUrl;
+
+      try {
+        const response = await fetch(fetchUrl);
+        const data = await response.json();
+        return NextResponse.json(data);
+      } catch (err: any) {
+        return NextResponse.json({ error: 'Direct API fetch failed', message: err.message }, { status: 502 });
+      }
+    }
+
+    // 14. /api/subtitles
     if (pathStr === 'subtitles') {
       const id = searchParams.get('id');
       const season = searchParams.get('season');
