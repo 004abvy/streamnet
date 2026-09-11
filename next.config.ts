@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/omss/:path*',
+        destination: 'http://localhost:4000/v1/:path*', // Proxy to local OMSS backend
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

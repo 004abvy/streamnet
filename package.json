@@ -3,22 +3,36 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"npm run backend\"",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backend": "cd aPi-embeds-m3u8s/core && npm run dev"
   },
   "dependencies": {
+    "@omss/framework": "^1.1.26",
+    "@videojs/hlsjs-video": "^10.0.0-rc.2",
+    "@videojs/react": "^10.0.0-rc.2",
+    "@videojs/shaka-video": "^10.0.0-rc.2",
+    "@vidstack/react": "^1.15.6",
+    "artplayer": "^5.4.0",
+    "cheerio": "^1.2.0",
+    "concurrently": "^10.0.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.4.2",
     "firebase": "^12.18.0",
     "framer-motion": "^13.2.0",
     "hls.js": "^1.5.20",
     "next": "16.3.4",
     "next-pwa": "^5.6.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "shaka-player": "^5.2.9",
+    "strataplayer": "^1.2.23"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -36,32 +36,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-
-        {/* Document-Start JavaScript Injector (uBlock Origin Core Scriptlets) */}
-        <Script
-          id="streamnet-js-injector"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: GET_INJECTABLE_UBLOCK_BUNDLE(),
-          }}
-        />
-
-        <Script
-          id="scroll-restoration"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
-              window.scrollTo(0, 0);
-              if (document.body) document.body.scrollTop = 0;
-              if (document.documentElement) document.documentElement.scrollTop = 0;
-              window.addEventListener('beforeunload', function() { window.scrollTo(0, 0); });
-              window.addEventListener('pagehide', function() { window.scrollTo(0, 0); });
-            `,
-          }}
-        />
       </head>
       <body className="min-h-full w-full flex flex-col bg-[var(--background)] overflow-x-hidden">
+        {/* Document-Start JavaScript Injector (uBlock Origin Core Scriptlets) */}
+        <Script id="streamnet-js-injector" src="/api/injector.js" strategy="beforeInteractive" />
+
+        <Script id="scroll-restoration" src="/scroll-restoration.js" strategy="beforeInteractive" />
         <ScrollToTopOnRefresh />
         <AuthProvider>
           {children}
