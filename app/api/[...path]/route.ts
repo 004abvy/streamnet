@@ -276,26 +276,49 @@ export async function GET(
 
       try {
         console.log(`[API Proxy] Proxying direct request to: ${fetchUrl}`);
+        
+        // Use a shorter timeout for the proxy fetch to fail fast if backend is unreachable
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        
         const response = await fetch(fetchUrl, {
           headers: {
             'Accept': 'application/json',
             'User-Agent': 'StreamNet-Internal-Proxy'
           },
+          signal: controller.signal,
           next: { revalidate: 0 }
         });
 
+        clearTimeout(timeout);
+
         if (!response.ok) {
           const status = response.status;
-          const text = await response.text();
+          let text = '';
+          try {
+            text = await response.text();
+          } catch {
+            text = 'Could not read error body';
+          }
           console.error(`[API Proxy] Upstream error ${status}: ${text}`);
-          return NextResponse.json({ error: `Upstream error ${status}`, detail: text }, { status });
+          return NextResponse.json({ 
+            error: `Upstream error ${status}`, 
+            detail: text,
+            target: fetchUrl 
+          }, { status });
         }
 
         const data = await response.json();
         return NextResponse.json(data);
       } catch (err: any) {
-        console.error(`[API Proxy] Fetch failed for ${fetchUrl}:`, err);
-        return NextResponse.json({ error: 'Direct API fetch failed', message: err.message }, { status: 502 });
+        console.error(`[API Proxy] Fetch failed for ${fetchUrl}:`, err.name, err.message);
+        return NextResponse.json({ 
+          error: 'Direct API fetch failed', 
+          message: err.message,
+          type: err.name,
+          target: fetchUrl,
+          hint: 'Ensure NEXT_PUBLIC_BACKEND_URL is set in Vercel and the backend is awake.'
+        }, { status: 502 });
       }
     }
 
