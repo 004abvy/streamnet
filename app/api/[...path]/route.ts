@@ -415,45 +415,62 @@ export async function GET(
         upstreamHeaders = {};
       }
 
+      let defaultReferer = 'https://vixsrc.to/';
+      const lowerUrl = decodedUrl.toLowerCase();
+      if (lowerUrl.includes('vixsrc') || lowerUrl.includes('vimeos')) {
+        defaultReferer = 'https://vixsrc.to/';
+      } else if (lowerUrl.includes('vidlink') || lowerUrl.includes('hakunaymatata')) {
+        defaultReferer = 'https://vidlink.pro/';
+      } else if (lowerUrl.includes('autoembed')) {
+        defaultReferer = 'https://autoembed.cc/';
+      } else if (lowerUrl.includes('videasy') || lowerUrl.includes('peakstorm')) {
+        defaultReferer = 'https://player.videasy.net/';
+      }
+
+      const effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || defaultReferer;
+      let effectiveOrigin = 'https://vixsrc.to';
+      try {
+        effectiveOrigin = new URL(effectiveReferer).origin;
+      } catch {}
+
+      const proxyFetchHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Referer': effectiveReferer,
+        'Origin': effectiveOrigin,
+        ...upstreamHeaders,
+      };
+
       const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
-      const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(upstreamHeaders))}`;
+      const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(proxyFetchHeaders))}`;
 
       let response: Response | null = null;
       let lastErr: any = null;
 
-      // 1. Try Cloudflare Worker edge proxy first (bypasses 403/429 Cloudflare CDN blocks)
-      try {
-        const workerCandidate = await fetch(targetWorkerUrl, { cache: 'no-store' });
-        if (workerCandidate.ok) {
-          response = workerCandidate;
+      // 1. Try Direct Fetch first with dynamic referer (Node/Vercel serverless handles this with 200 OK)
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const directCandidate = await fetch(decodedUrl, {
+            cache: 'no-store',
+            headers: proxyFetchHeaders,
+          });
+          if (directCandidate.ok) {
+            response = directCandidate;
+            break;
+          }
+        } catch (err: any) {
+          lastErr = err;
         }
-      } catch (e) {
-        console.warn('[stream/proxy] Cloudflare Worker fetch error, trying direct fallback...', e);
       }
 
-      // 2. Direct fallback if Cloudflare Worker is unreachable
+      // 2. Fall back to Cloudflare Worker edge proxy if direct fetch fails (e.g. 403 or 429)
       if (!response) {
-        const proxyFetchHeaders = {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': 'https://player.videasy.net/',
-          'Origin': 'https://player.videasy.net',
-          ...upstreamHeaders,
-        };
-
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const candidate = await fetch(decodedUrl, {
-              cache: 'no-store',
-              headers: proxyFetchHeaders,
-            });
-            if (candidate.ok || attempt === 1) {
-              response = candidate;
-              break;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 300));
-          } catch (err: any) {
-            lastErr = err;
+        try {
+          const workerCandidate = await fetch(targetWorkerUrl, { cache: 'no-store' });
+          if (workerCandidate.ok) {
+            response = workerCandidate;
           }
+        } catch (e: any) {
+          console.warn('[stream/proxy] Cloudflare Worker fetch error:', e);
         }
       }
 
