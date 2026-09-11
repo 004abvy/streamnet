@@ -303,11 +303,6 @@ export default function VidstackPlayer({
           }
           onEnded?.();
         }}
-        onDurationChange={(detail) => {
-          if (typeof detail === 'number' && detail > 0 && detail < 60) {
-            onInvalidDuration?.(detail);
-          }
-        }}
         onCanPlay={() => {
           // Direct seek on ready for HLS stability
           if (tmdbId && hasResumedRef.current !== src && player.current) {
