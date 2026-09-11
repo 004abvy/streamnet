@@ -32,34 +32,33 @@ export async function GET(
         upstreamHeaders = {};
       }
 
-      let defaultReferer = 'https://vixsrc.to/';
+      // Determine clean Referer and optional Origin based on target CDN domain
+      let effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || '';
+      let effectiveOrigin: string | undefined = undefined;
+
       const lowerUrl = decodedUrl.toLowerCase();
-      if (lowerUrl.includes('vixsrc') || lowerUrl.includes('vimeos')) {
-        defaultReferer = 'https://vixsrc.to/';
-      } else if (lowerUrl.includes('vidlink') || lowerUrl.includes('hakunaymatata')) {
-        defaultReferer = 'https://vidlink.pro/';
+      if (lowerUrl.includes('vimeos')) {
+        effectiveReferer = 'https://vimeos.net/';
+      } else if (lowerUrl.includes('peakstorm')) {
+        effectiveReferer = 'https://videasy.net/';
+        // Peakstorm rejects requests with Origin header (returns 403)
+      } else if (lowerUrl.includes('hakunaymatata') || lowerUrl.includes('vidlink')) {
+        effectiveReferer = 'https://vidlink.pro/';
+      } else if (lowerUrl.includes('vixsrc')) {
+        effectiveReferer = 'https://vixsrc.to/';
       } else if (lowerUrl.includes('autoembed')) {
-        defaultReferer = 'https://autoembed.cc/';
-      } else if (lowerUrl.includes('videasy') || lowerUrl.includes('peakstorm')) {
-        defaultReferer = 'https://videasy.net/';
+        effectiveReferer = 'https://autoembed.cc/';
+      } else if (!effectiveReferer || effectiveReferer.includes('player.videasy.net')) {
+        effectiveReferer = 'https://videasy.net/';
       }
 
-      let rawReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || defaultReferer;
-      if (rawReferer.includes('player.videasy.net')) {
-        rawReferer = 'https://videasy.net/';
-      }
-      const effectiveReferer = rawReferer;
-      let effectiveOrigin = 'https://vixsrc.to';
-      try {
-        effectiveOrigin = new URL(effectiveReferer).origin;
-      } catch {}
-
-      const proxyFetchHeaders = {
+      const proxyFetchHeaders: Record<string, string> = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-        'Referer': effectiveReferer,
-        'Origin': effectiveOrigin,
-        ...upstreamHeaders,
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
       };
+      if (effectiveReferer) proxyFetchHeaders['Referer'] = effectiveReferer;
+      if (effectiveOrigin) proxyFetchHeaders['Origin'] = effectiveOrigin;
 
       const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
       const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(proxyFetchHeaders))}`;
@@ -74,8 +73,8 @@ export async function GET(
             cache: 'no-store',
             headers: proxyFetchHeaders,
           });
+          response = directCandidate;
           if (directCandidate.ok) {
-            response = directCandidate;
             break;
           }
         } catch (err: any) {
@@ -83,8 +82,8 @@ export async function GET(
         }
       }
 
-      // 2. Cloudflare Worker edge proxy fallback
-      if (!response) {
+      // 2. Cloudflare Worker edge proxy fallback if direct fetch wasn't OK
+      if (!response || !response.ok) {
         try {
           const workerCandidate = await fetch(targetWorkerUrl, { cache: 'no-store' });
           if (workerCandidate.ok) {
@@ -100,7 +99,7 @@ export async function GET(
       }
 
       if (!response.ok) {
-        return new NextResponse('Stream Fetch Error', { status: response.status });
+        return new NextResponse(`Stream Fetch Error (${response.status})`, { status: response.status });
       }
 
       if (isManifest) {
