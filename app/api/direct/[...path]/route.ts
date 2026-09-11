@@ -21,9 +21,16 @@ export async function GET(
 
     if (resolved.length > 0) {
       const sources = resolved.map((stream, index) => {
+        const cleanHeaders: Record<string, string> = { ...(stream.headers || {}) };
+        if (cleanHeaders['Referer']?.includes('player.videasy.net')) {
+          cleanHeaders['Referer'] = 'https://videasy.net/';
+        }
+        if (cleanHeaders['Origin']?.includes('player.videasy.net')) {
+          cleanHeaders['Origin'] = 'https://videasy.net';
+        }
         const proxyParams = new URLSearchParams({
           url: stream.url,
-          headers: JSON.stringify(stream.headers || {}),
+          headers: JSON.stringify(cleanHeaders),
         });
         if (stream.type === 'hls') proxyParams.set('manifest', '1');
         return {

@@ -44,7 +44,11 @@ export async function GET(
         defaultReferer = 'https://videasy.net/';
       }
 
-      const effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || defaultReferer;
+      let rawReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || defaultReferer;
+      if (rawReferer.includes('player.videasy.net')) {
+        rawReferer = 'https://videasy.net/';
+      }
+      const effectiveReferer = rawReferer;
       let effectiveOrigin = 'https://vixsrc.to';
       try {
         effectiveOrigin = new URL(effectiveReferer).origin;
