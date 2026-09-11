@@ -95,7 +95,8 @@ export async function GET(
       }
 
       if (!response) {
-        return new NextResponse(`Proxy fetch failed: ${lastErr?.message || 'network error'}`, { status: 502 });
+        const errDetails = lastErr ? `${lastErr.name}: ${lastErr.message} | cause: ${JSON.stringify(lastErr.cause || {})} | stack: ${lastErr.stack}` : 'network error';
+        return new NextResponse(`Proxy fetch failed: ${errDetails}`, { status: 502 });
       }
 
       if (!response.ok) {
