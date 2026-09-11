@@ -415,35 +415,45 @@ export async function GET(
         upstreamHeaders = {};
       }
 
-      const proxyFetchHeaders = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': new URL(decodedUrl).origin,
-        ...upstreamHeaders,
-      };
+      const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
+      const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}`;
 
-      // No artificial AbortSignal timeout here — slow upstream manifests/segments
-      // should be allowed to finish rather than being cut off early. Vercel's own
-      // per-invocation execution limit (see `maxDuration` above) is the real ceiling.
       let response: Response | null = null;
       let lastErr: any = null;
-      // One retry on transient failures (5xx / network errors) — many scraped
-      // CDNs intermittently reject the first request under load.
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const candidate = await fetch(decodedUrl, {
-            cache: 'no-store',
-            headers: proxyFetchHeaders,
-          });
-          if (candidate.ok || attempt === 1) {
-            response = candidate;
-            break;
+
+      // 1. Try Cloudflare Worker edge proxy first (bypasses 403/429 Cloudflare CDN blocks)
+      try {
+        const workerCandidate = await fetch(targetWorkerUrl, { cache: 'no-store' });
+        if (workerCandidate.ok) {
+          response = workerCandidate;
+        }
+      } catch (e) {
+        console.warn('[stream/proxy] Cloudflare Worker fetch error, trying direct fallback...', e);
+      }
+
+      // 2. Direct fallback if Cloudflare Worker is unreachable
+      if (!response) {
+        const proxyFetchHeaders = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://player.videasy.net/',
+          'Origin': 'https://player.videasy.net',
+          ...upstreamHeaders,
+        };
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const candidate = await fetch(decodedUrl, {
+              cache: 'no-store',
+              headers: proxyFetchHeaders,
+            });
+            if (candidate.ok || attempt === 1) {
+              response = candidate;
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          } catch (err: any) {
+            lastErr = err;
           }
-          console.warn(`[stream/proxy] attempt ${attempt + 1} got ${candidate.status}, retrying:`, decodedUrl);
-          await new Promise((resolve) => setTimeout(resolve, 400));
-        } catch (err: any) {
-          lastErr = err;
-          console.error(`[stream/proxy] attempt ${attempt + 1} fetch failed:`, decodedUrl, err?.name, err?.message);
-          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 400));
         }
       }
 
