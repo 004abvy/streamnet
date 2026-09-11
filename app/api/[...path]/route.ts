@@ -257,29 +257,29 @@ export async function GET(
     // 13. /api/direct
     if (pathStr.startsWith('direct/')) {
       const parts = pathStr.split('/');
-      const mediaType = parts[1]; // movie or tv
+      const mediaType = parts[1] === 'tv' ? 'tv' : 'movie';
       const tmdbId = parts[2];
+      const season = parts[3] || '1';
+      const episode = parts[4] || '1';
       
       let upstreamUrl = '';
       if (mediaType === 'movie') {
         upstreamUrl = `http://localhost:4000/v1/movies/${tmdbId}`;
-      } else if (mediaType === 'tv') {
-        const season = parts[3];
-        const episode = parts[4];
+      } else {
         upstreamUrl = `http://localhost:4000/v1/tv/${tmdbId}/seasons/${season}/episodes/${episode}`;
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const fetchUrl = backendUrl 
-        ? `${backendUrl}/v1/${mediaType === 'movie' ? 'movies' : 'tv'}/${tmdbId}${mediaType === 'tv' ? `/seasons/${parts[3]}/episodes/${parts[4]}` : ''}`
+        ? `${backendUrl}/v1/${mediaType === 'movie' ? 'movies' : 'tv'}/${tmdbId}${mediaType === 'tv' ? `/seasons/${season}/episodes/${episode}` : ''}`
         : upstreamUrl;
 
+      // 1. Attempt primary OMSS backend (local dev or configured NEXT_PUBLIC_BACKEND_URL)
       try {
         console.log(`[API Proxy] Proxying direct request to: ${fetchUrl}`);
         
-        // Use a shorter timeout for the proxy fetch to fail fast if backend is unreachable
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 12000);
+        const timeout = setTimeout(() => controller.abort(), 5000);
         
         const response = await fetch(fetchUrl, {
           headers: {
@@ -292,34 +292,66 @@ export async function GET(
 
         clearTimeout(timeout);
 
-        if (!response.ok) {
-          const status = response.status;
-          let text = '';
-          try {
-            text = await response.text();
-          } catch {
-            text = 'Could not read error body';
+        if (response.ok) {
+          const data = await response.json();
+          if (data && Array.isArray(data.sources) && data.sources.length > 0) {
+            return NextResponse.json(data);
           }
-          console.error(`[API Proxy] Upstream error ${status}: ${text}`);
-          return NextResponse.json({ 
-            error: `Upstream error ${status}`, 
-            detail: text,
-            target: fetchUrl 
-          }, { status });
         }
-
-        const data = await response.json();
-        return NextResponse.json(data);
+        console.warn(`[API Proxy] Upstream returned status ${response.status} or empty sources. Attempting inline provider fallback...`);
       } catch (err: any) {
-        console.error(`[API Proxy] Fetch failed for ${fetchUrl}:`, err.name, err.message);
-        return NextResponse.json({ 
-          error: 'Direct API fetch failed', 
-          message: err.message,
-          type: err.name,
-          target: fetchUrl,
-          hint: 'Ensure NEXT_PUBLIC_BACKEND_URL is set in Vercel and the backend is awake.'
-        }, { status: 502 });
+        console.warn(`[API Proxy] Primary backend unreachable (${fetchUrl}): ${err.name} ${err.message}. Attempting inline provider fallback...`);
       }
+
+      // 2. Automatic Fallback: Inline Next.js stream resolvers (Videasy, VidLink, VixSrc, AutoEmbed)
+      try {
+        const currentUrl = new URL(request.url);
+        const { resolveAllStreams } = await import('../../../lib/providers/index');
+        const resolved = await resolveAllStreams(tmdbId, mediaType, season, episode);
+
+        if (resolved.length > 0) {
+          const sources = resolved.map((stream, index) => {
+            const proxyParams = new URLSearchParams({
+              url: stream.url,
+              headers: JSON.stringify(stream.headers || {}),
+            });
+            if (stream.type === 'hls') proxyParams.set('manifest', '1');
+            return {
+              id: stream.id || `provider-${index}`,
+              provider: { id: stream.id || `provider-${index}`, name: stream.provider },
+              name: stream.provider,
+              quality: stream.quality || null,
+              streamType: stream.type,
+              url: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+              audioTracks: [],
+            };
+          });
+
+          const subtitles = resolved.flatMap(s => s.subtitles || []).map(sub => ({
+            url: sub.url,
+            label: sub.label || sub.language || 'English',
+            format: 'vtt',
+          }));
+
+          return NextResponse.json({
+            success: true,
+            tmdbId,
+            sources,
+            subtitles,
+          });
+        }
+      } catch (inlineErr: any) {
+        console.error('[API Direct Fallback] Inline provider resolution error:', inlineErr);
+      }
+
+      // 3. If all resolution attempts fail
+      return NextResponse.json({
+        success: false,
+        tmdbId,
+        sources: [],
+        subtitles: [],
+        message: 'No direct HLS streams could be resolved from backend or inline providers.',
+      }, { status: 404 });
     }
 
     // 14. /api/subtitles
