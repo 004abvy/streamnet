@@ -2,7 +2,7 @@ import type { ResolvedStream } from './types';
 
 const BASE_URL = 'https://vixsrc.to';
 const VIXSRC_HEADERS: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/javascript, */*; q=0.01',
   'Accept-Language': 'en-US,en;q=0.9',
   'Referer': BASE_URL,
@@ -75,7 +75,7 @@ export async function resolveVixSrc(
       quality: `${bestResolution}p`,
       type: 'hls',
       headers: {
-        'Referer': apiUrl,
+        'Referer': 'https://vixsrc.to/',
         'User-Agent': VIXSRC_HEADERS['User-Agent'],
       },
     }];
