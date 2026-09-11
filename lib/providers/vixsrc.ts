@@ -52,7 +52,7 @@ export async function resolveVixSrc(
 
     // Step 5: Fetch HLS master playlist
     const playlistRes = await fetch(masterUrl, {
-      headers: { ...VIXSRC_HEADERS, Referer: apiUrl },
+      headers: { ...VIXSRC_HEADERS, Referer: BASE_URL },
       signal: AbortSignal.timeout(10000),
     });
     if (!playlistRes.ok) return [];
