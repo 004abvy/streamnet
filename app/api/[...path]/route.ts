@@ -275,10 +275,26 @@ export async function GET(
         : upstreamUrl;
 
       try {
-        const response = await fetch(fetchUrl);
+        console.log(`[API Proxy] Proxying direct request to: ${fetchUrl}`);
+        const response = await fetch(fetchUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'StreamNet-Internal-Proxy'
+          },
+          next: { revalidate: 0 }
+        });
+
+        if (!response.ok) {
+          const status = response.status;
+          const text = await response.text();
+          console.error(`[API Proxy] Upstream error ${status}: ${text}`);
+          return NextResponse.json({ error: `Upstream error ${status}`, detail: text }, { status });
+        }
+
         const data = await response.json();
         return NextResponse.json(data);
       } catch (err: any) {
+        console.error(`[API Proxy] Fetch failed for ${fetchUrl}:`, err);
         return NextResponse.json({ error: 'Direct API fetch failed', message: err.message }, { status: 502 });
       }
     }

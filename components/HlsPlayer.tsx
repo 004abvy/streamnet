@@ -122,6 +122,7 @@ export default function HlsPlayer({
         const data = await res.json();
 
         if (!data || !data.sources || data.sources.length === 0) {
+          console.error('[HlsPlayer] No sources in response for:', omssUrl, data);
           throw new Error(`No streams available for ${serverId}. Try another server.`);
         }
 
