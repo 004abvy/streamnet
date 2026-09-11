@@ -261,7 +261,7 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
               title={title}
               preferredLanguage={selectedLanguage}
               className="w-full h-full border-0"
-              onNextServer={handleSelectDirect}
+              onNextServer={() => changeServer('screenscape')}
               onInvalidDuration={handleInvalidDuration}
             />
           </div>

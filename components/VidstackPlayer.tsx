@@ -270,6 +270,10 @@ export default function VidstackPlayer({
         autoPlay={autoPlay}
         crossOrigin="anonymous"
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
+        onError={() => {
+          console.warn('[VidstackPlayer] Stream loading error (403/429/network). Advancing source...');
+          onInvalidDuration?.(0);
+        }}
         onEnded={() => {
           if (tmdbId) {
             localStorage.removeItem(`streamnet_progress_${tmdbId}`);

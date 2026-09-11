@@ -75,15 +75,8 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
             title={title}
             type="movie" 
             className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0" 
-            onNextServer={() => {
-              const directServers = SERVERS.filter(s => s.category === 'direct' || s.category === 'omss');
-              const currentIndex = directServers.findIndex(s => s.id === activeServer);
-              if (currentIndex !== -1 && currentIndex < directServers.length - 1) {
-                setActiveServer(directServers[currentIndex + 1].id);
-              } else if (directServers.length > 0) {
-                setActiveServer(directServers[0].id); // Loop back to first
-              }
-            }}
+            onNextServer={() => setActiveServer('screenscape')}
+            onInvalidDuration={() => setActiveServer('screenscape')}
           />
         ) : (
           <iframe
