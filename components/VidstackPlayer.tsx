@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance } from '@vidstack/react';
+import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 
 import '@vidstack/react/player/styles/default/theme.css';
@@ -31,7 +31,7 @@ export interface DirectSourceItem {
 export interface VidstackPlayerProps {
   title?: string;
   poster?: string;
-  src: string | VidstackSource[] | any;
+  src: MediaSrc;
   tracks?: VidstackTrack[];
   thumbnails?: string;
   className?: string;
@@ -64,13 +64,13 @@ export default function VidstackPlayer({
   const player = useRef<MediaPlayerInstance>(null);
   const [showStreamsDropdown, setShowStreamsDropdown] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const hasResumedRef = useRef<string | null>(null);
+  const hasResumedRef = useRef<MediaSrc | null>(null);
 
   // Force English/Preferred audio whenever tracks change, unless there is a saved preference
   useEffect(() => {
     if (!player.current || !tmdbId) return;
 
-    return player.current.subscribe(({ audioTracks, textTracks, currentTime, paused, canPlay }) => {
+    return player.current.subscribe(({ audioTracks, textTracks, canPlay }) => {
       // Restore saved progress once per source change when player is ready
       if (hasResumedRef.current !== src && player.current && canPlay) {
         const savedProgress = localStorage.getItem(`streamnet_progress_${tmdbId}`);
@@ -265,7 +265,7 @@ export default function VidstackPlayer({
       <MediaPlayer
         ref={player}
         title={title}
-        src={src as any}
+        src={src}
         poster={poster}
         autoPlay={autoPlay}
         crossOrigin="anonymous"
@@ -295,32 +295,30 @@ export default function VidstackPlayer({
         }}
         className="w-full h-full text-white font-sans"
         playsInline
-        onAudioTracksChange={(event) => {
-          const tracks = event.detail || event.target;
+        onAudioTracksChange={(tracks) => {
           if (!tracks || !tmdbId) return;
           try {
-            const trackList = Array.isArray(tracks) ? tracks : Array.from(tracks as any);
-            const selected = trackList.find((t: any) => t.selected);
+            const trackList = (Array.isArray(tracks) ? tracks : Array.from(tracks)) as AudioTrack[];
+            const selected = trackList.find((t) => t.selected);
             if (selected) {
-              localStorage.setItem(`streamnet_audio_${tmdbId}`, (selected as any).label);
+              localStorage.setItem(`streamnet_audio_${tmdbId}`, selected.label);
             }
           } catch {}
         }}
-        onTextTracksChange={(event) => {
-          const tracks = event.detail || event.target;
+        onTextTracksChange={(tracks) => {
           if (!tracks || !tmdbId) return;
           try {
-            const trackList = Array.isArray(tracks) ? tracks : Array.from(tracks as any);
-            const showing = trackList.find((t: any) => t.mode === 'showing');
+            const trackList = (Array.isArray(tracks) ? tracks : Array.from(tracks)) as TextTrack[];
+            const showing = trackList.find((t) => t.mode === 'showing');
             if (showing) {
-              localStorage.setItem(`streamnet_sub_${tmdbId}`, (showing as any).label);
+              localStorage.setItem(`streamnet_sub_${tmdbId}`, showing.label);
             } else {
               localStorage.removeItem(`streamnet_sub_${tmdbId}`);
             }
           } catch {}
         }}
-        onTimeUpdate={(event) => {
-          const currentTime = event.detail?.currentTime;
+        onTimeUpdate={(detail) => {
+          const currentTime = detail.currentTime;
           if (tmdbId && typeof currentTime === 'number' && currentTime > 0) {
             // Save every 1 second for precision
             const lastSaved = parseFloat(localStorage.getItem(`streamnet_progress_${tmdbId}_last_save`) || '0');
@@ -334,7 +332,7 @@ export default function VidstackPlayer({
         <MediaProvider>
           {poster && (
             <Poster
-              className="vds-poster absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 data-[visible]:opacity-100"
+              className="vds-poster absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 data-visible:opacity-100"
               src={poster}
               alt={title || 'Video poster'}
             />
