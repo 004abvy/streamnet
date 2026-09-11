@@ -1,0 +1,56 @@
+[
+  {
+    "id": "videasy",
+    "name": "NetPrime",
+    "urls": {
+      "movie": "https://player.videasy.to/movie/${id}",
+      "tv": "https://player.videasy.to/tv/${id}/${season}/${episode}"
+    },
+    "allowedDomain": "https://player.videasy.to"
+  },
+  {
+    "id": "vsembed.ru",
+    "name": "VidSrc",
+    "urls": {
+      "movie": "https://vsembed.ru/embed/movie?tmdb=${id}",
+      "tv": "https://vidsrc.cc/embed/tv?tmdb=${id}&s=${season}&e=${episode}"
+    },
+    "allowedDomain": "https://vidsrc.ru"
+  },
+  {
+    "id": "vidsrccc2",
+    "name": "Netflix",
+    "urls": {
+      "movie": "https://vidsrc.cc/v2/embed/movie/${id}",
+      "tv": "https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}"
+    },
+    "allowedDomain": "https://vidsrc.cc"
+  },
+  {
+    "id": "vidsrcvip2",
+    "name": "Amazon",
+    "urls": {
+      "movie": "https://vsembed.su/embed/movie/${id}",
+      "tv": "https://vidsrc.vip/embed/tv/${id}/${season}/${episode}"
+    },
+    "allowedDomain": "https://vsembed.su"
+  },
+  {
+    "id": "multiembed",
+    "name": "MultiEmbed",
+    "urls": {
+      "movie": "https://multiembed.mov/?video_id=${id}&tmdb=1",
+      "tv": "https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}"
+    },
+    "allowedDomain": "https://streamingnow.mov/"
+  },
+  {
+    "id": "vidsrcTo",
+    "name": "VidSrc.To",
+    "urls": {
+      "movie": "https://vidsrc.to/embed/movie/${id}",
+      "tv": "https://vidsrc.to/embed/tv/${id}/${season}/${episode}"
+    },
+    "allowedDomain": "https://vidsrc.su"
+  }
+]
