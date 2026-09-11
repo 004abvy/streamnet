@@ -3,10 +3,10 @@ import type { ResolvedStream } from './types';
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'a4e8c9bd39aadd7d67d8f0736c7a882a';
 
 const VIDEASY_HEADERS: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/plain, */*',
-  'Origin': 'https://player.videasy.net',
-  'Referer': 'https://player.videasy.net/',
+  'Origin': 'https://videasy.net',
+  'Referer': 'https://videasy.net/',
 };
 
 const VIDEASY_API = 'https://api.speedracelight.com';

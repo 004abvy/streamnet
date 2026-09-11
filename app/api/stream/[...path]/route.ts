@@ -41,7 +41,7 @@ export async function GET(
       } else if (lowerUrl.includes('autoembed')) {
         defaultReferer = 'https://autoembed.cc/';
       } else if (lowerUrl.includes('videasy') || lowerUrl.includes('peakstorm')) {
-        defaultReferer = 'https://player.videasy.net/';
+        defaultReferer = 'https://videasy.net/';
       }
 
       const effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || defaultReferer;
