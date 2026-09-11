@@ -270,37 +270,39 @@ export async function GET(
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const fetchUrl = backendUrl 
-        ? `${backendUrl}/v1/${mediaType === 'movie' ? 'movies' : 'tv'}/${tmdbId}${mediaType === 'tv' ? `/seasons/${season}/episodes/${episode}` : ''}`
-        : upstreamUrl;
+      const hasConfiguredBackend = Boolean(backendUrl && !backendUrl.includes('localhost') && !backendUrl.includes('127.0.0.1'));
+      const isLocalDev = process.env.NODE_ENV === 'development';
 
-      // 1. Attempt primary OMSS backend (local dev or configured NEXT_PUBLIC_BACKEND_URL)
-      try {
-        console.log(`[API Proxy] Proxying direct request to: ${fetchUrl}`);
-        
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch(fetchUrl, {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'StreamNet-Internal-Proxy'
-          },
-          signal: controller.signal,
-          next: { revalidate: 0 }
-        });
+      // 1. Attempt primary OMSS backend ONLY if configured external backend exists OR in local dev
+      if (hasConfiguredBackend || isLocalDev) {
+        const fetchUrl = hasConfiguredBackend
+          ? `${backendUrl}/v1/${mediaType === 'movie' ? 'movies' : 'tv'}/${tmdbId}${mediaType === 'tv' ? `/seasons/${season}/episodes/${episode}` : ''}`
+          : upstreamUrl;
 
-        clearTimeout(timeout);
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), isLocalDev && !hasConfiguredBackend ? 1200 : 2500);
+          
+          const response = await fetch(fetchUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'StreamNet-Internal-Proxy'
+            },
+            signal: controller.signal,
+            next: { revalidate: 0 }
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data && Array.isArray(data.sources) && data.sources.length > 0) {
-            return NextResponse.json(data);
+          clearTimeout(timeout);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data && Array.isArray(data.sources) && data.sources.length > 0) {
+              return NextResponse.json(data);
+            }
           }
+        } catch (err: any) {
+          // Fall through to instant inline resolution
         }
-        console.warn(`[API Proxy] Upstream returned status ${response.status} or empty sources. Attempting inline provider fallback...`);
-      } catch (err: any) {
-        console.warn(`[API Proxy] Primary backend unreachable (${fetchUrl}): ${err.name} ${err.message}. Attempting inline provider fallback...`);
       }
 
       // 2. Automatic Fallback: Inline Next.js stream resolvers (Videasy, VidLink, VixSrc, AutoEmbed)

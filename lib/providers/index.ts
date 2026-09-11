@@ -6,6 +6,13 @@ import { resolveAutoembed } from './autoembed';
 
 export type { ResolvedStream } from './types';
 
+function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout of ${ms}ms exceeded`)), ms))
+  ]);
+}
+
 /**
  * Resolve all available direct HLS streams for a TMDB id.
  * Calls all providers in parallel with individual timeouts.
@@ -18,10 +25,10 @@ export async function resolveAllStreams(
   episode: string = '1'
 ): Promise<ResolvedStream[]> {
   const resolvers = [
-    { name: 'Videasy', fn: () => resolveVideasy(tmdbId, mediaType, season, episode) },
-    { name: 'VidLink', fn: () => resolveVidLink(tmdbId, mediaType, season, episode) },
-    { name: 'VixSrc', fn: () => resolveVixSrc(tmdbId, mediaType, season, episode) },
-    { name: 'AutoEmbed', fn: () => resolveAutoembed(tmdbId, mediaType, season, episode) },
+    { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 3000) },
+    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 3000) },
+    { name: 'VixSrc', fn: () => withTimeout(resolveVixSrc(tmdbId, mediaType, season, episode), 3000) },
+    { name: 'AutoEmbed', fn: () => withTimeout(resolveAutoembed(tmdbId, mediaType, season, episode), 3000) },
   ];
 
   const results = await Promise.allSettled(
@@ -29,7 +36,7 @@ export async function resolveAllStreams(
       try {
         return await r.fn();
       } catch (e) {
-        console.warn(`[resolveAllStreams] ${r.name} failed:`, e);
+        console.warn(`[resolveAllStreams] ${r.name} failed or timed out:`, e);
         return [];
       }
     })
