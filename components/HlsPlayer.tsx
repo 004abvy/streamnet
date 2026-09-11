@@ -194,6 +194,7 @@ export default function HlsPlayer({
             id: s.provider?.id || s.id || `src-${idx}`,
             name,
             url,
+            rawUrl: s.rawUrl || s.url,
             audioLanguages: audioLangs,
             isWorking: true,
           };

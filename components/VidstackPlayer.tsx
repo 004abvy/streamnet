@@ -24,6 +24,7 @@ export interface DirectSourceItem {
   id: string;
   name: string;
   url: string;
+  rawUrl?: string;
   audioLanguages?: string[];
   isWorking?: boolean;
 }
@@ -63,8 +64,13 @@ export default function VidstackPlayer({
 }: VidstackPlayerProps) {
   const player = useRef<MediaPlayerInstance>(null);
   const [showStreamsDropdown, setShowStreamsDropdown] = useState<boolean>(false);
+  const [activeMediaSrc, setActiveMediaSrc] = useState<MediaSrc>(src);
   const menuRef = useRef<HTMLDivElement>(null);
   const hasResumedRef = useRef<MediaSrc | null>(null);
+
+  useEffect(() => {
+    setActiveMediaSrc(src);
+  }, [src]);
 
   // Force English/Preferred audio whenever tracks change, unless there is a saved preference
   useEffect(() => {
@@ -265,14 +271,20 @@ export default function VidstackPlayer({
       <MediaPlayer
         ref={player}
         title={title}
-        src={src}
+        src={activeMediaSrc}
         poster={poster}
         autoPlay={autoPlay}
         crossOrigin="anonymous"
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
         onError={() => {
-          console.warn('[VidstackPlayer] Stream loading error (403/429/network). Advancing source...');
-          onInvalidDuration?.(0);
+          const activeObj = availableDirectSources.find(s => s.url === src || s.name === serverName);
+          if (activeObj?.rawUrl && activeMediaSrc !== activeObj.rawUrl) {
+            console.log('[VidstackPlayer] Proxied stream blocked (403/429). Retrying direct client-side HLS URL...');
+            setActiveMediaSrc(activeObj.rawUrl);
+          } else {
+            console.warn('[VidstackPlayer] Stream loading error (403/429/network). Advancing source...');
+            onInvalidDuration?.(0);
+          }
         }}
         onEnded={() => {
           if (tmdbId) {
