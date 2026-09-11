@@ -250,27 +250,8 @@ export default function HlsPlayer({
           streamMemoryCache.set(omssUrl, { initialList, subtitles: [], timestamp: Date.now() });
         }
 
-        // NON-BLOCKING BACKGROUND PARALLEL PROBING: Update availableSources list as probes complete
-        const probeSource = async (item: DirectSourceItem): Promise<DirectSourceItem> => {
-          try {
-            const probeController = new AbortController();
-            const timeoutId = setTimeout(() => probeController.abort(), 2000);
-            const probeRes = await fetch(item.url, { method: 'HEAD', signal: probeController.signal });
-            clearTimeout(timeoutId);
-            return { ...item, isWorking: probeRes.ok };
-          } catch {
-            return { ...item, isWorking: false };
-          }
-        };
-
-        Promise.all(initialList.map(probeSource)).then((probedList) => {
-          if (isMounted && probedList.length > 0) {
-            const verifiedWorking = probedList.filter(r => r.isWorking);
-            const remaining = probedList.filter(r => !r.isWorking);
-            const finalList = verifiedWorking.length > 0 ? [...verifiedWorking, ...remaining] : probedList;
-            setAvailableSources(finalList);
-          }
-        });
+        // Keep all resolved sources active and available
+        setAvailableSources(initialList);
 
       } catch (err: any) {
         if (isMounted) {

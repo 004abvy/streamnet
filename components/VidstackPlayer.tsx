@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 
@@ -38,7 +38,7 @@ export interface VidstackPlayerProps {
   className?: string;
   autoPlay?: boolean;
   onEnded?: () => void;
-  onInvalidDuration?: (duration: number) => void;
+  onInvalidDuration?: (durationSeconds: number) => void;
   onSelectDirectSource?: (source: DirectSourceItem) => void;
   availableDirectSources?: DirectSourceItem[];
   serverName?: string;
@@ -71,6 +71,17 @@ export default function VidstackPlayer({
   useEffect(() => {
     setActiveMediaSrc(src);
   }, [src]);
+
+  const formattedMediaSrc = useMemo<MediaSrc>(() => {
+    if (typeof activeMediaSrc === 'string') {
+      const lower = activeMediaSrc.toLowerCase();
+      if (lower.includes('.mp4') || lower.includes('type=mp4')) {
+        return { src: activeMediaSrc, type: 'video/mp4' };
+      }
+      return { src: activeMediaSrc, type: 'application/x-mpegurl' };
+    }
+    return activeMediaSrc;
+  }, [activeMediaSrc]);
 
   // Force English/Preferred audio whenever tracks change, unless there is a saved preference
   useEffect(() => {
@@ -271,7 +282,7 @@ export default function VidstackPlayer({
       <MediaPlayer
         ref={player}
         title={title}
-        src={activeMediaSrc}
+        src={formattedMediaSrc}
         poster={poster}
         autoPlay={autoPlay}
         crossOrigin="anonymous"
