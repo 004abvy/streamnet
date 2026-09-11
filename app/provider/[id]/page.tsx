@@ -34,7 +34,7 @@ export default function ProviderPage({
       setLoading(true);
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const res = await fetch(`${backendUrl}/api/discover/provider/${id}?type=${type}&page=${currentPage}`);
+        const res = await fetch(`/api/discover/provider/${id}?type=${type}&page=${currentPage}`);
         const data = await res.json();
         
         if (data.results) {

@@ -21,7 +21,7 @@ export default function TVDetailsPage({
     if (!id) return;
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    fetch(`${backendUrl}/api/tv/${id}`)
+    fetch(`/api/tv/${id}`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

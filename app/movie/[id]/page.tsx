@@ -21,7 +21,7 @@ export default function MovieDetailsPage({
     if (!id) return;
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    fetch(`${backendUrl}/api/movies/${id}`)
+    fetch(`/api/movies/${id}`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

@@ -41,7 +41,7 @@ function SearchContent() {
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     
-    fetch(`${backendUrl}/api/search?q=${encodeURIComponent(queryParam)}`)
+    fetch(`/api/search?q=${encodeURIComponent(queryParam)}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         const filtered = data?.results?.filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv') || [];
@@ -64,7 +64,7 @@ function SearchContent() {
 
     const timer = setTimeout(() => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      fetch(`${backendUrl}/api/search?q=${encodeURIComponent(inputQuery.trim())}`)
+      fetch(`/api/search?q=${encodeURIComponent(inputQuery.trim())}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.results) {

@@ -47,7 +47,7 @@ export default function Navbar() {
       setLoadingSuggestions(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-      fetch(`${backendUrl}/api/search?q=${encodeURIComponent(query.trim())}`)
+      fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.results) {

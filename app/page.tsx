@@ -89,8 +89,8 @@ export default function Home() {
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
     Promise.all([
-      fetch(`${backendUrl}/api/movies/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null),
-      fetch(`${backendUrl}/api/tv/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
+      fetch(`/api/movies/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null),
+      fetch(`/api/tv/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
     ])
       .then(([moviesData, tvData]) => {
         if (moviesData?.results) setTrendingMovies(moviesData.results);

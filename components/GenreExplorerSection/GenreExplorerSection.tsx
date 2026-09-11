@@ -37,7 +37,7 @@ export default function GenreExplorerSection() {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const genreId = contentType === 'tv' ? (selectedGenre.tvId || selectedGenre.id) : selectedGenre.id;
 
-      fetch(`${backendUrl}/api/discover?type=${contentType}&genreId=${genreId}&page=${page}`)
+      fetch(`/api/discover?type=${contentType}&genreId=${genreId}&page=${page}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.results) {

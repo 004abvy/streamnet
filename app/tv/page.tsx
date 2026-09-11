@@ -68,7 +68,7 @@ function TvContent() {
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    let url = `${backendUrl}/api/tv/discover?page=${pageParam}&filter=${filterParam}`;
+    let url = `/api/tv/discover?page=${pageParam}&filter=${filterParam}`;
     if (genreParam) {
       url += `&genre=${genreParam}`;
     }

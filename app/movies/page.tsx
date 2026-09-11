@@ -69,7 +69,7 @@ function MoviesContent() {
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    let url = `${backendUrl}/api/movies/discover?page=${pageParam}&filter=${filterParam}`;
+    let url = `/api/movies/discover?page=${pageParam}&filter=${filterParam}`;
     if (genreParam) {
       url += `&genre=${genreParam}`;
     }

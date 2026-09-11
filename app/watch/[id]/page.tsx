@@ -21,7 +21,7 @@ export default function WatchPage({
     setLoading(true);
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    fetch(`${backendUrl}/api/movies/${id}`)
+    fetch(`/api/movies/${id}`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -132,13 +132,13 @@ export default function WatchPage({
               <div className="h-16 w-full rounded-lg bg-neutral-800/40 mt-1" />
             </div>
           </div>
-        ) : movie ? (
+        ) : (
           <>
             <VideoPlayer
               tmdbId={id}
               type="movie"
-              title={movie.title || movie.name}
-              backdropPath={movie.backdrop_path}
+              title={movie?.title || movie?.name}
+              backdropPath={movie?.backdrop_path}
               imdbId={imdbId}
             />
 
@@ -148,10 +148,6 @@ export default function WatchPage({
               </div>
             )}
           </>
-        ) : (
-          <div className="w-full aspect-video flex items-center justify-center text-neutral-500 bg-neutral-900 rounded-xl border border-neutral-800">
-            Movie details could not be loaded. Please ensure your backend is running.
-          </div>
         )}
       </div>
     </main>

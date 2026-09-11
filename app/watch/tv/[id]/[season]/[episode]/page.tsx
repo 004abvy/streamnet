@@ -27,7 +27,7 @@ export default function WatchTvPage() {
     
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
-    fetch(`${backendUrl}/api/tv/${id}`)
+    fetch(`/api/tv/${id}`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -59,24 +59,21 @@ export default function WatchTvPage() {
           } catch (e) {
             console.warn(e);
           }
-        } else {
-          setShow(null);
         }
         setLoading(false);
       })
       .catch((err) => {
-        console.warn("Metadata fetch error:", err);
-        setShow(null);
+        console.warn("Error fetching show:", err);
         setLoading(false);
       });
   }, [id, season, episode]);
 
+  const imdbId = show?.external_ids?.imdb_id || show?.imdb_id;
+  const similarShows = show?.similar?.results || show?.recommendations?.results || [];
+
   const handleEpisodeChange = (newSeason: number, newEpisode: number) => {
     router.push(`/watch/tv/${id}/${newSeason}/${newEpisode}`);
   };
-
-  const imdbId = show?.external_ids?.imdb_id || show?.imdb_id;
-  const similarShows = show?.similar?.results || show?.recommendations?.results || [];
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-0 md:p-8 pt-20 md:pt-24">
@@ -90,16 +87,19 @@ export default function WatchTvPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          <span>Back</span>
+          <span>Back to Show Details</span>
         </Link>
 
-        <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-            <polyline points="17 2 12 7 7 2"/>
-          </svg>
-          <span>Season {season} • Episode {episode}</span>
-        </div>
+        {show && (
+          <div className="flex items-center gap-2.5">
+            <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              <span>{show.vote_average ? show.vote_average.toFixed(1) : 'N/A'} {show.first_air_date ? `• ${show.first_air_date.split('-')[0]}` : ''}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="w-full max-w-[1050px] px-0 md:px-0 mt-2">
@@ -144,13 +144,13 @@ export default function WatchTvPage() {
               </div>
             </div>
           </div>
-        ) : show ? (
+        ) : (
           <>
             <VideoPlayer
               tmdbId={id}
               type="tv"
-              title={`${show.name || show.title} (S${season} E${episode})`}
-              backdropPath={show.backdrop_path}
+              title={show ? `${show.name || show.title} (S${season} E${episode})` : `Episode S${season} E${episode}`}
+              backdropPath={show?.backdrop_path}
               season={season}
               episode={episode}
               imdbId={imdbId}
@@ -158,7 +158,7 @@ export default function WatchTvPage() {
 
             <SeasonEpisodeSelector
               tvId={id}
-              seasons={show.seasons || []}
+              seasons={show?.seasons || []}
               currentSeason={season}
               currentEpisode={episode}
               onEpisodeSelect={handleEpisodeChange}
@@ -170,10 +170,6 @@ export default function WatchTvPage() {
               </div>
             )}
           </>
-        ) : (
-          <div className="w-full aspect-video flex items-center justify-center text-neutral-500 bg-neutral-900 rounded-xl border border-neutral-800">
-            TV show details could not be loaded. Please ensure your backend is running.
-          </div>
         )}
       </div>
     </main>
