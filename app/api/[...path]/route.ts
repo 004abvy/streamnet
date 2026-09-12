@@ -401,14 +401,17 @@ export async function GET(
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
       const decodedUrl = decodeURIComponent(rawUrl);
-      const isManifest = searchParams.get('manifest') === '1' || decodedUrl.includes('.m3u8');
+      const clientRange = request.headers.get('range');
+      const isMediaFile = /\.(mp4|m4s|ts|webm|mkv|aac|mp3|m4a)(?:\?|$)/i.test(decodedUrl);
+      const isManifest = !isMediaFile && (searchParams.get('manifest') === '1' || /\.m3u8(?:\?|$)/i.test(decodedUrl));
+
       let upstreamHeaders: Record<string, string> = {};
       try {
         const serializedHeaders = searchParams.get('headers');
         const parsedHeaders = serializedHeaders ? JSON.parse(serializedHeaders) : {};
         if (parsedHeaders && typeof parsedHeaders === 'object') {
           Object.entries(parsedHeaders).forEach(([key, value]) => {
-            if (typeof value === 'string' && !/^host$/i.test(key)) upstreamHeaders[key] = value;
+            if (typeof value === 'string' && !/^(host|range)$/i.test(key)) upstreamHeaders[key] = value;
           });
         }
       } catch {
@@ -433,12 +436,13 @@ export async function GET(
         effectiveOrigin = new URL(effectiveReferer).origin;
       } catch {}
 
-      const proxyFetchHeaders = {
+      const proxyFetchHeaders: Record<string, string> = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
         'Referer': effectiveReferer,
         'Origin': effectiveOrigin,
         ...upstreamHeaders,
       };
+      if (clientRange) proxyFetchHeaders['Range'] = clientRange;
 
       const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
       const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(proxyFetchHeaders))}`;
@@ -485,8 +489,11 @@ export async function GET(
 
       if (isManifest) {
         const manifestText = await response.text();
-        const host = request.headers.get('host') || 'localhost:3000';
-        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+        let protocol = request.headers.get('x-forwarded-proto') || 'https';
+        if (host.includes('localhost') || host.includes('10.0.2.2') || host.includes('192.168.')) {
+          protocol = 'http';
+        }
         const proxyUrl = (targetUrl: string, manifest: boolean) => {
           const params = new URLSearchParams({
             url: targetUrl,
@@ -531,14 +538,21 @@ export async function GET(
       } else {
         const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'video/MP2T';
+        const responseHeaders: Record<string, string> = {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Accept-Ranges': 'bytes',
+        };
+
+        const contentRange = response.headers.get('content-range');
+        if (contentRange) responseHeaders['Content-Range'] = contentRange;
+
+        const contentLength = response.headers.get('content-length');
+        if (contentLength) responseHeaders['Content-Length'] = contentLength;
+
         return new NextResponse(arrayBuffer, {
-          headers: {
-            'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          }
+          status: response.status,
+          headers: responseHeaders,
         });
       }
     }
@@ -552,8 +566,11 @@ export async function GET(
 
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-      const host = request.headers.get('host') || 'localhost:3000';
-      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+      let protocol = request.headers.get('x-forwarded-proto') || 'https';
+      if (host.includes('localhost') || host.includes('10.0.2.2') || host.includes('192.168.')) {
+        protocol = 'http';
+      }
       const baseUrl = `${protocol}://${host}`;
 
       const nxshaUrl = type === 'tv'
@@ -626,8 +643,11 @@ export async function GET(
 
       if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
-      const host = request.headers.get('host') || 'localhost:3000';
-      const protocol = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+      let protocol = request.headers.get('x-forwarded-proto') || 'https';
+      if (host.includes('localhost') || host.includes('10.0.2.2') || host.includes('192.168.')) {
+        protocol = 'http';
+      }
       const baseUrl = `${protocol}://${host}`;
 
       const mediaItems: Array<{
