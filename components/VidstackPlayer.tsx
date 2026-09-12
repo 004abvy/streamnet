@@ -13,6 +13,7 @@ export interface VidstackTrack {
   language?: string;
   kind: 'subtitles' | 'captions' | 'chapters' | 'descriptions';
   default?: boolean;
+  type?: string;
 }
 
 export interface VidstackSource {
@@ -71,6 +72,23 @@ export default function VidstackPlayer({
   useEffect(() => {
     setActiveMediaSrc(src);
   }, [src]);
+
+  // Dead stream detection: if the video doesn't reach canPlay within 15 seconds, auto-switch
+  useEffect(() => {
+    if (!src || !tmdbId) return;
+    
+    const loadTimeout = setTimeout(() => {
+      if (player.current) {
+        const state = player.current.state;
+        if ((!state.canPlay && state.currentTime === 0) || (state.waiting && state.currentTime === 0)) {
+          console.warn('[VidstackPlayer] Stream load timeout (8s). Stream is likely dead. Auto-advancing...');
+          onInvalidDuration?.(0);
+        }
+      }
+    }, 8000);
+
+    return () => clearTimeout(loadTimeout);
+  }, [src, tmdbId]);
 
   const formattedMediaSrc = useMemo<MediaSrc>(() => {
     if (typeof activeMediaSrc === 'string') {
@@ -154,10 +172,10 @@ export default function VidstackPlayer({
     s => s.name === serverName || s.url === src
   );
 
-  // Handle outside clicks to close dropdown
+  // Close stream dropdown if clicked outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowStreamsDropdown(false);
       }
     };
@@ -205,7 +223,6 @@ export default function VidstackPlayer({
               <span>Audio: Default</span>
             </button>
           )}
-
           <div className="relative">
             <button
               onClick={() => setShowStreamsDropdown(!showStreamsDropdown)}
@@ -287,8 +304,8 @@ export default function VidstackPlayer({
         autoPlay={autoPlay}
         crossOrigin="anonymous"
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
-        onError={() => {
-          console.warn('[VidstackPlayer] Stream error encountered. Advancing to next available stream source...');
+        onError={(err: any) => {
+          console.warn('[VidstackPlayer] Stream error encountered:', err?.detail || err, 'Advancing to next available stream source...');
           onInvalidDuration?.(0);
         }}
         onEnded={() => {
@@ -298,8 +315,10 @@ export default function VidstackPlayer({
           onEnded?.();
         }}
         onCanPlay={() => {
+          if (!player.current) return;
+
           // Direct seek on ready for HLS stability
-          if (tmdbId && hasResumedRef.current !== src && player.current) {
+          if (tmdbId && hasResumedRef.current !== src) {
             const savedProgress = localStorage.getItem(`streamnet_progress_${tmdbId}`);
             if (savedProgress) {
               const time = parseFloat(savedProgress);
@@ -361,6 +380,7 @@ export default function VidstackPlayer({
               label={track.label}
               lang={track.language}
               default={track.default}
+              type={(track.type as "vtt" | "srt") || 'vtt'}
             />
           ))}
         </MediaProvider>

@@ -220,5 +220,6 @@ export const SERVERS: StreamingServer[] = [
   },
 
   // OMSS Direct Providers
-  { id: 'auto-fast', name: 'StreamNet Player (Default Direct)', category: 'omss', enabled: true, buildUrl: () => '' }
+  { id: 'auto-fast', name: 'StreamNet Player (Default Direct)', category: 'omss', enabled: true, buildUrl: () => '' },
+  { id: 'vidsrc-direct', name: 'VidSrc Player (Direct)', category: 'direct', enabled: true, buildUrl: () => '' }
 ];

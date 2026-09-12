@@ -369,6 +369,7 @@ export default function HlsPlayer({
       language: sub.label?.substring(0, 2).toLowerCase() || 'en',
       kind: 'subtitles',
       default: isDefault,
+      type: sub.format === 'srt' ? 'srt' : 'vtt',
     };
   });
 

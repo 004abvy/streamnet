@@ -100,14 +100,20 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
   useEffect(() => {
     const handleFullscreenChange = () => {
       const fsElement = document.fullscreenElement;
+      const isIOS = typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
+      
       if (fsElement && containerRef.current?.contains(fsElement)) {
-        try {
-          (screen.orientation as any).lock('landscape').catch(() => {});
-        } catch {}
+        if (!isIOS) {
+          try {
+            (screen.orientation as any).lock('landscape').catch(() => {});
+          } catch {}
+        }
       } else {
-        try {
-          screen.orientation.unlock();
-        } catch {}
+        if (!isIOS) {
+          try {
+            screen.orientation.unlock();
+          } catch {}
+        }
       }
     };
 
@@ -269,6 +275,7 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
           <iframe
             src={embedUrl}
             allowFullScreen
+            {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
             {...(sandboxAttr ? { sandbox: sandboxAttr } : {})}
             allow="autoplay; fullscreen; picture-in-picture"
             className={`w-full aspect-video border-0 ${vpStyles.embedIframe}`}

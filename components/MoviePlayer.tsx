@@ -41,20 +41,25 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
   useEffect(() => {
     const handleFullscreenChange = () => {
       const fsElement = document.fullscreenElement;
+      const isIOS = typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
 
       if (fsElement && containerRef.current?.contains(fsElement)) {
-        // Entering fullscreen — lock to landscape
-        try {
-          (screen.orientation as any).lock('landscape').catch(() => {});
-        } catch {
-          // screen.orientation.lock not available
+        // Entering fullscreen — lock to landscape (only on non-iOS)
+        if (!isIOS) {
+          try {
+            (screen.orientation as any).lock('landscape').catch(() => {});
+          } catch {
+            // screen.orientation.lock not available
+          }
         }
       } else {
         // Exiting fullscreen — unlock orientation
-        try {
-          screen.orientation.unlock();
-        } catch {
-          // Silently fail
+        if (!isIOS) {
+          try {
+            screen.orientation.unlock();
+          } catch {
+            // Silently fail
+          }
         }
       }
     };
@@ -82,6 +87,7 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
           <iframe
             src={embedUrl}
             allowFullScreen
+            {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
             {...(sandboxAttr ? { sandbox: sandboxAttr } : {})}
             allow="autoplay; fullscreen; picture-in-picture"
             className={`w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0 ${vpStyles.embedIframe}`}
