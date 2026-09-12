@@ -128,7 +128,7 @@ export async function GET(
         const proxyUrl = (targetUrl: string, manifest: boolean) => {
           const params = new URLSearchParams({
             url: targetUrl,
-            headers: JSON.stringify(upstreamHeaders),
+            headers: JSON.stringify(proxyFetchHeaders),
           });
           if (manifest) params.set('manifest', '1');
           return `${protocol}://${host}/api/stream/proxy?${params.toString()}`;
@@ -167,7 +167,6 @@ export async function GET(
           }
         });
       } else {
-        const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'video/MP2T';
         const responseHeaders: Record<string, string> = {
           'Content-Type': contentType,
@@ -181,7 +180,9 @@ export async function GET(
         const contentLength = response.headers.get('content-length');
         if (contentLength) responseHeaders['Content-Length'] = contentLength;
 
-        return new NextResponse(arrayBuffer, {
+        // CRITICAL FIX: Stream the response body directly instead of loading into memory with arrayBuffer()
+        // This completely eliminates the buffering lag on Vercel Serverless Functions!
+        return new NextResponse(response.body, {
           status: response.status,
           headers: responseHeaders,
         });
