@@ -2,16 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../context/AuthContext';
 import { saveContinueWatching } from '../../utils/userStorage';
 import styles from './HeroCarousel.module.css';
+import {
+  Bell,
+  Command,
+  User,
+  Play,
+  Bookmark,
+  Share2
+} from 'lucide-react';
 
 interface Movie {
   id: number;
-  title: string;
+  title?: string;
+  name?: string;
   backdrop_path: string;
   overview: string;
   vote_average: number;
-  release_date: string;
+  release_date?: string;
+  first_air_date?: string;
+  media_type?: string;
 }
 
 interface HeroCarouselProps {
@@ -20,7 +33,10 @@ interface HeroCarouselProps {
 }
 
 export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [saved, setSaved] = useState(false);
 
   const visibleMovies = movies ? movies.slice(0, 5) : [];
   const loopMovies = visibleMovies.length > 1 ? [...visibleMovies, visibleMovies[0]] : visibleMovies;
@@ -35,48 +51,16 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
         }
         return prev + 1;
       });
-    }, 4000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [loopMovies.length]);
 
-  // Handle Loading State
   if (isLoading) {
     return (
-      <div className={styles.skeletonHero} aria-label="Loading featured spotlight">
-        <div className={styles.skeletonBackdropShimmer} />
-        <div className={styles.skeletonAmbientGlow} />
-        <div className={styles.skeletonOverlay} />
-        <div className={styles.skeletonBottomFade} />
-        <div className={styles.skeletonContent}>
-          <div className={styles.skeletonBadge} />
-          <div className={styles.skeletonTitle} />
-          <div className={styles.skeletonTitleSecondary} />
-          <div className={styles.skeletonMetaRow}>
-            <div className={styles.skeletonPill} style={{ width: '56px' }} />
-            <div className={styles.skeletonPill} style={{ width: '74px' }} />
-            <div className={styles.skeletonPill} style={{ width: '64px' }} />
-            <div className={styles.skeletonPill} style={{ width: '48px' }} />
-          </div>
-          <div className={styles.skeletonDescLine} style={{ width: '90%' }} />
-          <div className={styles.skeletonDescLine} style={{ width: '70%' }} />
-          <div className={styles.skeletonActions}>
-            <div className={styles.skeletonBtnPrimary}>
-              <span className={styles.skeletonPlayIcon} />
-              <span className={styles.skeletonBtnText} style={{ width: '78px' }} />
-            </div>
-            <div className={styles.skeletonBtnSecondary}>
-              <span className={styles.skeletonBtnText} style={{ width: '92px' }} />
-            </div>
-          </div>
-        </div>
-        <div className={styles.skeletonIndicators}>
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={`skel-dot-${i}`}
-              className={`${styles.skeletonDot} ${i === 0 ? styles.skeletonDotActive : ''}`}
-            />
-          ))}
+      <div className={styles.heroWrapper}>
+        <div className={styles.skeletonHero} aria-label="Loading hero spotlight">
+          <div className={styles.skeletonBackdropShimmer} />
         </div>
       </div>
     );
@@ -84,43 +68,106 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
 
   if (loopMovies.length === 0) return null;
 
+  const currentMovie = loopMovies[currentIndex] || loopMovies[0];
+  const displayTitle = currentMovie.title || currentMovie.name || 'Featured Title';
+  const isTvShow = currentMovie.media_type === 'tv' || !!currentMovie.first_air_date;
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: displayTitle,
+        url: window.location.href
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Link copied to clipboard!');
+    }
+  };
+
   return (
-    <div className={styles.container}>
-      <div
-        className={styles.track}
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {loopMovies.map((movie, index) => (
-          <div key={`${movie.id}-${index}`} className={styles.slide}>
-            <img
-              src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
-              alt={movie.title}
-              className={styles.backdrop}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-            />
-            <div className={styles.overlay}></div>
-            <div className={styles.bottomGradient}></div>
+    <div className={styles.heroWrapper}>
+      <div className={styles.container}>
+        {/* Rounded Backdrop Frame (Clips backdrop image & top right actions) */}
+        <div className={styles.backdropFrame}>
+          {/* Top Right Actions Pill (Announcements, Command, Profile) */}
+          <div className={styles.topRightActions}>
+            <button
+              className={styles.topActionBtn}
+              title="Announcements"
+              onClick={() => router.push('/announcements')}
+            >
+              <Bell size={18} />
+            </button>
+            <div className={styles.topActionDivider} />
+            <button
+              className={styles.topActionBtn}
+              title="Command Menu"
+              onClick={() => router.push('/command')}
+            >
+              <Command size={18} />
+            </button>
+            <div className={styles.topActionDivider} />
+            <button
+              className={styles.topActionBtn}
+              title="Profile / Login"
+              onClick={() => router.push(user ? '/settings' : '/login')}
+            >
+              <User size={18} />
+            </button>
+          </div>
 
-            <div className={styles.content}>
-              <h1 className={styles.title}>{movie.title}</h1>
-              <div className={styles.meta}>
-                <span>TV</span>
-                <span>★ {movie.vote_average?.toFixed(1)}</span>
-                <span>🗓 {movie.release_date?.split('-')[0]}</span>
+          {/* Carousel Track */}
+          <div
+            className={styles.track}
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          >
+            {loopMovies.map((movie, index) => (
+              <div key={`${movie.id}-${index}`} className={styles.slide}>
+                <img
+                  src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
+                  alt={movie.title || movie.name || 'Hero Backdrop'}
+                  className={styles.backdrop}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+                <div className={styles.overlay}></div>
+                <div className={styles.bottomGradient}></div>
               </div>
-              <p className={styles.description}>{movie.overview}</p>
+            ))}
+          </div>
 
-              <div className={styles.buttons}>
+          {/* Dot Indicators at Bottom Right */}
+          <div className={styles.indicators}>
+            {visibleMovies.map((_, i) => (
+              <div
+                key={`dot-${i}`}
+                className={`${styles.dot} ${i === (currentIndex % visibleMovies.length) ? styles.activeDot : ''}`}
+                onClick={() => setCurrentIndex(i)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Floating Bottom Center Movie Details Pill with Cutout Wrapping */}
+        <div className={styles.cutoutWrapper}>
+          <div className={styles.floatingCard}>
+            <div className={styles.mediaTypeTag}>
+              {isTvShow ? 'SHOW' : 'MOVIE'}
+            </div>
+
+            <div className={styles.cardMainContent}>
+              <h2 className={styles.cardTitle}>{displayTitle}</h2>
+              
+              <div className={styles.cardActions}>
                 <Link
-                  href={`/watch/${movie.id}`}
-                  className={styles.playBtn}
+                  href={isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`}
+                  className={styles.watchBtn}
                   onClick={() => {
                     try {
                       const stored = localStorage.getItem('continueWatching');
                       let list = stored ? JSON.parse(stored) : [];
-                      list = list.filter((m: any) => m.id !== movie.id);
-                      list.unshift(movie);
+                      list = list.filter((m: any) => m.id !== currentMovie.id);
+                      list.unshift(currentMovie);
                       if (list.length > 20) list.pop();
                       saveContinueWatching(list);
                     } catch (e) {
@@ -128,21 +175,35 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                     }
                   }}
                 >
-                  <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  Play Now
+                  <Play size={14} fill="currentColor" /> Watch
                 </Link>
-                <Link href={`/movie/${movie.id}`} className={styles.detailsBtn}>
+
+                <Link
+                  href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
+                  className={styles.detailsBtn}
+                >
                   Details
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
                 </Link>
+
+                <button
+                  className={styles.iconActionBtn}
+                  title={saved ? 'Remove Bookmark' : 'Add Bookmark'}
+                  onClick={() => setSaved(!saved)}
+                >
+                  <Bookmark size={16} fill={saved ? '#eab308' : 'none'} color={saved ? '#eab308' : '#a1a1aa'} />
+                </button>
+
+                <button
+                  className={styles.iconActionBtn}
+                  title="Share Title"
+                  onClick={handleShare}
+                >
+                  <Share2 size={16} />
+                </button>
               </div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

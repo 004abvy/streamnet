@@ -10,8 +10,10 @@ const withPWA = withPWAInit({
   buildExcludes: [/^\/api\//],
   publicExcludes: ['!api/**/*'],
 });
+// @ts-ignore
 const nextConfig: NextConfig = {
   turbopack: {},
+  // @ts-ignore
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.

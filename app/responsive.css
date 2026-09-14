@@ -62,7 +62,7 @@
     font-size: 18px;
     --scale-factor: 1.15;
     --container-max-width: 2100px;
-    --page-padding-x: 5rem;
+    --page-padding-x: 5.5rem;
   }
 }
 
@@ -72,7 +72,7 @@
     font-size: 16.5px;
     --scale-factor: 1.05;
     --container-max-width: 1850px;
-    --page-padding-x: 4rem;
+    --page-padding-x: 5rem;
   }
 }
 
@@ -82,7 +82,7 @@
     font-size: 16px;
     --scale-factor: 1;
     --container-max-width: 1680px;
-    --page-padding-x: 3rem;
+    --page-padding-x: 4.5rem;
   }
 }
 
@@ -92,7 +92,7 @@
     font-size: 15.5px;
     --scale-factor: 0.97;
     --container-max-width: 1380px;
-    --page-padding-x: 2.5rem;
+    --page-padding-x: 4.5rem;
   }
 }
 
@@ -101,7 +101,7 @@
   html {
     font-size: 15px;
     --scale-factor: 0.93;
-    --page-padding-x: 2rem;
+    --page-padding-x: 4.5rem;
   }
 }
 
@@ -110,7 +110,7 @@
   html {
     font-size: 14.5px;
     --scale-factor: 0.89;
-    --page-padding-x: 1.5rem;
+    --page-padding-x: 4.5rem;
   }
 }
 

@@ -1,0 +1,1 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[662],{52837:function(n,t,u){(window.__NEXT_P=window.__NEXT_P||[]).push(["/settings",function(){return u(26844)}])},26844:function(n,t,u){"use strict";u.r(t);var _=u(85893);t.default=()=>(0,_.jsx)(_.Fragment,{})}},function(n){n.O(0,[2888,9774,179],function(){return n(n.s=52837)}),_N_E=n.O()}]);

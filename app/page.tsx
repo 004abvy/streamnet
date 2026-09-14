@@ -122,7 +122,6 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
-      <Navbar />
       <HeroCarousel movies={trendingMovies} isLoading={loading} />
 
       <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>

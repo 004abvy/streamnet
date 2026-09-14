@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { AuthProvider } from "../context/AuthContext";
+import Sidebar from "../components/Sidebar/Sidebar";
 import ScrollToTopOnRefresh from "../components/ScrollToTopOnRefresh";
 import { GET_INJECTABLE_UBLOCK_BUNDLE } from "../utils/javascriptInjector";
 import "./globals.css";
@@ -44,7 +45,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="scroll-restoration" src="/scroll-restoration.js" strategy="beforeInteractive" />
         <ScrollToTopOnRefresh />
         <AuthProvider>
-          {children}
+          <Sidebar />
+          <div className="main-content-wrapper">
+            {children}
+          </div>
         </AuthProvider>
       </body>
     </html>
