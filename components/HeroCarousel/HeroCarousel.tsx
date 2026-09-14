@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { saveContinueWatching } from '../../utils/userStorage';
+import { getFontsList, getFontForMovie } from '../../utils/fontHelper';
+import { getPosterGradient, getVibrantColor } from '../../utils/colorHelper';
 import styles from './HeroCarousel.module.css';
 import {
   Bell,
@@ -37,9 +39,76 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [movieFonts, setMovieFonts] = useState<Record<number, string>>({});
+  const [movieColors, setMovieColors] = useState<Record<number, string>>({});
+  const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>({});
 
   const visibleMovies = movies ? movies.slice(0, 5) : [];
   const loopMovies = visibleMovies.length > 1 ? [...visibleMovies, visibleMovies[0]] : visibleMovies;
+  
+  const visibleMovieIds = visibleMovies.map(m => m.id).join(',');
+
+  useEffect(() => {
+    if (!visibleMovies.length) return;
+    let isMounted = true;
+
+    async function loadFonts() {
+      try {
+        await getFontsList(); // pre-fetch once
+        const fontMapping: Record<number, string> = {};
+        const colorMapping: Record<number, string> = {};
+        const buttonColorMapping: Record<number, string> = {};
+        const fontFamilies = new Set<string>();
+
+        for (const movie of visibleMovies) {
+          if (!movie.overview) continue;
+          
+          const fontPromise = getFontForMovie(movie.overview, movie.id);
+          const colorPromise = movie.backdrop_path 
+            ? getPosterGradient(`https://image.tmdb.org/t/p/w300${movie.backdrop_path}`)
+            : Promise.resolve('linear-gradient(135deg, #ffffff, #e0e0e0)');
+          const buttonColorPromise = movie.poster_path
+            ? getVibrantColor(`https://image.tmdb.org/t/p/w300${movie.poster_path}`)
+            : Promise.resolve('#eab308');
+
+          const [font, color, buttonColor] = await Promise.all([fontPromise, colorPromise, buttonColorPromise]);
+          
+          if (font) {
+            fontMapping[movie.id] = font;
+            fontFamilies.add(font);
+          }
+          if (color) {
+            colorMapping[movie.id] = color;
+          }
+          if (buttonColor) {
+            buttonColorMapping[movie.id] = buttonColor;
+          }
+        }
+
+        if (!isMounted) return;
+        setMovieFonts(fontMapping);
+        setMovieColors(colorMapping);
+        setMovieButtonColors(buttonColorMapping);
+
+        // Preload fonts by injecting link tags
+        fontFamilies.forEach(fontFamily => {
+          const fontId = `gfont-${fontFamily.replace(/[^a-zA-Z0-9]/g, '-')}`;
+          if (!document.getElementById(fontId)) {
+            const link = document.createElement('link');
+            link.id = fontId;
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400;700;800&display=swap`;
+            document.head.appendChild(link);
+          }
+        });
+      } catch (err) {
+        console.error('Error preloading fonts', err);
+      }
+    }
+
+    loadFonts();
+    return () => { isMounted = false; };
+  }, [visibleMovieIds]);
 
   useEffect(() => {
     if (loopMovies.length === 0) return;
@@ -51,7 +120,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
         }
         return prev + 1;
       });
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [loopMovies.length]);
@@ -86,6 +155,10 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
 
   return (
     <div className={styles.heroWrapper}>
+      <div 
+        className={styles.heroBackgroundBlur} 
+        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w1280${currentMovie.backdrop_path})` }} 
+      />
       <div className={styles.container}>
         {/* Rounded Backdrop Frame (Clips backdrop image & top right actions) */}
         <div className={styles.backdropFrame}>
@@ -150,18 +223,34 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
 
         {/* Floating Bottom Center Movie Details Pill with Cutout Wrapping */}
         <div className={styles.cutoutWrapper}>
-          <div className={styles.floatingCard}>
+          <div 
+            className={styles.floatingCard}
+            style={{ fontFamily: movieFonts[currentMovie.id] ? `"${movieFonts[currentMovie.id]}", sans-serif` : 'inherit' }}
+          >
             <div className={styles.mediaTypeTag}>
               {isTvShow ? 'SHOW' : 'MOVIE'}
             </div>
 
             <div className={styles.cardMainContent}>
-              <h2 className={styles.cardTitle}>{displayTitle}</h2>
+              <h2 
+                className={styles.cardTitle}
+                style={{ 
+                  backgroundImage: movieColors[currentMovie.id] || 'linear-gradient(135deg, #ffffff, #e0e0e0)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  letterSpacing: '0.05em',
+                  fontSize: displayTitle.length > 35 ? 'clamp(1rem, 2vw, 1.6rem)' : displayTitle.length > 20 ? 'clamp(1.2rem, 3vw, 2.2rem)' : 'clamp(1.5rem, 4vw, 2.8rem)'
+                }}
+              >
+                {displayTitle}
+              </h2>
               
               <div className={styles.cardActions}>
                 <Link
                   href={isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`}
                   className={styles.watchBtn}
+                  style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#eab308', color: '#000000', border: 'none' }}
                   onClick={() => {
                     try {
                       const stored = localStorage.getItem('continueWatching');
@@ -181,6 +270,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                 <Link
                   href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
                   className={styles.detailsBtn}
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: `1px solid ${movieButtonColors[currentMovie.id] || '#eab308'}`, color: '#ffffff' }}
                 >
                   Details
                 </Link>

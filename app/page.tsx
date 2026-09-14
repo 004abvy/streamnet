@@ -125,6 +125,8 @@ export default function Home() {
       <HeroCarousel movies={trendingMovies} isLoading={loading} />
 
       <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>
+        <ProvidersSection />
+
         {continueWatching.length > 0 && !loading && (
           <PosterCarousel
             title="Continue Watching"
@@ -134,8 +136,6 @@ export default function Home() {
             onRemoveItem={handleRemoveContinueWatchingItem}
           />
         )}
-
-        <ProvidersSection />
 
         <GenreExplorerSection />
 

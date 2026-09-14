@@ -32,8 +32,8 @@ interface PosterCarouselProps {
 
 export default function PosterCarousel({ title, movies, viewAllLink, onClear, onRemoveItem, isContinueWatching, isLoading }: PosterCarouselProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
   const [savedIds, setSavedIds] = useState<number[]>([]);
 
   const isContinue = isContinueWatching ?? (title.toLowerCase().includes('continue') || Boolean(onRemoveItem));
@@ -67,30 +67,31 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
     saveWatchlist(nextItems);
   };
 
-  const calculatePages = () => {
+  const checkScroll = () => {
     if (carouselRef.current) {
-      const { scrollWidth, clientWidth } = carouselRef.current;
-      setTotalPages(Math.max(1, Math.ceil(scrollWidth / clientWidth)));
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(Math.ceil(scrollLeft) < scrollWidth - clientWidth - 5);
     }
   };
 
   useEffect(() => {
-    calculatePages();
-    window.addEventListener('resize', calculatePages);
-    return () => window.removeEventListener('resize', calculatePages);
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
   }, [movies]);
 
-  const handleScroll = () => {
-    if (carouselRef.current) {
-      const { scrollLeft, clientWidth } = carouselRef.current;
-      const newPage = Math.round(scrollLeft / clientWidth) + 1;
-      setCurrentPage(newPage);
-    }
-  };
-
   const getScrollAmount = () => {
-    if (!carouselRef.current) return 420;
-    return Math.max(carouselRef.current.clientWidth * 0.9, 320);
+    if (!carouselRef.current) return 300;
+    const cards = carouselRef.current.children;
+    if (cards.length > 1) {
+      const card1 = cards[0] as HTMLElement;
+      const card2 = cards[1] as HTMLElement;
+      return card2.offsetLeft - card1.offsetLeft;
+    } else if (cards.length === 1) {
+      return (cards[0] as HTMLElement).offsetWidth;
+    }
+    return 300;
   };
 
   const scrollLeft = () => {
@@ -138,10 +139,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.titleWrapper}>
-          <h2 className={styles.title}>{title}</h2>
-          {viewAllLink && (
-            <Link href={viewAllLink} className={styles.viewAll}>View All</Link>
-          )}
+          {title && <h2 className={styles.title}>{title}</h2>}
         </div>
 
         <div className={styles.controls}>
@@ -158,35 +156,40 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
               Clear
             </button>
           )}
-          <div className={styles.pageIndicator}>
-            <span>{currentPage}</span> / {totalPages}
-          </div>
-          <div className={styles.buttonGroup}>
-            <button 
-              className={styles.controlBtn} 
-              onClick={scrollLeft}
-              disabled={currentPage === 1}
-              aria-label="Previous"
-            >
-              ←
-            </button>
-            <button 
-              className={styles.controlBtn} 
-              onClick={scrollRight}
-              disabled={currentPage === totalPages}
-              aria-label="Next"
-            >
-              →
-            </button>
-          </div>
+          {viewAllLink && (
+            <Link href={viewAllLink} className={styles.viewAll}>View All</Link>
+          )}
         </div>
       </div>
 
-      <div 
-        className={styles.carousel} 
-        ref={carouselRef}
-        onScroll={handleScroll}
-      >
+      <div className={styles.carouselWrapper}>
+        <button 
+          className={`${styles.navBtn} ${styles.leftBtn}`} 
+          onClick={scrollLeft}
+          disabled={!canScrollLeft}
+          aria-label="Previous"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        
+        <button 
+          className={`${styles.navBtn} ${styles.rightBtn}`} 
+          onClick={scrollRight}
+          disabled={!canScrollRight}
+          aria-label="Next"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+
+        <div 
+          className={styles.carousel} 
+          ref={carouselRef}
+          onScroll={checkScroll}
+        >
         {movies.map((movie) => {
           const displayTitle = movie.title || movie.name;
           const displayDate = movie.release_date || movie.first_air_date;
@@ -264,6 +267,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
             </Link>
           );
         })}
+        </div>
       </div>
     </div>
   );

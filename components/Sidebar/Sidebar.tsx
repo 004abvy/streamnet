@@ -113,9 +113,8 @@ export default function Sidebar() {
             const active = isPathActive(item.link);
             const isCurrentActive = idx === currentActiveIndex;
 
-            const itemClass = `${styles.sidebarLink} ${active ? styles.activeLink : ''} ${
-              !isCurrentActive ? styles.hiddenWhenCollapsed : ''
-            }`;
+            const itemClass = `${styles.sidebarLink} ${active ? styles.activeLink : ''} ${!isCurrentActive ? styles.hiddenWhenCollapsed : ''
+              }`;
 
             if (item.action === 'search') {
               return (
@@ -125,7 +124,7 @@ export default function Sidebar() {
                   onClick={() => setShowSearch(true)}
                   title={item.label}
                 >
-                  <Icon size={20} color={getIconColor(item.link)} />
+                  <Icon size={16} color={getIconColor(item.link)} />
                   <span className={styles.tooltip}>{item.label}</span>
                 </button>
               );
@@ -138,7 +137,7 @@ export default function Sidebar() {
                 className={itemClass}
                 title={item.label}
               >
-                <Icon size={20} color={getIconColor(item.link, item.isAi)} />
+                <Icon size={16} color={getIconColor(item.link, item.isAi)} />
                 <span className={styles.tooltip}>{item.label}</span>
               </Link>
             );
