@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './ProvidersSection.module.css';
 import PosterCarousel from '../PosterCarousel/PosterCarousel';
 
@@ -35,6 +35,10 @@ export default function ProvidersSection() {
   const [activeProvider, setActiveProvider] = useState<any>(null);
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
   const [content, setContent] = useState<any[]>([]);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -44,11 +48,26 @@ export default function ProvidersSection() {
         if (!res.ok) throw new Error(`Providers request failed with status ${res.status}`);
         const data = await res.json();
         if (data.results) {
-          // Filter to top 20 providers based on display_priority, excluding unwanted ones
+          const seenBaseNames = new Set<string>();
+          // Filter to top 20 providers based on display_priority, excluding unwanted ones and duplicates
           const topProviders = data.results
             .filter((p: any) => {
               const name = p.provider_name.toLowerCase();
-              return !name.includes('google play') && !name.includes('public domain');
+              if (name.includes('google play') || name.includes('public domain')) return false;
+
+              // Extract a base name for deduplication
+              let baseName = name;
+              if (name.includes('netflix')) baseName = 'netflix';
+              else if (name.includes('amazon') || name.includes('prime')) baseName = 'amazon';
+              else if (name.includes('apple tv')) baseName = 'appletv';
+              else if (name.includes('max')) baseName = 'max';
+              else if (name.includes('paramount')) baseName = 'paramount';
+              else if (name.includes('hulu')) baseName = 'hulu';
+              else if (name.includes('disney')) baseName = 'disney';
+
+              if (seenBaseNames.has(baseName)) return false;
+              seenBaseNames.add(baseName);
+              return true;
             })
             .sort((a: any, b: any) => a.display_priority - b.display_priority)
             .slice(0, 20);
@@ -65,6 +84,45 @@ export default function ProvidersSection() {
 
     return () => controller.abort();
   }, []);
+
+  const checkScroll = () => {
+    if (carouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(Math.ceil(scrollLeft) < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [providers]);
+
+  const getScrollAmount = () => {
+    if (!carouselRef.current) return 300;
+    const cards = carouselRef.current.children;
+    if (cards.length > 1) {
+      const card1 = cards[0] as HTMLElement;
+      const card2 = cards[1] as HTMLElement;
+      return card2.offsetLeft - card1.offsetLeft;
+    } else if (cards.length === 1) {
+      return (cards[0] as HTMLElement).offsetWidth;
+    }
+    return 300;
+  };
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     if (!activeProvider) return;
@@ -117,10 +175,37 @@ export default function ProvidersSection() {
           </div>
         </div>
 
-        <div className={styles.providersList}>
-          {providers.map((provider) => {
-            let logoUrl = CUSTOM_LOGOS[provider.provider_id];
-            let isCustom = true;
+        <div className={styles.carouselWrapper}>
+          <button 
+            className={`${styles.navBtn} ${styles.leftBtn}`} 
+            onClick={scrollLeft}
+            disabled={!canScrollLeft}
+            aria-label="Previous"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          
+          <button 
+            className={`${styles.navBtn} ${styles.rightBtn}`} 
+            onClick={scrollRight}
+            disabled={!canScrollRight}
+            aria-label="Next"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+
+          <div 
+            className={styles.providersList}
+            ref={carouselRef}
+            onScroll={checkScroll}
+          >
+            {providers.map((provider) => {
+              let logoUrl = CUSTOM_LOGOS[provider.provider_id];
+              let isCustom = true;
             
             // If we don't have it in our dictionary, try Brandfetch as a fallback vector
             if (!logoUrl) {
@@ -138,7 +223,7 @@ export default function ProvidersSection() {
                 <img 
                   src={logoUrl} 
                   alt={provider.provider_name} 
-                  className={`${styles.providerLogo} ${isCustom ? styles.customLogo : ''}`}
+                  className={`${styles.providerLogo} ${isCustom ? styles.customLogo : ''} ${['350', '2'].includes(provider.provider_id.toString()) ? styles.invertLogo : ''}`}
                   onError={(e) => {
                     // If Brandfetch fails or domain is wrong, fallback to TMDB logo and remove SVG monochrome filtering
                     if (!e.currentTarget.src.includes('tmdb.org')) {
@@ -150,6 +235,7 @@ export default function ProvidersSection() {
               </button>
             );
           })}
+          </div>
         </div>
       </div>
 
