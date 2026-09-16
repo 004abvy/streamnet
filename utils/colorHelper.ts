@@ -19,21 +19,19 @@ export async function getDominantColor(imageUrl: string): Promise<string> {
       let g = data[1];
       let b = data[2];
       
-      // Ensure the text remains legible (not too dark)
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      if (luma < 100) {
-        // Lighten the color if it's too dark
-        const boost = 120 - luma;
-        r = Math.min(255, r + boost * 1.5);
-        g = Math.min(255, g + boost * 1.5);
-        b = Math.min(255, b + boost * 1.5);
+      // Ensure the text remains legible by boosting brightness while preserving hue
+      const max = Math.max(r, g, b);
+      if (max < 120) {
+        const factor = 150 / Math.max(max, 1);
+        r = Math.min(255, r * factor);
+        g = Math.min(255, g * factor);
+        b = Math.min(255, b * factor);
       }
 
-      // Create a complementary/secondary color for the gradient (shift hue slightly and lighten)
-      // For simplicity in RGB, we'll just lighten and mix slightly
-      const r2 = Math.min(255, r + 40);
-      const g2 = Math.min(255, g + 40);
-      const b2 = Math.min(255, b + 60); // Add a cool tint to the secondary color
+      // Create a secondary color for the gradient that maintains the vibe without turning pink
+      const r2 = Math.max(0, r - 30);
+      const g2 = Math.max(0, g - 30);
+      const b2 = Math.max(0, b - 30);
       
       resolve(`linear-gradient(135deg, rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}), rgb(${Math.round(r2)}, ${Math.round(g2)}, ${Math.round(b2)}))`);
     };
@@ -106,18 +104,13 @@ export async function getPosterGradient(imageUrl: string): Promise<string> {
         let b = data[i+2];
         const max = Math.max(r, g, b);
         
-        // Vigorously boost saturation/brightness for texts
+        // Enhance brightness but preserve the original hue (no artificial baseline that washes out colors)
         if (max < 160) {
            const factor = 220 / Math.max(max, 1);
            r = Math.min(255, r * factor);
            g = Math.min(255, g * factor);
            b = Math.min(255, b * factor);
         }
-        
-        // Add artificial brightness baseline so the text pops
-        r = Math.min(255, r + 40);
-        g = Math.min(255, g + 40);
-        b = Math.min(255, b + 40);
         
         return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
       };

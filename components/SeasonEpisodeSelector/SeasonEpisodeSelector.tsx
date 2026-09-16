@@ -224,7 +224,7 @@ export default function SeasonEpisodeSelector({
               const isCurrent = selectedSeason === currentSeason && ep.episode_number === currentEpisode;
             const description = ep.overview?.trim() || 'No episode description available.';
             const stillUrl = ep.still_path
-              ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
+              ? `https://image.tmdb.org/t/p/w780${ep.still_path}`
               : '/fallback-backdrop.jpg';
 
             return (

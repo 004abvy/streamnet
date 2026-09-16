@@ -1,238 +1,214 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { saveWatchlist } from '../../utils/userStorage';
+import { useState, useEffect, CSSProperties } from 'react';
 import styles from './GenreExplorerSection.module.css';
+import AccordionGallery from '../reactbits/AccordianGallery';
 
 interface Genre {
   id: number;
   tvId?: number;
   name: string;
+  fontFamily: string;
+  labelStyle?: CSSProperties;
+  moviePoster: string;
+  tvPoster: string;
 }
 
-const GENRES: Genre[] = [
-  { id: 28, tvId: 10759, name: 'Action' },
-  { id: 35, tvId: 35, name: 'Comedy' },
-  { id: 18, tvId: 18, name: 'Drama' },
-  { id: 10749, tvId: 10749, name: 'Romance' },
-  { id: 878, tvId: 10765, name: 'Science Fiction' },
-  { id: 53, tvId: 53, name: 'Thriller' },
-  { id: 27, tvId: 27, name: 'Horror' },
-  { id: 16, tvId: 16, name: 'Animation' },
-  { id: 80, tvId: 80, name: 'Crime' },
+const TMDB_IMG = 'https://image.tmdb.org/t/p/original';
+
+const INITIAL_GENRES: Genre[] = [
+  {
+    id: 28,
+    tvId: 10759,
+    name: 'Action',
+    fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+    labelStyle: {
+      fontStyle: 'italic',
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      color: '#ffffff',
+      fontSize: 'clamp(1.3rem, 2.2vw, 2.5rem)',
+      textShadow: 'none'
+    },
+    moviePoster: `https://image.tmdb.org/t/p/original/d5NXSklXo0qyIYkgV94XAgMIckC.jpg`,
+    tvPoster: `https://image.tmdb.org/t/p/original/2OMB0ynKlyIenMJWI2Dy9IWT4c.jpg`
+  },
+  {
+    id: 35,
+    tvId: 35,
+    name: 'Comedy',
+    fontFamily: "'Fredoka', 'Comic Sans MS', cursive, sans-serif",
+    labelStyle: {
+      letterSpacing: '0.04em',
+      color: '#ffffff',
+      fontSize: 'clamp(1.3rem, 2.2vw, 2.5rem)',
+      textShadow: 'none'
+    },
+    moviePoster: `https://image.tmdb.org/t/p/original/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg`,
+    tvPoster: `https://image.tmdb.org/t/p/original/hGhWE5hufwMsqMzELbK7p47DFeu.jpg`
+  },
+  {
+    id: 27,
+    tvId: 53,
+    name: 'Horror',
+    fontFamily: "'Creepster', 'Garamond', serif",
+    labelStyle: {
+      letterSpacing: '0.08em',
+      color: '#ffffff',
+      fontSize: 'clamp(1.4rem, 2.4vw, 2.8rem)',
+      textShadow: 'none'
+    },
+    moviePoster: `https://image.tmdb.org/t/p/original/w2PJ63AQ8oXKfVhvJIedtJ2jJSR.jpg`,
+    tvPoster: `https://image.tmdb.org/t/p/original/uKvVjHNqB5VmOrdxqAt2V7JMr8P.jpg`
+  },
+  {
+    id: 878,
+    tvId: 10765,
+    name: 'Sci-Fi',
+    fontFamily: "'Orbitron', 'Audiowide', sans-serif",
+    labelStyle: {
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+      color: '#ffffff',
+      fontSize: 'clamp(1.3rem, 2.2vw, 2.5rem)',
+      textShadow: 'none'
+    },
+    moviePoster: `https://image.tmdb.org/t/p/original/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg`,
+    tvPoster: `https://image.tmdb.org/t/p/original/49WJfeN0moxb9IPfGn8AIqMGskD.jpg`
+  },
+  {
+    id: 10749,
+    tvId: 10749,
+    name: 'Romance',
+    fontFamily: "'Great Vibes', 'Dancing Script', cursive, serif",
+    labelStyle: {
+      fontSize: 'clamp(1.8rem, 3.2vw, 3.5rem)',
+      fontWeight: 'normal',
+      color: '#ffffff',
+      textShadow: 'none'
+    },
+    moviePoster: `https://image.tmdb.org/t/p/original/rzdPqYx7Um4FUZeD8wpXqjAUcEm.jpg`,
+    tvPoster: `https://image.tmdb.org/t/p/original/9PFonQ921jhuTMqq2esxIRnegeP.jpg`
+  }
 ];
 
 export default function GenreExplorerSection() {
   const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
-  const [selectedGenre, setSelectedGenre] = useState<Genre>(GENRES[0]);
-  const [page, setPage] = useState<number>(1);
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
+  const [genres, setGenres] = useState<Genre[]>(INITIAL_GENRES);
 
   useEffect(() => {
-    const fetchGenreContent = () => {
-      setLoading(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const genreId = contentType === 'tv' ? (selectedGenre.tvId || selectedGenre.id) : selectedGenre.id;
+    let isMounted = true;
+    const fetchLatestPosters = async () => {
+      try {
+        const updatedGenres = INITIAL_GENRES.map(g => ({ ...g }));
+        const usedMoviePaths = new Set<string>(
+          INITIAL_GENRES.map(g => g.moviePoster.replace(TMDB_IMG, ''))
+        );
+        const usedTvPaths = new Set<string>(
+          INITIAL_GENRES.map(g => g.tvPoster.replace(TMDB_IMG, ''))
+        );
 
-      fetch(`/api/discover?type=${contentType}&genreId=${genreId}&page=${page}`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && data.results) {
-            setItems(data.results.slice(0, 5)); // 5 items per row as in screenshot
-          } else {
-            setItems([]);
+        // Fetch all-time top popular/rated movies and TV shows concurrently
+        const moviePromises = INITIAL_GENRES.map(genre => fetch(`/api/discover?type=movie&genreId=${genre.id}&sortBy=vote_count.desc`).then(res => res.json()).catch(() => null));
+        const tvPromises = INITIAL_GENRES.map(genre => fetch(`/api/discover?type=tv&genreId=${genre.tvId || genre.id}&sortBy=vote_count.desc`).then(res => res.json()).catch(() => null));
+
+        const [movieResults, tvResults] = await Promise.all([
+          Promise.all(moviePromises),
+          Promise.all(tvPromises)
+        ]);
+
+        for (let i = 0; i < updatedGenres.length; i++) {
+          const genre = updatedGenres[i];
+          
+          // Process Movie
+          const movieData = movieResults[i];
+          if (movieData?.results?.length > 0) {
+            const uniqueMovie = movieData.results.find((m: any) => {
+              const path = m.backdrop_path || m.poster_path;
+              return path && !usedMoviePaths.has(path);
+            });
+            if (uniqueMovie) {
+              const path = uniqueMovie.backdrop_path || uniqueMovie.poster_path;
+              usedMoviePaths.add(path);
+              genre.moviePoster = `${TMDB_IMG}${path}`;
+            }
           }
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.warn("Error fetching genre content:", err);
-          setItems([]);
-          setLoading(false);
-        });
+
+          // Process TV
+          const tvData = tvResults[i];
+          if (tvData?.results?.length > 0) {
+            const uniqueTv = tvData.results.find((t: any) => {
+              const path = t.backdrop_path || t.poster_path;
+              return path && !usedTvPaths.has(path);
+            });
+            if (uniqueTv) {
+              const path = uniqueTv.backdrop_path || uniqueTv.poster_path;
+              usedTvPaths.add(path);
+              genre.tvPoster = `${TMDB_IMG}${path}`;
+            }
+          }
+        }
+
+        if (isMounted) setGenres(updatedGenres);
+      } catch (err) {
+        console.error('Error fetching latest genre posters:', err);
+      }
     };
-
-    fetchGenreContent();
-  }, [contentType, selectedGenre, page]);
-
-  const toggleBookmark = (e: React.MouseEvent, item: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setBookmarkedIds((prev) => {
-      const updated = prev.includes(item.id)
-        ? prev.filter((bId) => bId !== item.id)
-        : [...prev, item.id];
-      const stored = localStorage.getItem('saved_items');
-      const savedItems = stored ? JSON.parse(stored) : [];
-      const nextItems = updated.includes(item.id)
-        ? [...savedItems.filter((saved: any) => saved.id !== item.id), { ...item, media_type: contentType }]
-        : savedItems.filter((saved: any) => saved.id !== item.id);
-      saveWatchlist(nextItems);
-      return updated;
-    });
-  };
-
-  const handleGenreSelect = (genre: Genre) => {
-    setSelectedGenre(genre);
-    setPage(1);
-  };
-
-  const handleTypeToggle = (type: 'movie' | 'tv') => {
-    setContentType(type);
-    setPage(1);
-  };
+    
+    fetchLatestPosters();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
     <section className={styles.section}>
-      {/* Header Row */}
-      <div className={styles.headerRow}>
-        <div className={styles.headerText}>
-          <h2 className={styles.title}>Genres</h2>
-          <p className={styles.subtitle}>Explore content by genre</p>
-        </div>
+      <div className={styles.inner}>
+        {/* Header Row */}
+        <div className={styles.headerRow}>
+          <div className={styles.headerText}>
+            <h2 className={styles.title}>Genres</h2>
+          </div>
 
-        {/* Movies / TV Shows Toggle Pill */}
-        <div className={styles.typeToggleContainer}>
-          <button
-            className={`${styles.typeBtn} ${contentType === 'movie' ? styles.activeTypeBtn : ''}`}
-            onClick={() => handleTypeToggle('movie')}
-          >
-            Movies
-          </button>
-          <button
-            className={`${styles.typeBtn} ${contentType === 'tv' ? styles.activeTypeBtn : ''}`}
-            onClick={() => handleTypeToggle('tv')}
-          >
-            TV Shows
-          </button>
-        </div>
-      </div>
-
-      {/* Genre Underline Navigation Bar */}
-      <div className={styles.genreNavContainer}>
-        <div className={styles.genreNav}>
-          {GENRES.map((genre) => {
-            const isActive = selectedGenre.id === genre.id;
-            return (
-              <button
-                key={genre.id}
-                className={`${styles.genreTab} ${isActive ? styles.activeGenreTab : ''}`}
-                onClick={() => handleGenreSelect(genre)}
-              >
-                {genre.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Description Subtext */}
-      <div className={styles.subtextRow}>
-        <span>Browse top {contentType === 'movie' ? 'movies' : 'TV shows'} in </span>
-        <strong style={{ color: '#fff' }}>{selectedGenre.name}</strong>
-      </div>
-
-      {/* Sub-header & Controls Bar */}
-      <div className={styles.controlsRow}>
-        <h3 className={styles.sectionTitle}>
-          {selectedGenre.name} {contentType === 'movie' ? 'Movies' : 'TV Shows'}
-        </h3>
-
-        <div className={styles.controlsRight}>
-          <button className={styles.filterBtn}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-            </svg>
-            Filters
-          </button>
-
-          <span className={styles.pageIndicator}>
-            <strong>{page}</strong> / 6
-          </span>
-
-          <div className={styles.arrowGroup}>
+          {/* Movies / TV Shows Toggle Pill */}
+          <div className={styles.typeToggleContainer}>
             <button
-              className={styles.arrowBtn}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              aria-label="Previous Page"
+              className={`${styles.typeBtn} ${contentType === 'movie' ? styles.activeTypeBtn : ''}`}
+              onClick={() => setContentType('movie')}
             >
-              ←
+              Movies
             </button>
             <button
-              className={styles.arrowBtn}
-              onClick={() => setPage((p) => Math.min(6, p + 1))}
-              disabled={page === 6}
-              aria-label="Next Page"
+              className={`${styles.typeBtn} ${contentType === 'tv' ? styles.activeTypeBtn : ''}`}
+              onClick={() => setContentType('tv')}
             >
-              →
+              TV Shows
             </button>
           </div>
         </div>
+
+        <div className={styles.contentSection}>
+          <AccordionGallery
+            items={genres.map(genre => {
+              const genreId = contentType === 'tv' ? (genre.tvId || genre.id) : genre.id;
+              const route = contentType === 'tv' ? `/tv?genre=${genreId}` : `/movies?genre=${genreId}`;
+              return {
+                image: contentType === 'tv' ? genre.tvPoster : genre.moviePoster,
+                label: genre.name,
+                fontFamily: genre.fontFamily,
+                labelStyle: genre.labelStyle,
+                link: route,
+                alt: genre.name,
+              };
+            })}
+            height={460}
+            expandRatio={0.58}
+            gap={12}
+            orientation="horizontal"
+            trigger="hover"
+            showLabels={true}
+            grayscale={false}
+          />
+        </div>
       </div>
-
-      {/* 5 Card Grid */}
-      {loading ? (
-        <div className={styles.loadingGrid}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className={styles.cardSkeleton}>
-              <div className={styles.skeletonShimmer} />
-              <div className={styles.skeletonTopRow}>
-                <div className={styles.skeletonBadge} />
-                <div className={styles.skeletonBookmark} />
-              </div>
-              <div className={styles.skeletonBottomInfo}>
-                <div className={styles.skeletonTitle} />
-                <div className={styles.skeletonMeta} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className={styles.cardGrid}>
-          {items.map((item) => {
-            const isBookmarked = bookmarkedIds.includes(item.id);
-            const titleText = item.title || item.name;
-            const releaseYear = (item.release_date || item.first_air_date || '').split('-')[0] || '2026';
-            const rating = item.vote_average ? item.vote_average.toFixed(1) : '8.0';
-            const posterUrl = item.poster_path
-              ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-              : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop';
-            const href = contentType === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`;
-
-            return (
-              <Link href={href} key={item.id} className={styles.card}>
-                <div
-                  className={styles.posterWrapper}
-                  style={{ backgroundImage: `url(${posterUrl})` }}
-                >
-                  {/* Top-Right Bookmark Button */}
-                  <button
-                    className={`${styles.bookmarkBtn} ${isBookmarked ? styles.activeBookmark : ''}`}
-                    onClick={(e) => toggleBookmark(e, item)}
-                    aria-label="Bookmark"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? "#ffffff" : "none"} stroke="currentColor" strokeWidth="2">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                  </button>
-
-                  <div className={styles.posterOverlay}></div>
-
-                  {/* Bottom Content Overlay (Rating, Title, Year) */}
-                  <div className={styles.cardDetails}>
-                    <div className={styles.ratingPill}>{rating}</div>
-                    <div className={styles.cardTitle}>{titleText}</div>
-                    <div className={styles.cardYear}>{releaseYear}</div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </section>
   );
 }

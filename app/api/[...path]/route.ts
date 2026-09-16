@@ -72,13 +72,16 @@ export async function GET(
       const type = searchParams.get('type') === 'tv' ? 'tv' : 'movie';
       const genreId = searchParams.get('genreId');
       const page = searchParams.get('page') || '1';
+      const sortBy = searchParams.get('sortBy') || searchParams.get('sort_by') || 'vote_count.desc';
 
       const params: Record<string, any> = {
         language: 'en-US',
-        sort_by: 'popularity.desc',
+        sort_by: sortBy,
         page
       };
       if (genreId) params.with_genres = genreId;
+      const voteCount = searchParams.get('vote_count.gte');
+      if (voteCount) params['vote_count.gte'] = voteCount;
 
       const data = await fetchFromTMDB(`/discover/${type}`, params);
       return NextResponse.json(data);
@@ -96,11 +99,22 @@ export async function GET(
       return NextResponse.json(data);
     }
 
+    // 3.1 /api/search/movie
+    if (pathStr === 'search/movie') {
+      const query = searchParams.get('query') || searchParams.get('q') || '';
+      if (!query) return NextResponse.json({ results: [] });
+      const data = await fetchFromTMDB('/search/movie', { query, language: 'en-US' });
+      return NextResponse.json(data);
+    }
+
     // 4. /api/movies/discover
     if (pathStr === 'movies/discover') {
       const page = searchParams.get('page') || '1';
       const filter = searchParams.get('filter');
       const genre = searchParams.get('genre');
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
 
       let endpoint = '/discover/movie';
       const params: Record<string, any> = {
@@ -108,22 +122,35 @@ export async function GET(
         page
       };
 
+      if (genre) {
+        params.with_genres = genre;
+      }
+
       if (filter === '4k') {
         endpoint = '/discover/movie';
         params.sort_by = 'vote_average.desc';
         params['vote_count.gte'] = 200;
         params.with_original_language = 'en';
-        if (genre) params.with_genres = genre;
       } else if (filter === 'top_rated') {
-        endpoint = '/movie/top_rated';
+        if (genre) {
+          endpoint = '/discover/movie';
+          params.sort_by = 'vote_average.desc';
+          params['vote_count.gte'] = 300;
+        } else {
+          endpoint = '/movie/top_rated';
+        }
       } else if (filter === 'upcoming') {
-        endpoint = '/movie/upcoming';
+        endpoint = '/discover/movie';
+        params.sort_by = 'popularity.desc';
+        params['primary_release_date.gte'] = todayStr;
       } else if (filter === 'now_playing') {
-        endpoint = '/movie/now_playing';
+        endpoint = '/discover/movie';
+        params.sort_by = 'popularity.desc';
+        params['primary_release_date.gte'] = sixtyDaysAgo;
+        params['primary_release_date.lte'] = todayStr;
       } else {
         endpoint = '/discover/movie';
         params.sort_by = 'popularity.desc';
-        if (genre) params.with_genres = genre;
       }
 
       const data = await fetchFromTMDB(endpoint, params);
@@ -142,16 +169,34 @@ export async function GET(
         page
       };
 
+      if (genre) {
+        if (genre === '53' || genre === '27' || genre === '9648') {
+          // TMDB TV Horror/Mystery series (Strictly exclude Kids 10762 & Animation 16)
+          params.with_genres = '9648,80';
+          params.without_genres = '10762,16';
+        } else {
+          params.with_genres = genre;
+        }
+      }
+
       if (filter === 'top_rated') {
-        endpoint = '/tv/top_rated';
-      } else if (filter === 'on_the_air') {
-        endpoint = '/tv/on_the_air';
-      } else if (filter === 'airing_today') {
-        endpoint = '/tv/airing_today';
+        if (genre) {
+          endpoint = '/discover/tv';
+          params.sort_by = 'vote_average.desc';
+          params['vote_count.gte'] = 150;
+        } else {
+          endpoint = '/tv/top_rated';
+        }
+      } else if (filter === 'on_the_air' || filter === 'airing_today') {
+        if (genre) {
+          endpoint = '/discover/tv';
+          params.sort_by = 'popularity.desc';
+        } else {
+          endpoint = filter === 'airing_today' ? '/tv/airing_today' : '/tv/on_the_air';
+        }
       } else {
         endpoint = '/discover/tv';
         params.sort_by = 'popularity.desc';
-        if (genre) params.with_genres = genre;
       }
 
       const data = await fetchFromTMDB(endpoint, params);
@@ -243,13 +288,48 @@ export async function GET(
       return NextResponse.json(data);
     }
 
+    // 11.1 /api/donghua
+    if (pathStr === 'donghua') {
+      const page = searchParams.get('page') || '1';
+      const filter = searchParams.get('filter');
+
+      const params: Record<string, any> = {
+        with_genres: 16,
+        with_original_language: 'zh',
+        page,
+        sort_by: filter === 'top_rated' ? 'vote_average.desc' : 'popularity.desc'
+      };
+
+      const data = await fetchFromTMDB('/discover/tv', params);
+      return NextResponse.json(data);
+    }
+
+    // 11.2 /api/live-action
+    if (pathStr === 'live-action') {
+      const page = searchParams.get('page') || '1';
+      const filter = searchParams.get('filter');
+
+      const params: Record<string, any> = {
+        without_genres: 16,
+        with_original_language: 'ja|ko|zh',
+        page,
+        sort_by: filter === 'top_rated' ? 'vote_average.desc' : 'popularity.desc'
+      };
+
+      const data = await fetchFromTMDB('/discover/tv', params);
+      return NextResponse.json(data);
+    }
+
     // 12. /api/search
     if (pathStr === 'search') {
       const query = searchParams.get('q');
-      if (!query) return NextResponse.json({ results: [] });
+      const page = searchParams.get('page') || '1';
+      if (!query) return NextResponse.json({ results: [], total_pages: 0, total_results: 0 });
 
       const data = await fetchFromTMDB('/search/multi', {
-        query
+        query,
+        page,
+        language: 'en-US'
       });
       return NextResponse.json(data);
     }

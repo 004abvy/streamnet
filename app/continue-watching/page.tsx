@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { saveContinueWatching } from '../../utils/userStorage';
@@ -82,8 +81,6 @@ export default function ContinueWatchingPage() {
 
   return (
     <main className={styles.page}>
-      <Navbar />
-
       <div className={styles.ambientGlow} />
 
       <div className={styles.content}>
@@ -172,8 +169,8 @@ export default function ContinueWatchingPage() {
                         <img
                           src={
                             item.poster_path
-                              ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                              : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop'
+                              ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+                              : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'
                           }
                           alt={title}
                           className={styles.poster}

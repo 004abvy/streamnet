@@ -35,12 +35,12 @@ function getMovieVibe(overview: string): string {
 }
 
 const CINEMATIC_FONTS: Record<string, string[]> = {
-  scifi: ['Orbitron', 'Rajdhani', 'Syncopate', 'Teko', 'Audiowide', 'Michroma', 'Chakra Petch', 'Space Grotesk'],
-  horror: ['Creepster', 'Nosifer', 'Eater', 'Butcherman', 'Frijole', 'Sancreek', 'Rubik Glitch'],
-  romance: ['Great Vibes', 'Playball', 'Sacramento', 'Parisienne', 'Cinzel Decorative', 'Tangerine'],
-  fantasy: ['Cinzel', 'MedievalSharp', 'Uncial Antiqua', 'Almendra', 'Caesar Dressing', 'Macondo'],
-  action: ['Bebas Neue', 'Oswald', 'Anton', 'Fjalla One', 'Russo One', 'Teko'],
-  general: ['Playfair Display', 'Cormorant Garamond', 'Syne', 'Outfit', 'Cinzel', 'Righteous', 'Abril Fatface']
+  scifi: ['Orbitron', 'Syncopate', 'Monoton', 'Audiowide', 'Chakra Petch', 'Megrim', 'Wallpoet'],
+  horror: ['Creepster', 'Nosifer', 'Eater', 'Butcherman', 'Frijole', 'Rubik Glitch'],
+  romance: ['Great Vibes', 'Sacramento', 'Tangerine', 'Pacifico', 'Leckerli One'],
+  fantasy: ['MedievalSharp', 'Almendra', 'Caesar Dressing', 'Macondo', 'Uncial Antiqua'],
+  action: ['Bebas Neue', 'Black Ops One', 'Bungee', 'Russo One', 'Staatliches', 'Teko'],
+  general: ['Righteous', 'Audiowide', 'Teko', 'Permanent Marker', 'Syncopate']
 };
 
 function selectFontForVibe(vibe: string, fonts: any[], movieId: number): string | null {
@@ -63,13 +63,13 @@ function selectFontForVibe(vibe: string, fonts: any[], movieId: number): string 
         suitableFonts = fonts.filter(f => f.category === 'handwriting');
         break;
       case 'fantasy':
-        suitableFonts = fonts.filter(f => f.category === 'serif' || f.category === 'display');
+        suitableFonts = fonts.filter(f => f.category === 'sans-serif' || f.category === 'display');
         break;
       case 'action':
         suitableFonts = fonts.filter(f => f.category === 'display');
         break;
       default:
-        suitableFonts = fonts.filter(f => f.category === 'display' || f.category === 'serif');
+        suitableFonts = fonts.filter(f => f.category === 'display' || f.category === 'sans-serif');
         break;
     }
   }

@@ -8,7 +8,6 @@ import styles from './Sidebar.module.css';
 import {
   Home,
   Search,
-  Compass,
   Bot,
   Film,
   Monitor,
@@ -35,7 +34,34 @@ export default function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+  const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMouseEnter = () => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
+    }
+    setIsExpanded(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+    }
+    collapseTimerRef.current = setTimeout(() => {
+      setIsExpanded(false);
+    }, 1500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (collapseTimerRef.current) {
+        clearTimeout(collapseTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (showSearch && searchInputRef.current) {
@@ -70,18 +96,15 @@ export default function Sidebar() {
   const sidebarLinks = [
     { label: 'Home', link: '/', icon: Home },
     { label: 'Search', action: 'search', icon: Search },
-    { label: 'Discover', link: '/discover', icon: Compass },
     { label: 'RiveAI', link: '/ai', icon: Bot, isAi: true },
     { label: 'Movies', link: '/movies', icon: Film },
     { label: 'TV Shows', link: '/tv', icon: Monitor },
     { label: 'Sports', link: '/live-sports', icon: Trophy },
     { label: 'Live TV', link: '/live-tv', icon: Tv },
     { label: 'Radio', link: '/radio', icon: Radio },
-    { label: 'Manga', link: '/manga', icon: BookOpen },
     { label: 'Anime', link: '/anime', icon: Eye },
-    { label: 'KDrama', link: '/kdrama', icon: VenetianMask },
     { label: 'Collections', link: '/collections', icon: FolderOpen },
-    { label: 'Library', link: '/library', icon: Library },
+    { label: 'Library', link: '/saved', icon: Library },
     { label: 'Settings', link: '/settings', icon: Settings }
   ];
 
@@ -106,7 +129,11 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Matte Clear Glass Sidebar */}
-      <aside className={styles.sidebar}>
+      <aside
+        className={`${styles.sidebar} ${isExpanded ? styles.sidebarExpanded : ''}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <div className={styles.sidebarInner}>
           {sidebarLinks.map((item, idx) => {
             const Icon = item.icon;
@@ -118,15 +145,15 @@ export default function Sidebar() {
 
             if (item.action === 'search') {
               return (
-                <button
+                <Link
                   key={item.label}
+                  href={'/search'}
                   className={itemClass}
-                  onClick={() => setShowSearch(true)}
                   title={item.label}
                 >
-                  <Icon size={16} color={getIconColor(item.link)} />
+                  <Icon size={22} color={getIconColor('/search')} />
                   <span className={styles.tooltip}>{item.label}</span>
-                </button>
+                </Link>
               );
             }
 
@@ -137,7 +164,7 @@ export default function Sidebar() {
                 className={itemClass}
                 title={item.label}
               >
-                <Icon size={16} color={getIconColor(item.link, item.isAi)} />
+                <Icon size={22} color={getIconColor(item.link, item.isAi)} />
                 <span className={styles.tooltip}>{item.label}</span>
               </Link>
             );
@@ -172,17 +199,17 @@ export default function Sidebar() {
         <Link href="/" className={styles.bottomBarLink}>
           <Home color={getIconColor('/')} size={24} />
         </Link>
-        <button className={styles.bottomBarLink} onClick={() => { setShowSearch(true); setMobileMenuOpen(false); }}>
-          <Search size={24} />
-        </button>
+        <Link href="/search" className={styles.bottomBarLink}>
+          <Search size={24} color={getIconColor('/search')} />
+        </Link>
         <Link href="/movies" className={styles.bottomBarLink}>
           <Film color={getIconColor('/movies')} size={24} />
         </Link>
         <Link href="/tv" className={styles.bottomBarLink}>
           <Monitor color={getIconColor('/tv')} size={24} />
         </Link>
-        <Link href="/library" className={styles.bottomBarLink}>
-          <Library color={getIconColor('/library')} size={24} />
+        <Link href="/saved" className={styles.bottomBarLink}>
+          <Library color={getIconColor('/saved')} size={24} />
         </Link>
         <button className={styles.bottomBarLink} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -218,11 +245,8 @@ export default function Sidebar() {
                 <Link href="/" className={styles.menuItem}>
                   <Home size={18} /> Home
                 </Link>
-                <button onClick={() => { setShowSearch(true); setMobileMenuOpen(false); }} className={styles.menuItem}>
+                <Link href="/search" className={styles.menuItem} onClick={() => setMobileMenuOpen(false)}>
                   <Search size={18} /> Search
-                </button>
-                <Link href="/discover" className={styles.menuItem}>
-                  <Compass size={18} /> Discover
                 </Link>
                 <Link href="/command" className={styles.menuItem}>
                   <Command size={18} /> Command Menu
@@ -230,7 +254,7 @@ export default function Sidebar() {
                 <Link href="/ai" className={`${styles.menuItem} ${styles.riveAiItem}`}>
                   <Bot size={18} color="#eab308" /> <span style={{ color: '#eab308', fontWeight: 600 }}>RiveAI</span>
                 </Link>
-                <Link href="/library" className={styles.menuItem}>
+                <Link href="/saved" className={styles.menuItem}>
                   <Library size={18} /> Library
                 </Link>
 
@@ -244,9 +268,6 @@ export default function Sidebar() {
                 <Link href="/radio" className={styles.menuItem}>
                   <Radio size={18} /> Radio
                 </Link>
-                <Link href="/manga" className={styles.menuItem}>
-                  <BookOpen size={18} /> Manga
-                </Link>
               </div>
 
               <div className={styles.menuColumn}>
@@ -259,9 +280,6 @@ export default function Sidebar() {
                 </Link>
                 <Link href="/anime" className={styles.menuItem}>
                   <Eye size={18} /> Anime
-                </Link>
-                <Link href="/kdrama" className={styles.menuItem}>
-                  <VenetianMask size={18} /> K-Drama
                 </Link>
                 <Link href="/collections" className={styles.menuItem}>
                   <FolderOpen size={18} /> Collections

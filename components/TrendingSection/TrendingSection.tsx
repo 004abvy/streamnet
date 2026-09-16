@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { saveWatchlist, saveContinueWatching } from '../../utils/userStorage';
 import styles from './TrendingSection.module.css';
+import GlareHover from '../reactbits/GlareHover';
 
 interface TrendingItem {
   id: number;
@@ -142,7 +143,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
   const featuredPosters = currentBatch.slice(0, 5);
   const heroGridItems = currentBatch.slice(5, 9);
 
-  const renderNormalPoster = (item: TrendingItem) => {
+  const renderNormalPoster = (item: TrendingItem, rank?: number) => {
     const displayTitle = item.title || item.name || 'Untitled';
     const displayDate = item.release_date || item.first_air_date;
     const year = displayDate ? displayDate.split('-')[0] : '';
@@ -150,31 +151,50 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     const isTv = item.media_type === 'tv' || Boolean(item.name && !item.title);
     const href = isTv ? `/tv/${item.id}` : `/movie/${item.id}`;
     const poster = item.poster_path
-      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-      : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop';
+      ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+      : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
 
     return (
       <Link href={href} key={item.id} className={styles.posterCard}>
-        <img src={poster} alt={displayTitle} className={styles.posterImg} loading="lazy" />
-        <div className={styles.posterOverlay} />
-
-        <button
-          type="button"
-          className={`${styles.bookmarkBtn} ${isBookmarked ? styles.bookmarked : ''}`}
-          onClick={(e) => toggleBookmark(e, item)}
-          aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        <GlareHover
+          width="100%"
+          height="100%"
+          background="transparent"
+          borderColor="transparent"
+          borderRadius="12px"
+          glareColor="#ffffff"
+          glareOpacity={0.3}
+          glareAngle={-30}
+          glareSize={300}
+          transitionDuration={450}
+          playOnce={false}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
+          {rank && (
+            <div className={styles.rankBadgeWrapper}>
+              <span className={styles.rankFallbackNumber}>{rank}</span>
+            </div>
+          )}
+          <img src={poster} alt={displayTitle} className={styles.posterImg} loading="lazy" />
+          <div className={styles.posterOverlay} />
 
-        <div className={styles.posterInfo}>
-          <div className={styles.ratingBadge}>{rating}</div>
-          <h3 className={styles.posterTitle}>{displayTitle}</h3>
-          {year && <p className={styles.posterYear}>{year}</p>}
-        </div>
+          <button
+            type="button"
+            className={`${styles.bookmarkBtn} ${isBookmarked ? styles.bookmarked : ''}`}
+            onClick={(e) => toggleBookmark(e, item)}
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
+
+          <div className={styles.posterInfo}>
+            <div className={styles.ratingBadge}>{rating}</div>
+            <h3 className={styles.posterTitle}>{displayTitle}</h3>
+            {year && <p className={styles.posterYear}>{year}</p>}
+          </div>
+        </GlareHover>
       </Link>
     );
   };
@@ -185,53 +205,66 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     const detailsHref = isTv ? `/tv/${item.id}` : `/movie/${item.id}`;
     const watchHref = isTv ? `/watch/tv/${item.id}/1/1` : `/watch/${item.id}`;
     const backdrop = item.backdrop_path
-      ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}`
+      ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
       : item.poster_path
-        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+        ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
         : 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
     const overview = item.overview || 'Explore details, cast, trailers, and streaming options for this trending title.';
 
     return (
       <div key={item.id} className={styles.heroCard}>
-        <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} loading="lazy" />
-        <div className={styles.heroOverlay} />
-
-        <button
-          type="button"
-          className={`${styles.bookmarkBtn} ${isBookmarked ? styles.bookmarked : ''}`}
-          onClick={(e) => toggleBookmark(e, item)}
-          aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        <GlareHover
+          width="100%"
+          height="100%"
+          background="transparent"
+          borderColor="transparent"
+          borderRadius="12px"
+          glareColor="#ffffff"
+          glareOpacity={0.3}
+          glareAngle={-30}
+          glareSize={300}
+          transitionDuration={450}
+          playOnce={false}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
+          <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} loading="lazy" />
+          <div className={styles.heroOverlay} />
 
-        <div className={styles.heroContent}>
-          <h3 className={styles.heroTitle}>{displayTitle}</h3>
-          <p className={styles.heroDescription}>{overview}</p>
+          <button
+            type="button"
+            className={`${styles.bookmarkBtn} ${isBookmarked ? styles.bookmarked : ''}`}
+            onClick={(e) => toggleBookmark(e, item)}
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
 
-          <div className={styles.heroActions}>
-            <Link
-              href={watchHref}
-              className={styles.playBtn}
-              onClick={(e) => handlePlayNow(e, item, isTv)}
-            >
-              <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              Play Now
-            </Link>
+          <div className={styles.heroContent}>
+            <h3 className={styles.heroTitle}>{displayTitle}</h3>
 
-            <Link href={detailsHref} className={styles.detailsBtn}>
-              Details
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className={styles.heroActions}>
+              <Link
+                href={watchHref}
+                className={styles.playBtn}
+                onClick={(e) => handlePlayNow(e, item, isTv)}
+              >
+                <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                Play
+              </Link>
+
+              <Link href={detailsHref} className={styles.detailsBtn}>
+                About
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
           </div>
-        </div>
+        </GlareHover>
       </div>
     );
   };
@@ -252,9 +285,9 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
         </div>
       </div>
 
-      <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', width: '100%', paddingTop: '16px', marginTop: '-16px' }}>
         <div className={styles.postersRow}>
-          {featuredPosters.map((item) => renderNormalPoster(item))}
+          {featuredPosters.map((item, idx) => renderNormalPoster(item, idx + 1))}
         </div>
         {heroGridItems.length > 0 && (
           <div className={styles.heroGrid}>

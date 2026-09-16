@@ -1,0 +1,40 @@
+.glare-hover {
+    width: var(--gh-width);
+    height: var(--gh-height);
+    background: var(--gh-bg);
+    border-radius: var(--gh-br);
+    border: 1px solid var(--gh-border);
+    overflow: hidden;
+    position: relative;
+    display: block;
+}
+
+.glare-hover::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+        var(--gh-angle),
+        transparent 30%,
+        var(--gh-rgba) 50%,
+        transparent 70%
+    );
+    transform: translate(-100%, -100%) rotate(25deg);
+    transition: transform 0s, opacity 0s;
+}
+
+.glare-hover:hover {
+    cursor: pointer;
+}
+
+.glare-hover:hover::before {
+    opacity: 1;
+    transform: translate(100%, 100%) rotate(25deg);
+    transition: transform var(--gh-duration) ease-in-out, opacity 0.2s ease-in-out;
+}

@@ -1,1 +1,0 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[7681],{52097:function(n,t,u){(window.__NEXT_P=window.__NEXT_P||[]).push(["/tv",function(){return u(63288)}])},63288:function(n,t,u){"use strict";u.r(t);var _=u(85893),c=u(53123);t.default=()=>(0,_.jsx)(c.Z,{categoryDiv:"tv"})}},function(n){n.O(0,[594,2751,3123,2888,9774,179],function(){return n(n.s=52097)}),_N_E=n.O()}]);

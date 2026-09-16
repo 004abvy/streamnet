@@ -1,7 +1,0 @@
-# HTTrack Website Copier Cookie File
-# This file format is compatible with Netscape cookies
-images.axios.com	TRUE	/	FALSE	1999999999	__cf_bm	II2vPK9WPwMNyuHmbDh9rNnGW95ZgRI4SASQFDq7y9Y-1789150894.9495883-1.0.1.1-ob_tvn5AhAHU_1l3OrNDEDko2xH43TJWtN0obu3Zv8EVH1E0dLz1RR8sARTfTDWjGT36xM03iGb0Hwyby3jYIMAj_ZRH_hULfpD8cmH9TtIoX4UdBsAGNbJq1ld2K.o3
-axios.com	TRUE	/	FALSE	1999999999	SameSite	None
-upload.wikimedia.org	TRUE	/	FALSE	1999999999	WMF-Uniq	6TwnW8j8T9PPTRR8etw_DQPYAAEBAFvd23h-momU9Z3GXyX5hHZPpWfeWtYbS4z3
-upload.wikimedia.org	TRUE	/	FALSE	1999999999	SameSite	None
-

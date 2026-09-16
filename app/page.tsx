@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar/Navbar';
 import HeroCarousel from '../components/HeroCarousel/HeroCarousel';
 import PosterCarousel from '../components/PosterCarousel/PosterCarousel';
 import TrendingSection from '../components/TrendingSection/TrendingSection';

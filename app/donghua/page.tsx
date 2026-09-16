@@ -5,9 +5,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import PosterGrid from '../../components/PosterGrid/PosterGrid';
 import Pagination from '../../components/Pagination/Pagination';
 import Footer from '../../components/Footer/Footer';
-import styles from './anime.module.css';
+import styles from '../anime/anime.module.css';
 
-function AnimeContent() {
+function DonghuaContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -24,7 +24,7 @@ function AnimeContent() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/anime?page=${pageParam}&filter=${filterParam}`);
+        const res = await fetch(`/api/donghua?page=${pageParam}&filter=${filterParam}`);
         const data = await res.json();
 
         if (isMounted) {
@@ -38,7 +38,7 @@ function AnimeContent() {
           setLoading(false);
         }
       } catch (err) {
-        console.warn("Failed to fetch TMDB anime:", err);
+        console.warn("Failed to fetch TMDB donghua:", err);
         if (isMounted) {
           setShows([]);
           setLoading(false);
@@ -62,29 +62,14 @@ function AnimeContent() {
     if (page > 1) params.set('page', page.toString());
 
     const queryString = params.toString();
-    router.push(`/anime${queryString ? `?${queryString}` : ''}`);
+    router.push(`/donghua${queryString ? `?${queryString}` : ''}`);
   };
-
-  const getPageInfo = () => {
-    if (filterParam === 'top_rated') {
-      return { title: 'Top Rated Anime', subtitle: 'The highest-rated Japanese animation series of all time.' };
-    }
-    if (filterParam === 'on_the_air') {
-      return { title: 'Currently Airing Anime', subtitle: 'Catch up with the latest airing anime episodes this season.' };
-    }
-    if (filterParam === 'upcoming') {
-      return { title: 'Upcoming Anime', subtitle: 'Upcoming releases and new seasons coming soon.' };
-    }
-    return { title: 'Popular Anime', subtitle: 'Discover and stream the most popular anime series worldwide.' };
-  };
-
-  const pageInfo = getPageInfo();
 
   return (
     <div className={styles.content}>
       <div className={styles.headerSection}>
-        <h1 className={styles.pageTitle}>{pageInfo.title}</h1>
-        <p className={styles.pageSubtitle}>{pageInfo.subtitle}</p>
+        <h1 className={styles.pageTitle}>Donghua (Chinese Animation)</h1>
+        <p className={styles.pageSubtitle}>Explore top-rated Chinese animated series, cultivation sagas, and martial arts donghua.</p>
 
         {/* Filter Pills Bar */}
         <div className={styles.filterRow}>
@@ -101,25 +86,13 @@ function AnimeContent() {
             >
               Top Rated
             </button>
-            <button
-              className={`${styles.filterBtn} ${filterParam === 'on_the_air' ? styles.activeFilterBtn : ''}`}
-              onClick={() => updateQueryParams('on_the_air', 1)}
-            >
-              On The Air
-            </button>
-            <button
-              className={`${styles.filterBtn} ${filterParam === 'upcoming' ? styles.activeFilterBtn : ''}`}
-              onClick={() => updateQueryParams('upcoming', 1)}
-            >
-              Upcoming
-            </button>
           </div>
         </div>
       </div>
 
       {shows.length === 0 && !loading ? (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#aaa' }}>
-          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No anime found for this filter.</p>
+          <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No donghua found.</p>
         </div>
       ) : (
         <>
@@ -137,11 +110,11 @@ function AnimeContent() {
   );
 }
 
-export default function AnimePage() {
+export default function DonghuaPage() {
   return (
     <main className={styles.container}>
-      <Suspense fallback={<div className={styles.loading}>Loading Anime...</div>}>
-        <AnimeContent />
+      <Suspense fallback={<div className={styles.loading}>Loading Donghua...</div>}>
+        <DonghuaContent />
       </Suspense>
       <Footer />
     </main>

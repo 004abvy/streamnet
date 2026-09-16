@@ -2,21 +2,29 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar/Navbar';
 import PosterGrid from '../../components/PosterGrid/PosterGrid';
+import Pagination from '../../components/Pagination/Pagination';
+import Footer from '../../components/Footer/Footer';
+import DomeGallery from '../../components/reactbits/DomeGallery';
 import styles from './search.module.css';
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryParam = searchParams.get('q') || '';
-  
+  const pageParam = parseInt(searchParams.get('page') || '1', 10);
+
   const [inputQuery, setInputQuery] = useState(queryParam);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [trendingPosters, setTrendingPosters] = useState<any[]>([]);
+  const trendingMoviesRef = useRef<any[]>([]);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -29,41 +37,67 @@ function SearchContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch full search results when queryParam in URL changes
+  // Fetch trending posters for dome gallery
+  useEffect(() => {
+    fetch('/api/movies/trending')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.results) {
+          const filtered = data.results.filter((m: any) => m.poster_path);
+          const posters = filtered.map((m: any) => ({
+              src: `https://image.tmdb.org/t/p/w780${m.poster_path}`,
+              alt: m.title || m.name
+            }));
+          trendingMoviesRef.current = filtered.map((m: any) => ({
+            id: m.id,
+            media_type: m.media_type || 'movie',
+            title: m.title || m.name
+          }));
+          setTrendingPosters(posters);
+        }
+      })
+      .catch(err => console.warn('Trending fetch error:', err));
+  }, []);
+
+  // Fetch full search results when queryParam or pageParam in URL changes
   useEffect(() => {
     setInputQuery(queryParam);
+    setShowSuggestions(false);
+    setSuggestions([]);
     if (!queryParam) {
       setResults([]);
+      setTotalPages(1);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-    
-    fetch(`/api/search?q=${encodeURIComponent(queryParam)}`)
+
+    fetch(`/api/search?q=${encodeURIComponent(queryParam)}&page=${pageParam}`)
       .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        const filtered = data?.results?.filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv') || [];
+      .then((tmdbData) => {
+        const filtered = tmdbData?.results?.filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv' || item.poster_path) || [];
         setResults(filtered);
+        setTotalPages(Math.min(tmdbData?.total_pages || 1, 500));
         setLoading(false);
       })
       .catch(err => {
         console.warn("Search failed:", err);
+        setResults([]);
+        setTotalPages(1);
         setLoading(false);
       });
-  }, [queryParam]);
+  }, [queryParam, pageParam]);
 
   // Fetch suggestions live as user types in the input box
   useEffect(() => {
-    if (!inputQuery.trim() || inputQuery.trim().length < 2) {
+    if (!isInputFocused || !inputQuery.trim() || inputQuery.trim().length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
     const timer = setTimeout(() => {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       fetch(`/api/search?q=${encodeURIComponent(inputQuery.trim())}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -86,12 +120,14 @@ function SearchContent() {
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [inputQuery]);
+  }, [inputQuery, isInputFocused]);
 
   const handleSearchFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputQuery.trim()) {
       setShowSuggestions(false);
+      setSuggestions([]);
+      inputRef.current?.blur();
       router.push(`/search?q=${encodeURIComponent(inputQuery.trim())}`);
     }
   };
@@ -105,38 +141,64 @@ function SearchContent() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    router.push(`/search?q=${encodeURIComponent(queryParam)}&page=${newPage}`);
+  };
+
   return (
     <div className={styles.content}>
-      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative' }} ref={searchBoxRef}>
+      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 10 }} ref={searchBoxRef}>
         <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
           <input
+            ref={inputRef}
             type="text"
             value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+            onChange={(e) => {
+              setInputQuery(e.target.value);
+              if (!e.target.value.trim()) {
+                setShowSuggestions(false);
+                setSuggestions([]);
+              }
+            }}
+            onFocus={() => {
+              setIsInputFocused(true);
+              if (inputQuery.trim().length >= 2 && suggestions.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
+            onBlur={() => {
+              setTimeout(() => setIsInputFocused(false), 200);
+            }}
             placeholder="Search for movies, TV shows, anime..."
             style={{
               flex: 1,
-              padding: '0.8rem 1.2rem',
-              borderRadius: '25px',
-              border: '1px solid #333',
-              background: '#141414',
+              padding: '0.8rem 1.5rem',
+              borderRadius: '9999px',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              background: 'rgba(18, 18, 24, 0.55)',
+              backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+              WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.05)',
               color: '#fff',
               fontSize: '1rem',
               outline: 'none',
+              transition: 'all 0.3s ease'
             }}
           />
           <button
             type="submit"
             style={{
-              padding: '0.8rem 1.5rem',
-              borderRadius: '25px',
+              padding: '0.8rem 1.8rem',
+              borderRadius: '9999px',
               border: 'none',
               background: '#f59e0b',
               color: '#000',
               fontWeight: 'bold',
               cursor: 'pointer',
-              fontSize: '0.95rem'
+              fontSize: '0.95rem',
+              boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)',
+              transition: 'all 0.3s ease'
             }}
           >
             Search
@@ -147,13 +209,15 @@ function SearchContent() {
         {showSuggestions && suggestions.length > 0 && (
           <div style={{
             position: 'absolute',
-            top: 'calc(100% + 6px)',
+            top: 'calc(100% + 12px)',
             left: '1rem',
             right: '1rem',
-            background: '#12121a',
-            border: '1px solid #28283a',
-            borderRadius: '12px',
-            boxShadow: '0 15px 35px rgba(0,0,0,0.9)',
+            background: 'rgba(18, 18, 24, 0.75)',
+            backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            borderRadius: '24px',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1)',
             zIndex: 100,
             overflow: 'hidden'
           }}>
@@ -171,12 +235,12 @@ function SearchContent() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '1rem',
-                    padding: '0.65rem 1rem',
+                    padding: '0.85rem 1.2rem',
                     cursor: 'pointer',
-                    borderBottom: '1px solid #1c1c2b',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                     transition: 'background 0.2s',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#1c1c2a')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <img
@@ -220,16 +284,44 @@ function SearchContent() {
       </div>
 
       {loading || results.length > 0 ? (
-        <PosterGrid title={queryParam ? `Search Results for "${queryParam}"` : ''} movies={results} isLoading={loading} />
+        <>
+          <PosterGrid title={queryParam ? `Search Results for "${queryParam}"` : ''} movies={results} isLoading={loading} />
+          {!loading && totalPages > 1 && (
+            <div style={{ marginTop: '2.5rem', marginBottom: '3rem' }}>
+              <Pagination page={pageParam} totalPages={totalPages} onPageChange={handlePageChange} />
+            </div>
+          )}
+          <Footer />
+        </>
       ) : queryParam ? (
         <div className={styles.emptyState}>
           <h2>No results found</h2>
           <p>We couldn't find anything matching "{queryParam}". Try another search term above.</p>
         </div>
       ) : (
-        <div className={styles.emptyState}>
-          <h2>Search Movies & TV Shows</h2>
-          <p>Type a title in the search bar above to start searching.</p>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, overflow: 'hidden' }}>
+          {trendingPosters.length > 0 && (
+            <DomeGallery
+              images={trendingPosters}
+              autoRotate={true}
+              autoRotateSpeed={0.05}
+              grayscale={false}
+              minRadius={800}
+              fit={1.2}
+              fitBasis="width"
+              overlayBlurColor="#000000"
+              onImageClick={(index) => {
+                const movies = trendingMoviesRef.current;
+                if (movies.length === 0) return;
+                const movie = movies[index % movies.length];
+                if (movie.media_type === 'tv') {
+                  router.push(`/tv/${movie.id}`);
+                } else {
+                  router.push(`/movie/${movie.id}`);
+                }
+              }}
+            />
+          )}
         </div>
       )}
     </div>
@@ -239,7 +331,6 @@ function SearchContent() {
 export default function SearchPage() {
   return (
     <main className={styles.container}>
-      <Navbar />
       <Suspense fallback={<div className={styles.content}><div className={styles.loading}>Loading...</div></div>}>
         <SearchContent />
       </Suspense>

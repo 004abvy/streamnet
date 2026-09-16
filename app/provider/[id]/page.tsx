@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Navbar from '../../../components/Navbar/Navbar';
 import PosterGrid from '../../../components/PosterGrid/PosterGrid';
 import Pagination from '../../../components/Pagination/Pagination';
 import styles from './provider.module.css';
@@ -67,8 +66,6 @@ export default function ProviderPage({
 
   return (
     <main className={styles.main}>
-      <Navbar />
-      
       <div className={styles.container}>
         <div className={styles.header}>
           <button onClick={() => router.back()} className={styles.backBtn}>

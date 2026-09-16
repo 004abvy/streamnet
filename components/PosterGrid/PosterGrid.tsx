@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { saveWatchlist } from '../../utils/userStorage';
 import styles from './PosterGrid.module.css';
+import GlareHover from '../reactbits/GlareHover';
 
 interface Movie {
   id: number;
@@ -99,32 +100,46 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
           
           return (
             <Link href={linkHref} key={movie.id} className={`${styles.card} ${square ? styles.squareCard : ''}`}>
-              <img
-                src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop'}
-                alt={displayTitle}
-                className={styles.poster}
-                loading="lazy"
-              />
-              <div className={styles.overlay}></div>
-
-              <button
-                type="button"
-                className={`${styles.bookmark} ${savedIds.includes(movie.id) ? styles.bookmarked : ''}`}
-                onClick={(event) => toggleSaved(event, movie)}
-                aria-label={savedIds.includes(movie.id) ? 'Remove from saved' : 'Save poster'}
+              <GlareHover
+                width="100%"
+                height="100%"
+                background="transparent"
+                borderColor="transparent"
+                borderRadius="12px"
+                glareColor="#ffffff"
+                glareOpacity={0.3}
+                glareAngle={-30}
+                glareSize={300}
+                transitionDuration={450}
+                playOnce={false}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-              </button>
+                <img
+                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'}
+                  alt={displayTitle}
+                  className={styles.poster}
+                  loading="lazy"
+                />
+                <div className={styles.overlay}></div>
 
-              <div className={styles.info}>
-                {(movie.vote_average ?? 0) > 0 && (
-                  <div className={styles.rating}>{rating}</div>
-                )}
-                <h3 className={styles.movieTitle}>{displayTitle}</h3>
-                {year && <p className={styles.year}>{year}</p>}
-              </div>
+                <button
+                  type="button"
+                  className={`${styles.bookmark} ${savedIds.includes(movie.id) ? styles.bookmarked : ''}`}
+                  onClick={(event) => toggleSaved(event, movie)}
+                  aria-label={savedIds.includes(movie.id) ? 'Remove from saved' : 'Save poster'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </button>
+
+                <div className={styles.info}>
+                  {(movie.vote_average ?? 0) > 0 && (
+                    <div className={styles.rating}>{rating}</div>
+                  )}
+                  <h3 className={styles.movieTitle}>{displayTitle}</h3>
+                  {year && <p className={styles.year}>{year}</p>}
+                </div>
+              </GlareHover>
             </Link>
           );
         })}

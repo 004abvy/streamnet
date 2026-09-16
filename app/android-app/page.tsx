@@ -1,12 +1,10 @@
 import Link from 'next/link';
-import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import styles from './android.module.css';
 
 export default function AndroidAppPage() {
   return (
     <main className={styles.page}>
-      <Navbar />
       <div className={styles.ambientGlow} />
 
       <div className={styles.content}>

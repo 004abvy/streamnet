@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './PosterBackground.module.css';
+import GlareHover from '../reactbits/GlareHover';
 
 // 100% Verified, Rock-Solid High-Res TMDB Poster URLs (Zero Batman, Zero 404s)
 const VERIFIED_CINEMA_POSTERS: string[] = [
@@ -101,13 +102,27 @@ function SafePosterCard({ src, index }: { src: string; index: number }) {
 
   return (
     <div className={styles.posterCard}>
-      <img
-        src={imgSrc}
-        alt="Movie Poster"
-        loading="eager"
-        className={styles.posterImg}
-        onError={handleError}
-      />
+      <GlareHover
+        width="100%"
+        height="100%"
+        background="transparent"
+        borderColor="transparent"
+        borderRadius="12px"
+        glareColor="#ffffff"
+        glareOpacity={0.3}
+        glareAngle={-30}
+        glareSize={300}
+        transitionDuration={450}
+        playOnce={false}
+      >
+        <img
+          src={imgSrc}
+          alt="Movie Poster"
+          loading="eager"
+          className={styles.posterImg}
+          onError={handleError}
+        />
+      </GlareHover>
     </div>
   );
 }

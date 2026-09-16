@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Navbar from '../../../components/Navbar/Navbar';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
 import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
 import styles from '../../movie/[id]/movieDetails.module.css';
@@ -72,8 +71,6 @@ export default function TVDetailsPage({
   if (loading) {
     return (
       <main className={styles.container} aria-label="Loading series details">
-        <Navbar />
-
         {/* Backdrop Skeleton */}
         <div className={styles.skeletonBackdropWrapper}>
           <div className={styles.skeletonShimmer} />
@@ -140,11 +137,9 @@ export default function TVDetailsPage({
 
   return (
     <main className={styles.container}>
-      <Navbar />
-      
       <div className={styles.backdropWrapper}>
         <img 
-          src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`} 
+          src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
           alt={movie.name || movie.title} 
           className={styles.backdrop}
           decoding="async"
@@ -156,7 +151,7 @@ export default function TVDetailsPage({
         <div className={styles.topSection}>
           <div className={styles.posterCol}>
             <img 
-              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
+              src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`}
               alt={movie.name || movie.title} 
               className={styles.poster}
             />

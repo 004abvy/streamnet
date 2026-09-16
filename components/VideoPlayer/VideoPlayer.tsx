@@ -145,7 +145,7 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
   };
 
   const backdropUrl = backdropPath
-    ? (backdropPath.startsWith('http') ? backdropPath : `https://image.tmdb.org/t/p/w1280${backdropPath}`)
+    ? (backdropPath.startsWith('http') ? backdropPath : `https://image.tmdb.org/t/p/original${backdropPath}`)
     : null;
 
   return (
@@ -312,8 +312,8 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
         {/* Revealed Mode Options (Direct / Embed) */}
         {showOptions && (
           <div className="mt-3 flex flex-col items-center gap-3 p-3 bg-neutral-950/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-2">
-              {/* Direct Button: Immediately switches to Direct HLS, closes dropdown */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {/* Direct Button */}
               <button
                 onClick={handleSelectDirect}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide uppercase transition-all duration-200 cursor-pointer ${
@@ -322,10 +322,6 @@ export default function VideoPlayer({ tmdbId, type, season, episode, language, i
                     : 'bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Direct</span>
               </button>
 
               {/* Embed Button: Reveals dropdown to select embed servers */}

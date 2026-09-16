@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Navbar from '../../../components/Navbar/Navbar';
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
 import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
 import { saveContinueWatching } from '../../../utils/userStorage';
@@ -63,8 +62,6 @@ export default function WatchPage({
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-0 md:p-8 pt-20 md:pt-24">
-      <Navbar />
-
       <div className="w-full max-w-[1050px] px-4 md:px-0 mb-4 flex items-center justify-between flex-wrap gap-3">
         <Link
           href={`/movie/${id}`}

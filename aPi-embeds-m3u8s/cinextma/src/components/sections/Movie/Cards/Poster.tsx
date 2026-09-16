@@ -11,6 +11,7 @@ import { useCallback } from "react";
 import { Movie } from "tmdb-ts/dist/types";
 import { useLongPress } from "use-long-press";
 import HoverPosterCard from "./Hover";
+import GlareHover from "@/components/reactbits/GlareHover";
 
 interface MoviePosterCardProps {
   movie: Movie;
@@ -49,90 +50,118 @@ const MoviePosterCard: React.FC<MoviePosterCardProps> = ({ movie, variant = "ful
       >
         <Link href={`/movie/${movie.id}`} ref={ref} {...longPress()}>
           {variant === "full" && (
-            <div className="group motion-preset-focus relative aspect-2/3 overflow-hidden rounded-lg border-[3px] border-transparent text-white transition-colors hover:border-primary">
-              {hovered && (
-                <Icon
-                  icon="line-md:play-filled"
-                  width="64"
-                  height="64"
-                  className="absolute-center z-20 text-white"
-                />
-              )}
-              {movie.adult && (
-                <Chip
-                  color="danger"
-                  size="sm"
-                  variant="flat"
-                  className="absolute left-2 top-2 z-20"
-                >
-                  18+
-                </Chip>
-              )}
-              <div className="absolute bottom-0 z-2 h-1/2 w-full bg-linear-to-t from-black from-1%"></div>
-              <div className="absolute bottom-0 z-3 flex w-full flex-col gap-1 px-4 py-3">
-                <h6 className="truncate text-sm font-semibold">{title}</h6>
-                <div className="flex justify-between text-xs">
-                  <p>{releaseYear}</p>
-                  <Rating rate={movie?.vote_average} />
+            <GlareHover
+              width="100%"
+              height="100%"
+              background="transparent"
+              borderColor="transparent"
+              borderRadius="8px"
+              glareColor="#ffffff"
+              glareOpacity={0.3}
+              glareAngle={-30}
+              glareSize={300}
+              transitionDuration={450}
+              playOnce={false}
+            >
+              <div className="group motion-preset-focus relative aspect-2/3 overflow-hidden rounded-lg border-[3px] border-transparent text-white transition-colors hover:border-primary">
+                {hovered && (
+                  <Icon
+                    icon="line-md:play-filled"
+                    width="64"
+                    height="64"
+                    className="absolute-center z-20 text-white"
+                  />
+                )}
+                {movie.adult && (
+                  <Chip
+                    color="danger"
+                    size="sm"
+                    variant="flat"
+                    className="absolute left-2 top-2 z-20"
+                  >
+                    18+
+                  </Chip>
+                )}
+                <div className="absolute bottom-0 z-2 h-1/2 w-full bg-linear-to-t from-black from-1%"></div>
+                <div className="absolute bottom-0 z-3 flex w-full flex-col gap-1 px-4 py-3">
+                  <h6 className="truncate text-sm font-semibold">{title}</h6>
+                  <div className="flex justify-between text-xs">
+                    <p>{releaseYear}</p>
+                    <Rating rate={movie?.vote_average} />
+                  </div>
                 </div>
+                <Image
+                  alt={title}
+                  src={posterImage}
+                  radius="none"
+                  className="z-0 aspect-2/3 h-[250px] object-cover object-center transition group-hover:scale-110 md:h-[300px]"
+                  classNames={{
+                    img: "group-hover:opacity-70",
+                  }}
+                />
               </div>
-              <Image
-                alt={title}
-                src={posterImage}
-                radius="none"
-                className="z-0 aspect-2/3 h-[250px] object-cover object-center transition group-hover:scale-110 md:h-[300px]"
-                classNames={{
-                  img: "group-hover:opacity-70",
-                }}
-              />
-            </div>
+            </GlareHover>
           )}
 
           {variant === "bordered" && (
-            <Card
-              isHoverable
-              fullWidth
-              shadow="md"
-              className="group h-full bg-secondary-background"
+            <GlareHover
+              width="100%"
+              height="100%"
+              background="transparent"
+              borderColor="transparent"
+              borderRadius="12px"
+              glareColor="#ffffff"
+              glareOpacity={0.3}
+              glareAngle={-30}
+              glareSize={300}
+              transitionDuration={450}
+              playOnce={false}
             >
-              <CardHeader className="flex items-center justify-center pb-0">
-                <div className="relative size-full">
-                  {hovered && (
-                    <Icon
-                      icon="line-md:play-filled"
-                      width="64"
-                      height="64"
-                      className="absolute-center z-20 text-white"
-                    />
-                  )}
-                  {movie.adult && (
-                    <Chip
-                      color="danger"
-                      size="sm"
-                      variant="shadow"
-                      className="absolute left-2 top-2 z-20"
-                    >
-                      18+
-                    </Chip>
-                  )}
-                  <div className="relative overflow-hidden rounded-large">
-                    <Image
-                      isBlurred
-                      alt={title}
-                      className="aspect-2/3 rounded-lg object-cover object-center group-hover:scale-110"
-                      src={posterImage}
-                    />
+              <Card
+                isHoverable
+                fullWidth
+                shadow="md"
+                className="group h-full bg-secondary-background"
+              >
+                <CardHeader className="flex items-center justify-center pb-0">
+                  <div className="relative size-full">
+                    {hovered && (
+                      <Icon
+                        icon="line-md:play-filled"
+                        width="64"
+                        height="64"
+                        className="absolute-center z-20 text-white"
+                      />
+                    )}
+                    {movie.adult && (
+                      <Chip
+                        color="danger"
+                        size="sm"
+                        variant="shadow"
+                        className="absolute left-2 top-2 z-20"
+                      >
+                        18+
+                      </Chip>
+                    )}
+                    <div className="relative overflow-hidden rounded-large">
+                      <Image
+                        isBlurred
+                        alt={title}
+                        className="aspect-2/3 rounded-lg object-cover object-center group-hover:scale-110"
+                        src={posterImage}
+                      />
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardBody className="justify-end pb-1">
-                <p className="text-md truncate font-bold">{title}</p>
-              </CardBody>
-              <CardFooter className="justify-between pt-0 text-xs">
-                <p>{releaseYear}</p>
-                <Rating rate={movie.vote_average} />
-              </CardFooter>
-            </Card>
+                </CardHeader>
+                <CardBody className="justify-end pb-1">
+                  <p className="text-md truncate font-bold">{title}</p>
+                </CardBody>
+                <CardFooter className="justify-between pt-0 text-xs">
+                  <p>{releaseYear}</p>
+                  <Rating rate={movie.vote_average} />
+                </CardFooter>
+              </Card>
+            </GlareHover>
           )}
         </Link>
       </Tooltip>

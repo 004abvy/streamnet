@@ -153,10 +153,23 @@ export default function ProvidersSection() {
     .replace(' Amazon Channel', '')
     .replace(' Plus', '+');
 
-  const carouselTitle = `${shortName} ${mediaType === 'tv' ? 'TV Shows' : 'Movies'}`;
+  const activeBackdrop = content.length > 0 && content[0].backdrop_path
+    ? `https://image.tmdb.org/t/p/original${content[0].backdrop_path}`
+    : null;
 
   return (
     <section className={styles.container}>
+      {activeBackdrop && (
+        <div className={styles.providerBackdrop}>
+          <img
+            src={activeBackdrop}
+            alt={shortName}
+            className={styles.providerBackdropImg}
+            loading="lazy"
+          />
+          <div className={styles.providerBackdropOverlay} />
+        </div>
+      )}
       <div className={styles.inner}>
         <div className={styles.header}>
           <div className={styles.toggleGroup}>

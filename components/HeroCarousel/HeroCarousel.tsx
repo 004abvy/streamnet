@@ -157,7 +157,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
     <div className={styles.heroWrapper}>
       <div 
         className={styles.heroBackgroundBlur} 
-        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w1280${currentMovie.backdrop_path})` }} 
+        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${currentMovie.backdrop_path})` }}
       />
       <div className={styles.container}>
         {/* Rounded Backdrop Frame (Clips backdrop image & top right actions) */}
@@ -197,7 +197,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             {loopMovies.map((movie, index) => (
               <div key={`${movie.id}-${index}`} className={styles.slide}>
                 <img
-                  src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
+                  src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
                   alt={movie.title || movie.name || 'Hero Backdrop'}
                   className={styles.backdrop}
                   loading={index === 0 ? "eager" : "lazy"}
@@ -240,7 +240,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                   letterSpacing: '0.05em',
-                  fontSize: displayTitle.length > 35 ? 'clamp(1rem, 2vw, 1.6rem)' : displayTitle.length > 20 ? 'clamp(1.2rem, 3vw, 2.2rem)' : 'clamp(1.5rem, 4vw, 2.8rem)'
+                  fontSize: displayTitle.length > 35 ? 'clamp(1rem, 1.5vw, 1.4rem)' : displayTitle.length > 20 ? 'clamp(1.2rem, 2vw, 1.8rem)' : 'clamp(1.4rem, 3vw, 2.2rem)'
                 }}
               >
                 {displayTitle}

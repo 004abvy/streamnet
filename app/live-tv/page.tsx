@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import styles from './liveTv.module.css';
 
@@ -746,6 +745,21 @@ const HINDI_CHANNELS: Channel[] = [
 
 const CATEGORIES = ['All', 'Movies', 'Sports', 'News', 'Entertainment', 'Music', 'Kids', 'Documentary', 'Religious', 'General'];
 
+const CATEGORY_ICONS: Record<string, string> = {
+  'All': '📺 All',
+  'Favorites': '⭐ Favorites',
+  'Recently viewed': '🕒 Recent',
+  'Movies': '🎬 Movies',
+  'Sports': '⚽ Sports',
+  'News': '📰 News',
+  'Entertainment': '🍿 Entertainment',
+  'Music': '🎵 Music',
+  'Kids': '🧸 Kids',
+  'Documentary': '📜 Documentary',
+  'Religious': '🕌 Religious',
+  'General': '🌐 General'
+};
+
 const FAILED_BUNDLED_CHANNEL_IDS = new Set([
   'and-tv', 'and-pictures', 'zee-cinema', 'zee-bollywood', 'zee-action', 'zee-cine-classic',
   'zee-south-flix', 'star-gold-thrills', 'sony-max', 'sony-max-2', 'sony-wah', 'sony-pix',
@@ -1134,10 +1148,18 @@ export default function LiveTvPage() {
     };
   }, [activeChannel, channels]);
 
+  const toggleTheaterMode = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      video.requestFullscreen().catch(() => {});
+    }
+  };
+
   return (
     <main className={styles.container}>
-      <Navbar />
-
       <div className={styles.content}>
         {/* Left Section: Video Player Viewport */}
         <div className={styles.playerSection}>
@@ -1150,9 +1172,17 @@ export default function LiveTvPage() {
               <span className={styles.badgeItem}>{activeChannel.country}</span>
               <span className={styles.badgeItem}>{activeChannel.category}</span>
               <span className={styles.badgeQuality}>{activeChannel.quality}</span>
-              {streamLoadTime > 0 && !isLoadingStream && (
-                <span className={styles.badgeItem}>Loaded in {streamLoadTime.toFixed(1)}s</span>
-              )}
+              <button
+                type="button"
+                className={styles.fullscreenBtn}
+                onClick={toggleTheaterMode}
+                title="Fullscreen Player"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                </svg>
+                Fullscreen
+              </button>
             </div>
           </div>
 
@@ -1208,14 +1238,14 @@ export default function LiveTvPage() {
                 className={`${styles.quickFilter} ${selectedCategory === 'Favorites' ? styles.activeCat : ''}`}
                 onClick={() => setSelectedCategory('Favorites')}
               >
-                {`★ Favorites (${favoriteIds.length})`}
+                {`⭐ Favorites (${favoriteIds.length})`}
               </button>
               <button
                 type="button"
                 className={`${styles.quickFilter} ${selectedCategory === 'Recently viewed' ? styles.activeCat : ''}`}
                 onClick={() => setSelectedCategory('Recently viewed')}
               >
-                {`Recently viewed (${recentIds.length})`}
+                {`🕒 Recent (${recentIds.length})`}
               </button>
             </div>
           </div>
@@ -1228,7 +1258,7 @@ export default function LiveTvPage() {
                 className={`${styles.catBtn} ${selectedCategory === cat ? styles.activeCat : ''}`}
                 onClick={() => setSelectedCategory(cat)}
               >
-                {cat}
+                {CATEGORY_ICONS[cat] || cat}
               </button>
             ))}
           </div>

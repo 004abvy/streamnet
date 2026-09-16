@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar/Navbar';
 import PosterGrid from '../../components/PosterGrid/PosterGrid';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -26,12 +25,16 @@ interface SavedItem {
 
 const MOVIE_GENRES: Record<number, string> = {
   28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
-  18: 'Drama', 27: 'Horror', 10749: 'Romance', 878: 'Sci-Fi', 53: 'Thriller'
+  99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+  27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi',
+  53: 'Thriller', 10752: 'War', 37: 'Western'
 };
 
 const TV_GENRES: Record<number, string> = {
   10759: 'Action & Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
-  18: 'Drama', 10765: 'Sci-Fi & Fantasy', 9648: 'Mystery', 10762: 'Kids'
+  99: 'Documentary', 18: 'Drama', 10751: 'Family', 10762: 'Kids',
+  9648: 'Mystery', 10763: 'News', 10764: 'Reality', 10765: 'Sci-Fi & Fantasy',
+  10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics', 37: 'Western'
 };
 
 const MOVIE_GENRE_TABS = Object.entries(MOVIE_GENRES).map(([id, name]) => ({ id: Number(id), name }));
@@ -127,7 +130,6 @@ export default function SavedPage() {
   if (loading || !user) {
     return (
       <main className={styles.container}>
-        <Navbar />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
           Loading...
         </div>
@@ -137,8 +139,6 @@ export default function SavedPage() {
 
   return (
     <main className={styles.container}>
-      <Navbar />
-
       <div className={styles.ambientGlow} />
 
       <div className={styles.content}>

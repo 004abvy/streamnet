@@ -3,9 +3,38 @@
   color: #fff;
   margin-top: 3rem;
   padding-top: 1rem;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.providerBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.28;
+  transition: opacity 0.8s ease;
+}
+
+.providerBackdropImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(24px);
+  transform: scale(1.1);
+  transition: opacity 0.6s ease;
+}
+
+.providerBackdropOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 15, 0.4) 0%, rgba(10, 10, 15, 0.85) 60%, rgba(10, 10, 15, 1) 100%);
 }
 
 .inner {
+  position: relative;
+  z-index: 2;
   padding: 0 clamp(1rem, 5vw, 6rem);
   width: 100%;
   max-width: 1800px;
@@ -126,7 +155,7 @@
   gap: 1.1rem;
   overflow-x: auto;
   scroll-behavior: smooth;
-  padding: 1rem 0 2rem 0;
+  padding: 1rem 0 0.5rem 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
   width: 100%;
@@ -140,7 +169,7 @@
   flex: 0 0 calc((100% - (1.1rem * 4)) / 5);
   background: #000;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0;
+  border-radius: 16px;
   padding: 16px;
   display: flex;
   align-items: center;
@@ -172,14 +201,14 @@
   background: #111111;
   border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 .providerBtn.activeProvider {
   opacity: 1;
   background: #111111;
   border-color: #ffffff;
-  border-radius: 20px;
+  border-radius: 16px;
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
@@ -228,5 +257,5 @@
 }
 
 .contentSection {
-  margin-top: 1rem;
+  margin-top: 0;
 }

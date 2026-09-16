@@ -4,7 +4,6 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
-import Navbar from '../../components/Navbar/Navbar';
 import styles from './verifyEmail.module.css';
 
 function VerifyContent() {
@@ -74,7 +73,6 @@ function VerifyContent() {
 export default function VerifyEmailPage() {
   return (
     <main className={styles.page}>
-      <Navbar />
       <div className={styles.ambientGlow} />
       <Suspense fallback={<div className={styles.container}><h1 className={styles.title}>Loading...</h1></div>}>
         <VerifyContent />
