@@ -96,6 +96,7 @@ const Masonry: React.FC<MasonryProps> = ({
 
   const [containerRef, { width }] = useMeasure<HTMLDivElement>();
   const [imagesReady, setImagesReady] = useState(false);
+  const hasMounted = useRef(false);
 
   const getInitialPosition = (item: GridItem) => {
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -110,49 +111,51 @@ const Masonry: React.FC<MasonryProps> = ({
 
     switch (direction) {
       case 'top':
-        return { x: item.x, y: -200 };
+        return { x: item.x, y: item.y - 200 };
       case 'bottom':
-        return { x: item.x, y: window.innerHeight + 200 };
+        return { x: item.x, y: item.y + 200 };
       case 'left':
-        return { x: -200, y: item.y };
+        return { x: item.x - 200, y: item.y };
       case 'right':
-        return { x: window.innerWidth + 200, y: item.y };
+        return { x: item.x + 200, y: item.y };
       case 'center':
         return {
           x: containerRect.width / 2 - item.w / 2,
           y: containerRect.height / 2 - item.h / 2
         };
       default:
-        return { x: item.x, y: item.y + 100 };
+        return { x: item.x, y: item.y + 200 };
     }
   };
 
   useEffect(() => {
+    setImagesReady(false);
+    hasMounted.current = false;
     preloadImages(items.map(i => i.img)).then(() => setImagesReady(true));
   }, [items]);
+
+  const HORIZONTAL_GAP = 24;
+  const VERTICAL_GAP = 24;
 
   const { grid, maxColHeight } = useMemo(() => {
     if (!width) return { grid: [], maxColHeight: 0 };
 
     const colHeights = new Array(columns).fill(0);
-    const columnWidth = width / columns;
+    const columnWidth = (width - HORIZONTAL_GAP * (columns - 1)) / columns;
 
     const gridItems = items.map(child => {
       const col = colHeights.indexOf(Math.min(...colHeights));
-      const x = columnWidth * col;
-      // Calculate exact proportional height dynamically.
-      const height = (columnWidth - 16) * child.heightMultiplier;
+      const x = (columnWidth + HORIZONTAL_GAP) * col;
+      const height = columnWidth * child.heightMultiplier;
       const y = colHeights[col];
 
-      colHeights[col] += height + 16; // 16px vertical gap
+      colHeights[col] += height + VERTICAL_GAP;
 
       return { ...child, x, y, w: columnWidth, h: height };
     });
 
     return { grid: gridItems, maxColHeight: Math.max(...colHeights) };
   }, [columns, items, width]);
-
-  const hasMounted = useRef(false);
 
   useLayoutEffect(() => {
     if (containerRef.current && maxColHeight > 0) {
@@ -161,6 +164,8 @@ const Masonry: React.FC<MasonryProps> = ({
   }, [maxColHeight]);
 
   useLayoutEffect(() => {
+    if (!imagesReady || !width) return;
+
     grid.forEach((item, index) => {
       const selector = `[data-key="${item.id}"]`;
       const animationProps = {
@@ -178,14 +183,16 @@ const Masonry: React.FC<MasonryProps> = ({
           y: initialPos.y,
           width: item.w,
           height: item.h,
+          scale: 0.96,
           ...(blurToFocus && { filter: 'blur(10px)' })
         };
 
         gsap.fromTo(selector, initialState, {
           opacity: 1,
+          scale: 1,
           ...animationProps,
           ...(blurToFocus && { filter: 'blur(0px)' }),
-          duration: 0.8,
+          duration: 0.85,
           ease: 'power3.out',
           delay: index * stagger
         });
@@ -200,7 +207,7 @@ const Masonry: React.FC<MasonryProps> = ({
     });
 
     hasMounted.current = true;
-  }, [grid, stagger, animateFrom, blurToFocus, duration, ease]);
+  }, [grid, imagesReady, stagger, animateFrom, blurToFocus, duration, ease, width]);
 
   const handleMouseEnter = (e: React.MouseEvent, item: GridItem) => {
     const element = e.currentTarget as HTMLElement;
@@ -261,7 +268,7 @@ const Masonry: React.FC<MasonryProps> = ({
             onClick={() => window.open(item.url, '_self')}
             onMouseEnter={e => handleMouseEnter(e, item)}
             onMouseLeave={e => handleMouseLeave(e, item)}
-            style={{ position: 'absolute', width: item.w - 16, height: item.h, margin: '8px' }}
+            style={{ position: 'absolute', width: item.w, height: item.h }}
           >
             <div className="item-img" style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '16px', overflow: 'hidden' }}>
               <img

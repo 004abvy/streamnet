@@ -99,9 +99,7 @@ export default function Sidebar() {
     { label: 'RiveAI', link: '/ai', icon: Bot, isAi: true },
     { label: 'Movies', link: '/movies', icon: Film },
     { label: 'TV Shows', link: '/tv', icon: Monitor },
-    { label: 'Sports', link: '/live-sports', icon: Trophy },
     { label: 'Live TV', link: '/live-tv', icon: Tv },
-    { label: 'Radio', link: '/radio', icon: Radio },
     { label: 'Anime', link: '/anime', icon: Eye },
     { label: 'Collections', link: '/collections', icon: FolderOpen },
     { label: 'Library', link: '/saved', icon: Library },
@@ -259,14 +257,8 @@ export default function Sidebar() {
                 </Link>
 
                 <h4 className={styles.menuGroupTitle} style={{ marginTop: '1.5rem' }}>SERVICES</h4>
-                <Link href="/live-sports" className={styles.menuItem}>
-                  <Trophy size={18} /> Live Sports
-                </Link>
                 <Link href="/live-tv" className={styles.menuItem}>
                   <Tv size={18} /> IPTV
-                </Link>
-                <Link href="/radio" className={styles.menuItem}>
-                  <Radio size={18} /> Radio
                 </Link>
               </div>
 
