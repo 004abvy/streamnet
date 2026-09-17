@@ -103,8 +103,7 @@ export default function Sidebar() {
     { label: 'Anime', link: '/anime', icon: Eye },
     { label: 'Collections', link: '/collections', icon: FolderOpen },
     { label: 'Library', link: '/saved', icon: Library },
-    { label: 'Announcements', link: '/announcements', icon: Bell },
-    { label: 'Settings', link: '/settings', icon: Settings }
+    { label: 'Announcements', link: '/announcements', icon: Bell }
   ];
 
   const activeIndex = sidebarLinks.findIndex(item => {
@@ -281,9 +280,6 @@ export default function Sidebar() {
                 <h4 className={styles.menuGroupTitle} style={{ marginTop: '1.5rem' }}>SYSTEM</h4>
                 <Link href="/announcements" className={styles.menuItem}>
                   <Bell size={18} /> Announcements
-                </Link>
-                <Link href="/settings" className={styles.menuItem}>
-                  <Settings size={18} /> Settings
                 </Link>
               </div>
             </div>
