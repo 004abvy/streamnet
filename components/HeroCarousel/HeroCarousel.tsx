@@ -36,12 +36,29 @@ interface HeroCarouselProps {
 
 export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [movieFonts, setMovieFonts] = useState<Record<number, string>>({});
   const [movieColors, setMovieColors] = useState<Record<number, string>>({});
   const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>({});
+
+  const getUserInitial = () => {
+    if (!user) return null;
+    if (user.name && user.name.trim()) return user.name.trim().charAt(0).toUpperCase();
+    if (user.email && user.email.trim()) return user.email.trim().charAt(0).toUpperCase();
+    return 'U';
+  };
+
+  const handleProfileBtnClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      router.push('/login');
+    } else {
+      setShowProfileMenu(!showProfileMenu);
+    }
+  };
 
   const visibleMovies = movies ? movies.slice(0, 5) : [];
   const loopMovies = visibleMovies.length > 1 ? [...visibleMovies, visibleMovies[0]] : visibleMovies;
@@ -180,13 +197,49 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
               <Command size={18} />
             </button>
             <div className={styles.topActionDivider} />
-            <button
-              className={styles.topActionBtn}
-              title="Profile / Login"
-              onClick={() => router.push(user ? '/settings' : '/login')}
-            >
-              <User size={18} />
-            </button>
+
+            <div style={{ position: 'relative' }} onMouseLeave={() => setShowProfileMenu(false)}>
+              <button
+                className={styles.topActionBtn}
+                title={user ? (user.name || user.email || 'Profile') : 'Sign In'}
+                onClick={handleProfileBtnClick}
+                onMouseEnter={() => { if (user) setShowProfileMenu(true); }}
+              >
+                {user ? (
+                  <span className={styles.userInitialBadge}>{getUserInitial()}</span>
+                ) : (
+                  <User size={18} />
+                )}
+              </button>
+
+              {/* Glassmorphic Profile Dropdown Menu */}
+              {user && showProfileMenu && (
+                <div className={styles.profileDropdown}>
+                  <div className={styles.profileHeader}>
+                    <span className={styles.profileName}>{user.name || 'User'}</span>
+                    <span className={styles.profileEmail}>{user.email || ''}</span>
+                  </div>
+                  <div className={styles.dropdownDivider} />
+                  <Link href="/saved" className={styles.dropdownItem} onClick={() => setShowProfileMenu(false)}>
+                    Library / Bookmarks
+                  </Link>
+                  <Link href="/settings" className={styles.dropdownItem} onClick={() => setShowProfileMenu(false)}>
+                    Settings
+                  </Link>
+                  <div className={styles.dropdownDivider} />
+                  <button
+                    type="button"
+                    className={`${styles.dropdownItem} ${styles.logoutItem}`}
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      logout();
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Carousel Track */}
