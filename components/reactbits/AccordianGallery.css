@@ -59,8 +59,9 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: var(--ag-media-size);
+  width: var(--ag-media-size, 380px);
   height: 100%;
+  transform: translate(-50%, -50%);
   filter: grayscale(var(--ag-gray));
   will-change: transform, filter;
   transition: filter 0.15s cubic-bezier(0, 0, 0.2, 1);
@@ -68,7 +69,7 @@
 
 .accordion-gallery--vertical .ag-panel__media {
   width: 100%;
-  height: var(--ag-media-size);
+  height: var(--ag-media-size, 380px);
 }
 
 .ag-panel__media img {
@@ -185,19 +186,78 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .accordion-gallery {
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 250px !important;
     perspective: none;
-    height: auto !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
   }
+
+  .accordion-gallery::-webkit-scrollbar {
+    display: none;
+  }
+
   .ag-panel {
-    min-height: 84px;
+    flex: 1 1 0 !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: unset !important;
+    border-radius: 14px !important;
     transform: none !important;
   }
-  .accordion-gallery .ag-panel__media {
-    width: 100%;
-    height: var(--ag-media-size);
+
+  .ag-panel__media {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+  }
+
+  .ag-panel__media img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  .ag-panel__vertical-tag {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) rotate(180deg) !important;
+    writing-mode: vertical-rl !important;
+    text-orientation: mixed !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-family: 'Bebas Neue', 'Impact', sans-serif !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.22em !important;
+    text-transform: uppercase !important;
+    pointer-events: none !important;
+    z-index: 4 !important;
+    white-space: nowrap !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.98), 0 0 10px rgba(0, 0, 0, 0.9) !important;
+    opacity: 0.85 !important;
+    transition: all 0.25s ease !important;
+  }
+
+  .ag-panel--active .ag-panel__vertical-tag {
+    opacity: 1 !important;
+    color: #ffffff !important;
+    font-size: 1.25rem !important;
+    letter-spacing: 0.28em !important;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 1), 0 0 14px rgba(0, 0, 0, 0.95) !important;
+  }
+
+  .ag-panel__active-badge {
+    display: none !important;
   }
 }
 

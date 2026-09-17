@@ -103,6 +103,7 @@ export default function Sidebar() {
     { label: 'Anime', link: '/anime', icon: Eye },
     { label: 'Collections', link: '/collections', icon: FolderOpen },
     { label: 'Library', link: '/saved', icon: Library },
+    { label: 'Announcements', link: '/announcements', icon: Bell },
     { label: 'Settings', link: '/settings', icon: Settings }
   ];
 

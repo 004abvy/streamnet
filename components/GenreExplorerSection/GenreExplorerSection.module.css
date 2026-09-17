@@ -136,8 +136,20 @@
 }
 
 @media (max-width: 600px) {
+  .inner {
+    padding: 0 1rem;
+  }
   .headerRow {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .title {
+    font-size: 1.4rem;
+  }
+  .typeBtn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.85rem;
   }
 }
