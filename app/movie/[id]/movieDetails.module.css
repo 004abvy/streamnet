@@ -480,24 +480,6 @@
     padding: 1rem 1rem 4rem;
   }
 }
-  z-index: 10;
-  background: #000000;
-  padding: 3rem clamp(1.25rem, 5vw, 6rem) 5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -25px 50px rgba(0, 0, 0, 0.9);
-}
-
-/* Responsive Media Queries */
-@media (max-width: 1024px) {
-  .editorialGrid {
-    grid-template-columns: 1fr;
-    gap: 3rem;
-    padding-top: 100px;
-    min-height: auto;
-  }
-
-  .rightCol {
-    border-left: none;
     padding-left: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     padding-top: 2rem;
