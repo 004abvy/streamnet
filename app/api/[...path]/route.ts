@@ -410,8 +410,9 @@ export async function GET(
           });
 
           const subtitles = resolved.flatMap(s => s.subtitles || []).map(sub => ({
-            url: sub.url,
+            url: `${currentUrl.origin}/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
             label: sub.label || sub.language || 'English',
+            language: sub.language || (sub.label?.toLowerCase().includes('eng') ? 'en' : 'en'),
             format: 'vtt',
           }));
 

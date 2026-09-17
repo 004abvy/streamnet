@@ -28,13 +28,12 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
   const containerRef = useRef<HTMLDivElement>(null);
 
   let embedUrl = buildEmbedUrl(movieId, language);
-  let sandboxAttr: string | undefined = "allow-scripts allow-same-origin allow-forms";
+  let sandboxAttr: string | undefined = "allow-scripts allow-same-origin allow-forms allow-presentation";
 
-  if (activeServer !== 'screenscape') {
+  if (activeServer !== 'screenscape' && activeServer !== 'rivestream') {
     const server = SERVERS.find(s => s.id === activeServer);
     if (server) {
       embedUrl = server.buildUrl({ tmdbId: movieId, type: 'movie' });
-      sandboxAttr = undefined; // Remove strict sandbox for other servers
     }
   }
 
@@ -89,7 +88,7 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
             allowFullScreen
             {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
             {...(sandboxAttr ? { sandbox: sandboxAttr } : {})}
-            allow="autoplay; fullscreen; picture-in-picture"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
             className={`w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl border-0 ${vpStyles.embedIframe}`}
             title="Movie Player"
           />
@@ -115,7 +114,6 @@ export default function MoviePlayer({ movieId, language, title }: MoviePlayerPro
           onChange={(e) => { if (e.target.value) setActiveServer(e.target.value) }}
         >
           <option value="" disabled>Iframe Servers</option>
-          <option value="screenscape">ScreenScape</option>
           {SERVERS.filter(s => s.category === 'iframe').map(s => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}

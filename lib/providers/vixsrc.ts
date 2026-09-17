@@ -58,7 +58,7 @@ export async function resolveVixSrc(
     if (!playlistRes.ok) return [];
     const content = await playlistRes.text();
 
-    // Step 6: Parse for best resolution
+    // Step 6: Parse for best resolution and embedded subtitles
     const variantRegex = /#EXT-X-STREAM-INF:[^\n]*RESOLUTION=\d+x(\d+)[^\n]*\n([^\n]+)/g;
     let match;
     let bestResolution = 0;
@@ -67,6 +67,26 @@ export async function resolveVixSrc(
       if (res > bestResolution) bestResolution = res;
     }
     if (bestResolution === 0) return [];
+
+    const subtitles: { url: string; label: string; language?: string }[] = [];
+    const lines = content.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('#EXT-X-MEDIA:TYPE=SUBTITLES')) {
+        const nameMatch = line.match(/NAME="([^"]+)"/);
+        const langMatch = line.match(/LANGUAGE="([^"]+)"/);
+        const uriMatch = line.match(/URI="([^"]+)"/);
+        if (uriMatch) {
+          try {
+            const subUrl = new URL(uriMatch[1], masterUrl).href;
+            subtitles.push({
+              url: subUrl,
+              label: nameMatch ? nameMatch[1] : 'Subtitles',
+              language: langMatch ? langMatch[1] : 'en',
+            });
+          } catch {}
+        }
+      }
+    }
 
     return [{
       id: 'vixsrc-0',
@@ -78,6 +98,7 @@ export async function resolveVixSrc(
         'Referer': 'https://vixsrc.to/',
         'User-Agent': VIXSRC_HEADERS['User-Agent'],
       },
+      subtitles,
     }];
   } catch (e) {
     console.warn('[VixSrc] Error:', e);

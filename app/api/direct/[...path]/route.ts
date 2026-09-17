@@ -56,11 +56,44 @@ export async function GET(
         };
       });
 
-      const subtitles = resolved.flatMap(s => s.subtitles || []).map(sub => ({
-        url: sub.url,
-        label: sub.label || sub.language || 'English',
-        format: 'vtt',
-      }));
+      // Aggregate subtitles from all resolved streams
+      const resolvedSubs = resolved.flatMap(s => s.subtitles || []);
+      const hasEnglish = resolvedSubs.some(s =>
+        (s.label || s.language || '').toLowerCase().includes('eng')
+      );
+
+      let fallbackSubs: any[] = [];
+      if (!hasEnglish || resolvedSubs.length === 0) {
+        try {
+          const { getImdbIdFromTmdb, fetchOpenSubtitles } = await import('../../../../lib/subtitles');
+          const imdbId = await getImdbIdFromTmdb(tmdbId, mediaType);
+          if (imdbId) {
+            fallbackSubs = await fetchOpenSubtitles(imdbId, mediaType, season, episode);
+          }
+        } catch (subErr) {
+          console.warn('[api/direct] Fallback subtitle search error:', subErr);
+        }
+      }
+
+      const allSubs = [...resolvedSubs, ...fallbackSubs];
+      const seenUrls = new Set<string>();
+      const subtitles: { url: string; label: string; language: string; format: string }[] = [];
+
+      for (const sub of allSubs) {
+        if (!sub?.url || seenUrls.has(sub.url)) continue;
+        seenUrls.add(sub.url);
+
+        const rawLabel = sub.label || sub.language || 'English';
+        const isEng = rawLabel.toLowerCase().includes('eng');
+        const langCode = sub.language || (isEng ? 'en' : rawLabel.toLowerCase().includes('hin') ? 'hi' : rawLabel.slice(0, 2).toLowerCase());
+
+        subtitles.push({
+          url: `${currentUrl.origin}/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
+          label: rawLabel,
+          language: langCode,
+          format: 'vtt',
+        });
+      }
 
       return NextResponse.json({
         success: true,

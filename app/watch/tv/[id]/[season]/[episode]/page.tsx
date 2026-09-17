@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import VideoPlayer from '../../../../../../components/VideoPlayer/VideoPlayer';
 import SeasonEpisodeSelector from '../../../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
 import PosterCarousel from '../../../../../../components/PosterCarousel/PosterCarousel';
@@ -23,8 +22,7 @@ export default function WatchTvPage() {
 
   useEffect(() => {
     if (!id) return;
-    
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+    setLoading(true);
 
     fetch(`/api/tv/${id}`)
       .then((res) => {
@@ -75,34 +73,11 @@ export default function WatchTvPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center p-0 md:p-8 pt-20 md:pt-24">
-      <div className="w-full max-w-[1050px] px-4 md:px-0 mb-4 flex items-center justify-between flex-wrap gap-3">
-        <Link
-          href={`/tv/${id}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-300 hover:text-white bg-neutral-900/80 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/50 px-4 py-2 rounded-xl transition-all shadow-md"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-          <span>Back to Show Details</span>
-        </Link>
-
-        {show && (
-          <div className="flex items-center gap-2.5">
-            <div className="inline-flex items-center gap-2 text-amber-400 font-extrabold text-sm bg-amber-500/10 border border-amber-500/40 px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.12)]">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              <span>{show.vote_average ? show.vote_average.toFixed(1) : 'N/A'} {show.first_air_date ? `• ${show.first_air_date.split('-')[0]}` : ''}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-[1050px] px-0 md:px-0 mt-2">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden">
+      <div className="w-full max-w-6xl">
         {loading ? (
           <div className="w-full flex flex-col gap-6">
-            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center p-6">
+            <div className="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center p-6">
               {/* Shimmer sweep */}
               <div
                 className="absolute inset-0 pointer-events-none"
@@ -134,7 +109,7 @@ export default function WatchTvPage() {
 
             {/* Below Player Metadata Skeleton */}
             <div className="w-full flex flex-col gap-3 pt-2">
-              <div className="h-8 w-1/2 rounded-lg bg-neutral-800/80 animate-pulse" />
+              <div className="h-7 w-1/3 rounded-lg bg-neutral-800/80 animate-pulse" />
               <div className="flex items-center gap-3">
                 <div className="h-5 w-24 rounded-md bg-neutral-800/60" />
                 <div className="h-5 w-20 rounded-md bg-neutral-800/60" />
@@ -146,23 +121,28 @@ export default function WatchTvPage() {
             <VideoPlayer
               tmdbId={id}
               type="tv"
-              title={show ? `${show.name || show.title} (S${season} E${episode})` : `Episode S${season} E${episode}`}
+              title={show ? `${show.name || show.title}` : `Episode S${season} E${episode}`}
               backdropPath={show?.backdrop_path}
               season={season}
               episode={episode}
               imdbId={imdbId}
+              voteAverage={show?.vote_average}
+              releaseDate={show?.first_air_date}
+              backHref={`/tv/${id}`}
             />
 
-            <SeasonEpisodeSelector
-              tvId={id}
-              seasons={show?.seasons || []}
-              currentSeason={season}
-              currentEpisode={episode}
-              onEpisodeSelect={handleEpisodeChange}
-            />
+            <div className="w-full mt-4">
+              <SeasonEpisodeSelector
+                tvId={id}
+                seasons={show?.seasons || []}
+                currentSeason={season}
+                currentEpisode={episode}
+                onEpisodeSelect={handleEpisodeChange}
+              />
+            </div>
 
             {similarShows.length > 0 && (
-              <div className="w-full mt-8">
+              <div className="w-full mt-10">
                 <PosterCarousel title="You May Also Like" movies={similarShows} />
               </div>
             )}

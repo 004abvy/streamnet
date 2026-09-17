@@ -27,17 +27,27 @@ export const SERVERS: StreamingServer[] = [
     }
   },
   {
+    id: 'rivestream',
+    name: 'RiveStream',
+    category: 'iframe',
+    enabled: true,
+    buildUrl: ({ tmdbId, type, season, episode }) => 
+      type === 'movie'
+        ? `https://rivestream.ru/embed?type=movie&id=${tmdbId}`
+        : `https://rivestream.ru/embed?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`
+  },
+
+  // Deactivated / Backup Iframe Servers (Kept for future activation)
+  {
     id: 'vidking',
     name: 'VidKing',
     category: 'iframe',
-    enabled: true,
+    enabled: false,
     buildUrl: ({ tmdbId, type, season, episode }) => 
       type === 'movie' 
         ? `https://www.vidking.net/embed/movie/${tmdbId}?color=006fee&autoplay=false`
         : `https://www.vidking.net/embed/tv/${tmdbId}/${season}/${episode}?color=f5a524&autoplay=false`
   },
-
-  // Deactivated / Backup Iframe Servers (Kept for future activation)
   {
     id: 'vidlink',
     name: 'VidLink',

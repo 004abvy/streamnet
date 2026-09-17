@@ -28,7 +28,7 @@ export async function GET(
       const rawUrl = searchParams.get('url');
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
-      const decodedUrl = decodeURIComponent(rawUrl);
+      const decodedUrl = rawUrl;
       const isManifest = searchParams.get('manifest') === '1' || decodedUrl.includes('.m3u8');
       let upstreamHeaders: Record<string, string> = {};
       try {
@@ -48,7 +48,23 @@ export async function GET(
       let effectiveOrigin: string | undefined = undefined;
 
       const lowerUrl = decodedUrl.toLowerCase();
-      if (lowerUrl.includes('vimeos')) {
+      if (
+        lowerUrl.includes('rivestream') ||
+        lowerUrl.includes('valhallastream') ||
+        lowerUrl.includes('m3u8-proxy') ||
+        lowerUrl.includes('bxcnv') ||
+        lowerUrl.includes('flkow') ||
+        lowerUrl.includes('hoxcv') ||
+        lowerUrl.includes('bxncw') ||
+        lowerUrl.includes('flulp') ||
+        lowerUrl.includes('kbocw') ||
+        lowerUrl.includes('wnowe') ||
+        lowerUrl.includes('flocw') ||
+        lowerUrl.includes('hls_mps')
+      ) {
+        effectiveReferer = 'https://rivestream.ru/';
+        effectiveOrigin = 'https://rivestream.ru';
+      } else if (lowerUrl.includes('vimeos')) {
         effectiveReferer = 'https://vimeos.net/';
       } else if (lowerUrl.includes('peakstorm')) {
         effectiveReferer = 'https://videasy.net/';
@@ -71,6 +87,11 @@ export async function GET(
       if (effectiveReferer) proxyFetchHeaders['Referer'] = effectiveReferer;
       if (effectiveOrigin) proxyFetchHeaders['Origin'] = effectiveOrigin;
 
+      const clientRange = request.headers.get('range');
+      if (clientRange) {
+        proxyFetchHeaders['Range'] = clientRange;
+      }
+
       const workerBaseUrl = process.env.NEXT_PUBLIC_PROXY_URL || 'https://rapid-shadow-7122.abvy7661.workers.dev';
       const targetWorkerUrl = `${workerBaseUrl}?url=${encodeURIComponent(decodedUrl)}&headers=${encodeURIComponent(JSON.stringify(proxyFetchHeaders))}`;
 
@@ -90,6 +111,7 @@ export async function GET(
           }
         } catch (err: any) {
           lastErr = err;
+          console.log('[stream/proxy] directCandidate error:', err);
         }
       }
 
@@ -117,7 +139,7 @@ export async function GET(
       if (isManifest) {
         const manifestText = await response.text();
         const host = request.headers.get('host') || 'localhost:3000';
-        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
         const proxyUrl = (targetUrl: string, manifest: boolean) => {
           const params = new URLSearchParams({
             url: targetUrl,
@@ -162,11 +184,23 @@ export async function GET(
       } else {
         const arrayBuffer = await response.arrayBuffer();
         const contentType = response.headers.get('content-type') || 'video/MP2T';
+        const respHeaders: Record<string, string> = {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length',
+          'Accept-Ranges': response.headers.get('accept-ranges') || 'bytes',
+        };
+
+        if (response.headers.get('content-range')) {
+          respHeaders['Content-Range'] = response.headers.get('content-range')!;
+        }
+        if (response.headers.get('content-length')) {
+          respHeaders['Content-Length'] = response.headers.get('content-length')!;
+        }
+
         return new NextResponse(arrayBuffer, {
-          headers: {
-            'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*',
-          }
+          status: response.status,
+          headers: respHeaders,
         });
       }
     }

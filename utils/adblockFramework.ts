@@ -85,6 +85,24 @@ const STANDARD_ALLOW_FEATURES = [
  * popups, new tabs, and page redirects regardless of iframe sandbox state.
  */
 export const SERVER_AD_POLICIES: Record<string, ServerAdPolicy> = {
+  screenscape: {
+    serverId: 'screenscape',
+    name: 'ScreenScape',
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Native HTML5 iframe sandbox eliminates popups, redirects, and click-jacks.',
+  },
+  rivestream: {
+    serverId: 'rivestream',
+    name: 'RiveStream',
+    sandboxTokens: [...PERFECT_SANDBOX_TOKENS],
+    referrerPolicy: 'no-referrer-when-downgrade',
+    allowFeatures: [...STANDARD_ALLOW_FEATURES],
+    protectionLevel: 'maximum',
+    notes: 'Native HTML5 iframe sandbox eliminates popups, redirects, and click-jacks.',
+  },
   yapgrid: {
     serverId: 'yapgrid',
     name: 'YapGrid 4K',

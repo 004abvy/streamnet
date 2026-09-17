@@ -20,6 +20,7 @@ The platform utilizes a variety of third-party embed iframes for delivering 4K U
 ### Additional Backup / Iframe Servers (`servers.ts`)
 *   **ScreenScape:** `https://screenscape.me/embed?tmdb={tmdbId}&type={type}`
 *   **VidKing:** `https://www.vidking.net/embed/movie/{tmdbId}`
+*   **RiveStream:** `https://rivestream.ru/embed?type=movie&id={tmdbId}` (TV: `https://rivestream.ru/embed?type=tv&id={tmdbId}&season={season}&episode={episode}`)
 *   **Embed.su:** `https://embed.su/embed/movie/{tmdbId}`
 *   **VidSrc (v2/v3):** `https://vidsrc.cc/v2/embed/movie/{tmdbId}`
 *   **SuperEmbed:** `https://multiembed.mov/?video_id={tmdbId}&tmdb=1`

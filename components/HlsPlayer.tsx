@@ -232,11 +232,27 @@ export default function HlsPlayer({
         if (data.subtitles && Array.isArray(data.subtitles)) {
           const rawSubs: SubtitleTrack[] = data.subtitles
             .filter((sub: any) => sub && sub.url)
-            .map((sub: any) => ({
-              url: (sub.url || '').replace(/localhost/g, hostname).replace(/127\.0\.0\.1/g, hostname),
-              label: sub.label || 'English',
-              format: sub.format || 'vtt',
-            }));
+            .map((sub: any) => {
+              let subUrl = sub.url || '';
+              if (subUrl.startsWith('/')) {
+                subUrl = `${protocol}//${hostname}${port}${subUrl}`;
+              } else if (subUrl.includes('/api/subtitle/proxy')) {
+                try {
+                  const parsed = new URL(subUrl);
+                  subUrl = `${protocol}//${hostname}${port}${parsed.pathname}${parsed.search}`;
+                } catch {
+                  subUrl = subUrl.replace(/localhost(:\d+)?/g, `${hostname}${port}`);
+                }
+              } else {
+                subUrl = subUrl.replace(/localhost(:\d+)?/g, `${hostname}${port}`);
+              }
+
+              return {
+                url: subUrl,
+                label: sub.label || 'English',
+                format: 'vtt',
+              };
+            });
 
           const uniqueMap = new Map<string, SubtitleTrack>();
           rawSubs.forEach(s => {
@@ -366,10 +382,10 @@ export default function HlsPlayer({
     return {
       src: sub.url,
       label: uniqueLabel,
-      language: sub.label?.substring(0, 2).toLowerCase() || 'en',
+      language: isEnglish ? 'en' : (rawLabel.toLowerCase().includes('hindi') ? 'hi' : sub.label?.substring(0, 2).toLowerCase() || 'en'),
       kind: 'subtitles',
       default: isDefault,
-      type: sub.format === 'srt' ? 'srt' : 'vtt',
+      type: 'vtt',
     };
   });
 
