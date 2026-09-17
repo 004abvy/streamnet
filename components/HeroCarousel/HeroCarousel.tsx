@@ -10,7 +10,7 @@ import { getPosterGradient, getVibrantColor } from '../../utils/colorHelper';
 import styles from './HeroCarousel.module.css';
 import {
   Bell,
-  Command,
+  Bot,
   User,
   Play,
   Bookmark,
@@ -44,6 +44,8 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const [movieColors, setMovieColors] = useState<Record<number, string>>({});
   const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>({});
 
+  const profileMenuTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const getUserInitial = () => {
     if (!user) return null;
     if (user.name && user.name.trim()) return user.name.trim().charAt(0).toUpperCase();
@@ -59,6 +61,31 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
       setShowProfileMenu(!showProfileMenu);
     }
   };
+
+  const handleMouseEnterProfile = () => {
+    if (profileMenuTimerRef.current) {
+      clearTimeout(profileMenuTimerRef.current);
+      profileMenuTimerRef.current = null;
+    }
+    if (user) setShowProfileMenu(true);
+  };
+
+  const handleMouseLeaveProfile = () => {
+    if (profileMenuTimerRef.current) {
+      clearTimeout(profileMenuTimerRef.current);
+    }
+    profileMenuTimerRef.current = setTimeout(() => {
+      setShowProfileMenu(false);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profileMenuTimerRef.current) {
+        clearTimeout(profileMenuTimerRef.current);
+      }
+    };
+  }, []);
 
   const visibleMovies = movies ? movies.slice(0, 5) : [];
   const loopMovies = visibleMovies.length > 1 ? [...visibleMovies, visibleMovies[0]] : visibleMovies;
@@ -179,7 +206,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
       <div className={styles.container}>
         {/* Rounded Backdrop Frame (Clips backdrop image & top right actions) */}
         <div className={styles.backdropFrame}>
-          {/* Top Right Actions Pill (Announcements, Command, Profile) */}
+          {/* Top Right Actions Pill (Announcements, RiveAI, Profile) */}
           <div className={styles.topRightActions}>
             <button
               className={styles.topActionBtn}
@@ -191,19 +218,22 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             <div className={styles.topActionDivider} />
             <button
               className={styles.topActionBtn}
-              title="Command Menu"
-              onClick={() => router.push('/command')}
+              title="RiveAI Assistant"
+              onClick={() => router.push('/ai')}
             >
-              <Command size={18} />
+              <Bot size={18} color="#eab308" />
             </button>
             <div className={styles.topActionDivider} />
 
-            <div style={{ position: 'relative' }} onMouseLeave={() => setShowProfileMenu(false)}>
+            <div
+              style={{ position: 'relative' }}
+              onMouseEnter={handleMouseEnterProfile}
+              onMouseLeave={handleMouseLeaveProfile}
+            >
               <button
                 className={styles.topActionBtn}
                 title={user ? (user.name || user.email || 'Profile') : 'Sign In'}
                 onClick={handleProfileBtnClick}
-                onMouseEnter={() => { if (user) setShowProfileMenu(true); }}
               >
                 {user ? (
                   <span className={styles.userInitialBadge}>{getUserInitial()}</span>
