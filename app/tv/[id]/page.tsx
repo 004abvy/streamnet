@@ -3,8 +3,10 @@
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
+import Footer from '../../../components/Footer/Footer';
 import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
 import styles from '../../movie/[id]/movieDetails.module.css';
+import { Play, Bookmark } from 'lucide-react';
 
 export default function TVDetailsPage({
   params,
@@ -15,16 +17,13 @@ export default function TVDetailsPage({
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     fetch(`/api/tv/${id}`)
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && !data.error) {
           setMovie(data);
@@ -68,173 +67,184 @@ export default function TVDetailsPage({
     }
   };
 
+  const handlePlayNow = () => {
+    if (!movie) return;
+    try {
+      const stored = localStorage.getItem('continueWatching');
+      let list = stored ? JSON.parse(stored) : [];
+      list = list.filter((m: any) => m.id !== movie.id);
+      list.unshift({ ...movie, media_type: 'tv' });
+      if (list.length > 20) list.pop();
+      saveContinueWatching(list);
+    } catch (e) {
+      console.error("Failed to save to continue watching", e);
+    }
+  };
+
   if (loading) {
-    return (
-      <main className={styles.container} aria-label="Loading series details">
-        {/* Backdrop Skeleton */}
-        <div className={styles.skeletonBackdropWrapper}>
-          <div className={styles.skeletonShimmer} />
-          <div className={styles.backdropOverlay} />
-        </div>
-
-        {/* Main Content Skeleton */}
-        <div className={styles.mainContainer}>
-          <div className={styles.topSection}>
-            {/* Left Poster Column Skeleton */}
-            <div className={styles.posterCol}>
-              <div className={styles.skeletonPoster}>
-                <div className={styles.skeletonShimmer} />
-              </div>
-              <div className={styles.skeletonPlayBtn} />
-              <div className={styles.skeletonWatchlistBtn} />
-            </div>
-
-            {/* Right Info Column Skeleton */}
-            <div className={styles.infoCol}>
-              <div className={styles.skeletonBackBtn} />
-
-              <div className={styles.skeletonTitle} />
-              <div className={styles.skeletonSubtitle} />
-
-              <div className={styles.skeletonRatingRow}>
-                <div className={styles.skeletonBadge} style={{ width: '64px' }} />
-                <div className={styles.skeletonBadge} style={{ width: '84px' }} />
-                <div className={styles.skeletonBadge} style={{ width: '72px' }} />
-              </div>
-
-              <div className={styles.skeletonGenresRow}>
-                <div className={styles.skeletonGenrePill} />
-                <div className={styles.skeletonGenrePill} />
-                <div className={styles.skeletonGenrePill} />
-              </div>
-
-              <div className={styles.skeletonTagline} />
-
-              <div className={styles.skeletonOverviewSection}>
-                <div className={styles.skeletonSectionHeader} />
-                <div className={styles.skeletonOverviewLine} style={{ width: '100%' }} />
-                <div className={styles.skeletonOverviewLine} style={{ width: '94%' }} />
-                <div className={styles.skeletonOverviewLine} style={{ width: '82%' }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs Skeleton */}
-          <div className={styles.skeletonTabs}>
-            <div className={styles.skeletonTab} style={{ width: '96px' }} />
-            <div className={styles.skeletonTab} style={{ width: '80px' }} />
-            <div className={styles.skeletonTab} style={{ width: '90px' }} />
-            <div className={styles.skeletonTab} style={{ width: '110px' }} />
-          </div>
-        </div>
-      </main>
-    );
+    return <div className={styles.loading}>Loading series details...</div>;
   }
 
   if (!movie || !movie.id) {
-    return <div className={styles.loading}>TV Show not found.</div>;
+    return <div className={styles.loading}>Series not found.</div>;
   }
+
+  const displayTitle = movie.name || movie.title || 'Untitled Series';
+  const directorName = movie.created_by?.map((c: any) => c.name).join(', ') || movie.credits?.crew?.find((c: any) => c.job === 'Executive Producer' || c.job === 'Director')?.name || 'N/A';
+  const composerName = movie.credits?.crew?.find((c: any) => c.job === 'Original Music Composer' || c.job === 'Music')?.name || 'Original Score';
+  const genreNames = movie.genres?.map((g: any) => g.name).join(', ') || 'N/A';
+  const topCast = movie.credits?.cast?.slice(0, 4) || [];
+
+  let formattedDate = 'N/A';
+  if (movie.first_air_date || movie.release_date) {
+    try {
+      const d = new Date(movie.first_air_date || movie.release_date);
+      formattedDate = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      formattedDate = movie.first_air_date || movie.release_date;
+    }
+  }
+
+  const trailer = movie.videos?.results?.find(
+    (v: any) => v.site === "YouTube" && v.type === "Trailer"
+  ) || movie.videos?.results?.find((v: any) => v.site === "YouTube");
 
   return (
     <main className={styles.container}>
-      <div className={styles.backdropWrapper}>
-        <img 
-          src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
-          alt={movie.name || movie.title} 
-          className={styles.backdrop}
-          decoding="async"
+      {/* Full-Bleed Background Backdrop */}
+      <div className={styles.heroBackground}>
+        <img
+          src={`https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path}`}
+          alt={displayTitle}
+          className={styles.heroImg}
         />
-        <div className={styles.backdropOverlay}></div>
+        <div className={styles.heroOverlay} />
       </div>
 
-      <div className={styles.mainContainer}>
-        <div className={styles.topSection}>
-          <div className={styles.posterCol}>
-            <img 
-              src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`}
-              alt={movie.name || movie.title} 
-              className={styles.poster}
-            />
-            <Link 
+      {/* Hero Editorial Grid Container */}
+      <div className={styles.editorialGrid}>
+        {/* Left Column: Title, Synopsis, Play & Wishlist Buttons, Actors */}
+        <div className={styles.leftCol}>
+          <h1 className={styles.editorialTitle}>{displayTitle}</h1>
+          <p className={styles.editorialOverview}>{movie.overview}</p>
+
+          {/* Action Buttons: Play Now & Wishlist */}
+          <div className={styles.editorialActions}>
+            <Link
               href={`/watch/tv/${movie.id}/1/1`}
-              className={styles.playBtn}
-              onClick={() => {
-                try {
-                  const stored = localStorage.getItem('continueWatching');
-                  let list = stored ? JSON.parse(stored) : [];
-                  list = list.filter((m: any) => m.id !== movie.id);
-                  list.unshift({ ...movie, media_type: 'tv' });
-                  if (list.length > 20) list.pop();
-                  saveContinueWatching(list);
-                } catch (e) {
-                  console.error("Failed to save to continue watching", e);
-                }
-              }}
+              className={styles.playNowBtn}
+              onClick={handlePlayNow}
             >
-              <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              Watch Series
+              <Play size={18} fill="currentColor" /> Play Now
             </Link>
-            <div className={styles.actions}>
-              <button
-                className={styles.actionBtn}
-                onClick={toggleWatchlist}
-                style={isSaved ? { background: '#f59e0b', color: '#000', borderColor: '#f59e0b', fontWeight: 700 } : {}}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
-                {isSaved ? 'In Watchlist ✓' : 'Watchlist'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`${styles.wishlistBtn} ${isSaved ? styles.savedWishlist : ''}`}
+              onClick={toggleWatchlist}
+            >
+              <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
+              {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
+            </button>
           </div>
 
-          <div className={styles.infoCol}>
-            <div className={styles.badges}>
-              {movie.vote_average > 0 && (
-                <span className={`${styles.badge} ${styles.rating}`}>
-                  {movie.vote_average.toFixed(1)}
-                </span>
-              )}
-              {movie.genres?.map((g: any) => (
-                <span key={g.id} className={styles.badge}>{g.name}</span>
-              ))}
+          {/* Bottom Left: Top Cast / Actors */}
+          {topCast.length > 0 && (
+            <div className={styles.actorsSection}>
+              <span className={styles.actorsSectionHeader}>01 ACTORS</span>
+              <div className={styles.actorsList}>
+                {topCast.map((actor: any) => (
+                  <div key={actor.id} className={styles.actorBadge}>
+                    {actor.profile_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
+                        alt={actor.name}
+                        className={styles.actorAvatar}
+                      />
+                    ) : (
+                      <div className={styles.actorAvatar} style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {actor.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className={styles.actorMeta}>
+                      <span className={styles.actorName}>{actor.name}</span>
+                      <span className={styles.characterName}>{actor.character}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-
-            <h1 className={styles.title}>{movie.name || movie.title}</h1>
-            <p className={styles.tagline}>{movie.overview}</p>
-          </div>
+          )}
         </div>
 
-        {movie.videos?.results && (
-          (() => {
-            const trailer = movie.videos.results.find(
-              (v: any) => v.site === "YouTube" && v.type === "Trailer"
-            ) || movie.videos.results.find((v: any) => v.site === "YouTube");
-            
-            if (trailer) {
-              return (
-                <div className={styles.trailerContainer}>
-                  <h2 className={styles.trailerTitle}>Trailer</h2>
-                  <div className={styles.videoWrapper}>
-                    <iframe
-                      src={`https://www.youtube.com/embed/${trailer.key}?autoplay=0`}
-                      title="YouTube video player"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()
-        )}
+        {/* Right Column: Premiere, Director, Music By, Genre, & Trailer Box */}
+        <div className={styles.rightCol}>
+          <div className={styles.metaGroup}>
+            <span className={styles.metaLabel}>PREMIERE</span>
+            <span className={styles.metaValue}>{formattedDate}</span>
+          </div>
 
+          <div className={styles.metaGroup}>
+            <span className={styles.metaLabel}>CREATOR / DIRECTOR</span>
+            <span className={styles.metaValue}>{directorName}</span>
+          </div>
+
+          <div className={styles.metaGroup}>
+            <span className={styles.metaLabel}>MUSIC BY</span>
+            <span className={styles.metaValue}>{composerName}</span>
+          </div>
+
+          <div className={styles.metaGroup}>
+            <span className={styles.metaLabel}>GENRE</span>
+            <span className={styles.metaValue}>{genreNames}</span>
+          </div>
+
+          {/* Bottom Right - Watch Trailer Box */}
+          {trailer && (
+            <div className={styles.trailerBox} onClick={() => setShowTrailerModal(true)}>
+              <img
+                src={`https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`}
+                alt="Watch Trailer"
+                className={styles.trailerImg}
+              />
+              <div className={styles.trailerOverlay}>
+                <div className={styles.playCircle}>
+                  <Play size={18} fill="currentColor" />
+                </div>
+                <span className={styles.trailerLabel}>WATCH TRAILER</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal for Watching Trailer */}
+      {showTrailerModal && trailer && (
+        <div className={styles.trailerModal} onClick={() => setShowTrailerModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className={styles.closeModalBtn}
+              onClick={() => setShowTrailerModal(false)}
+            >
+              ✕
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1`}
+              title="Trailer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className={styles.modalIframe}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Scroll Down Details: Tabs, Episodes, Similar Series */}
+      <div className={styles.scrollDetailsSection}>
         <DetailsTabs movie={movie} />
       </div>
+
+      <Footer />
     </main>
   );
 }

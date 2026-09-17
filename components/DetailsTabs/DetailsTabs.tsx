@@ -111,7 +111,7 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
             {movie.credits?.cast?.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
                 {movie.credits.cast.slice(0, 12).map((actor: any) => (
-                  <div key={actor.id} style={{ background: '#1a1a1a', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div key={actor.id} style={{ background: 'rgba(18, 18, 26, 0.45)', backdropFilter: 'blur(28px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', overflow: 'hidden' }}>
                      <img 
                         src={actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'https://via.placeholder.com/200x300?text=No+Image'} 
                         alt={actor.name}
@@ -174,9 +174,9 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
             {movie.reviews?.results && movie.reviews.results.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {movie.reviews.results.slice(0, 5).map((review: any) => (
-                  <div key={review.id} style={{ background: '#111', padding: '1.5rem', borderRadius: '8px' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '1.1rem' }}>A review by {review.author}</div>
-                    <p style={{ color: '#aaa', fontSize: '0.95rem', lineHeight: '1.6' }}>{review.content.substring(0, 400)}...</p>
+                  <div key={review.id} style={{ background: 'rgba(18, 18, 26, 0.45)', backdropFilter: 'blur(28px)', border: '1px solid rgba(255,255,255,0.12)', padding: '1.5rem', borderRadius: '16px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '1.1rem', color: '#fff' }}>A review by {review.author}</div>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6' }}>{review.content.substring(0, 400)}...</p>
                   </div>
                 ))}
               </div>
