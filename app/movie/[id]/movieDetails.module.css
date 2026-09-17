@@ -380,64 +380,106 @@
   background: transparent;
   padding: 1rem clamp(1.25rem, 5vw, 6rem) 5rem;
 }
-.trailerModal {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+  .editorialGrid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    padding-top: 100px;
+    min-height: auto;
+  }
+
+  .rightCol {
+    width: 100%;
+    padding-left: 0;
+    padding-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .trailerBox {
+    grid-column: span 2;
+  }
 }
 
-.modalContent {
-  position: relative;
-  width: 100%;
-  max-width: 1000px;
-  aspect-ratio: 16 / 9;
-  background: #000;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9);
-}
+@media (max-width: 600px) {
+  .editorialGrid {
+    padding: 85px 1rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2.5rem;
+  }
 
-.modalIframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
+  .leftCol {
+    max-width: 100%;
+  }
 
-.closeModalBtn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 10;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
+  .editorialTitle {
+    font-size: 2.4rem;
+    text-align: center;
+  }
 
-.closeModalBtn:hover {
-  background: #ffffff;
-  color: #000000;
-}
+  .editorialOverview {
+    font-size: 0.9rem;
+    text-align: center;
+  }
 
-/* Scroll Details Section (Below Hero) */
-.scrollDetailsSection {
-  position: relative;
+  .editorialActions {
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.85rem;
+  }
+
+  .playNowBtn, .wishlistBtn {
+    width: 100%;
+    font-size: 1.05rem;
+    padding: 0.95rem 1rem;
+  }
+
+  .actorsSectionHeader {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .actorsList {
+    justify-content: center;
+  }
+
+  .actorBadge {
+    padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+  }
+
+  .rightCol {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-top: 0;
+  }
+
+  .metaGroup {
+    align-items: center;
+    text-align: center;
+  }
+
+  .metaLabel {
+    font-size: 0.7rem;
+  }
+
+  .metaValue {
+    font-size: 1rem;
+  }
+
+  .trailerBox {
+    margin-top: 0.5rem;
+  }
+
+  .scrollDetailsSection {
+    padding: 1rem 1rem 4rem;
+  }
+}
   z-index: 10;
   background: #000000;
   padding: 3rem clamp(1.25rem, 5vw, 6rem) 5rem;
