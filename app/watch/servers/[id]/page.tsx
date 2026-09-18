@@ -588,6 +588,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 }}
                 className="w-full h-full"
               />
+            ) : embedFallbackUrl ? (
+              <iframe
+                src={embedFallbackUrl}
+                className="w-full aspect-video border-0 bg-black"
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
+              />
             ) : (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
                 <p className="text-amber-400 font-bold text-base">Stream Offline</p>

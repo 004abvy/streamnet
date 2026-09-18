@@ -193,23 +193,29 @@ export async function GET(
         });
       } else {
         const arrayBuffer = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') || 'video/MP2T';
+        const contentType = response.headers.get('content-type') || (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/MP2T');
+        const totalBytes = arrayBuffer.byteLength;
+
+        let status = response.status;
         const respHeaders: Record<string, string> = {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length',
-          'Accept-Ranges': response.headers.get('accept-ranges') || 'bytes',
+          'Accept-Ranges': 'bytes',
+          'Content-Length': totalBytes.toString(),
         };
 
-        if (response.headers.get('content-range')) {
-          respHeaders['Content-Range'] = response.headers.get('content-range')!;
-        }
-        if (response.headers.get('content-length')) {
-          respHeaders['Content-Length'] = response.headers.get('content-length')!;
+        const upstreamContentRange = response.headers.get('content-range');
+        if (upstreamContentRange) {
+          respHeaders['Content-Range'] = upstreamContentRange;
+          if (status === 200) status = 206;
+        } else if (clientRange && status === 200) {
+          status = 206;
+          respHeaders['Content-Range'] = `bytes 0-${totalBytes - 1}/${totalBytes}`;
         }
 
         return new NextResponse(arrayBuffer, {
-          status: response.status,
+          status: status,
           headers: respHeaders,
         });
       }
