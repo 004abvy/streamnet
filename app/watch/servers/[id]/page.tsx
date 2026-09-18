@@ -83,7 +83,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const [hasLiveGlow, setHasLiveGlow] = useState<boolean>(false);
+  const [isIOSDevice, setIsIOSDevice] = useState<boolean>(false);
   const canvasTaintedRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const checkIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
+    setIsIOSDevice(checkIOS);
+  }, []);
 
   // Real-time Canvas Ambilight Render Loop (Live video color projection outside player)
   useEffect(() => {
@@ -432,7 +438,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-3 sm:px-6 md:px-8 py-10 sm:py-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
       {/* Cinematic Ambient Background Backdrop */}
-      {backdropUrl && (
+      {backdropUrl && !isIOSDevice && (
         <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
           <img
             src={backdropUrl}
@@ -484,38 +490,40 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       {/* Cinema Player Frame with Ambient Spill & ArtPlayer */}
       <div className="w-full max-w-6xl relative mb-6" style={{ isolation: 'isolate' }}>
         {/* Dynamic Ambient Glow (shades & colors subtly bleeding outside player frame in real time) */}
-        <div
-          className={`absolute -inset-3 sm:-inset-5 md:-inset-7 z-0 pointer-events-none transition-opacity duration-500 select-none overflow-visible ${
-            isVideoPlaying ? 'opacity-75 sm:opacity-80' : 'opacity-50 sm:opacity-55'
-          }`}
-        >
-          {/* Real-time Video Canvas Mirror */}
-          <canvas
-            ref={ambientCanvasRef}
-            width={48}
-            height={27}
-            className={`w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07] transition-all duration-300 ${
-              hasLiveGlow ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-
-          {/* Fallback Cinema Backdrop Ambient Lighting */}
+        {!isIOSDevice && (
           <div
-            className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500 ${
-              !hasLiveGlow ? 'opacity-100' : 'opacity-25'
+            className={`absolute -inset-3 sm:-inset-5 md:-inset-7 z-0 pointer-events-none transition-opacity duration-500 select-none overflow-visible ${
+              isVideoPlaying ? 'opacity-75 sm:opacity-80' : 'opacity-50 sm:opacity-55'
             }`}
           >
-            {backdropUrl ? (
-              <img
-                src={backdropUrl}
-                alt=""
-                className="w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07]"
-              />
-            ) : (
-              <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-amber-500/20 via-sky-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
-            )}
+            {/* Real-time Video Canvas Mirror */}
+            <canvas
+              ref={ambientCanvasRef}
+              width={48}
+              height={27}
+              className={`w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07] transition-all duration-300 ${
+                hasLiveGlow ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+
+            {/* Fallback Cinema Backdrop Ambient Lighting */}
+            <div
+              className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500 ${
+                !hasLiveGlow ? 'opacity-100' : 'opacity-25'
+              }`}
+            >
+              {backdropUrl ? (
+                <img
+                  src={backdropUrl}
+                  alt=""
+                  className="w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07]"
+                />
+              ) : (
+                <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-amber-500/20 via-sky-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Player Container */}
         <div
