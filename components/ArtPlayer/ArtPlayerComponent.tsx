@@ -352,7 +352,19 @@ export default function ArtPlayerComponent({
 
     artInstanceRef.current = art;
 
+    const updatePortalTarget = () => {
+      const popupWrapper = art.template?.$layers?.querySelector('.artplayer-react-popup-wrapper') as HTMLElement;
+      if (popupWrapper) {
+        setPortalTarget(popupWrapper);
+      } else if (art.template?.$player) {
+        setPortalTarget(art.template.$player);
+      } else if (containerRef.current) {
+        setPortalTarget(containerRef.current);
+      }
+    };
+
     art.on('ready', () => {
+      updatePortalTarget();
       if (initialTime && initialTime > 0) {
         try {
           if (art.currentTime < initialTime - 0.8 || art.currentTime === 0) {
@@ -362,17 +374,20 @@ export default function ArtPlayerComponent({
       }
     });
 
+    art.on('fullscreen', () => {
+      updatePortalTarget();
+    });
+
+    art.on('fullscreenWeb', () => {
+      updatePortalTarget();
+    });
+
+    updatePortalTarget();
+    setTimeout(updatePortalTarget, 100);
+    setTimeout(updatePortalTarget, 500);
+
     if (getInstance) {
       getInstance(art);
-    }
-
-    const popupWrapper = art.template?.$layers?.querySelector('.artplayer-react-popup-wrapper') as HTMLElement;
-    if (popupWrapper) {
-      setPortalTarget(popupWrapper);
-    } else if (art.template?.$player) {
-      setPortalTarget(art.template.$player);
-    } else if (containerRef.current) {
-      setPortalTarget(containerRef.current);
     }
 
     art.on('video:ended', () => {
