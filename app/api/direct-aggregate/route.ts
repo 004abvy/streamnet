@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
           if (!rawUrl || seenUrls.has(rawUrl)) return;
           seenUrls.add(rawUrl);
 
-          const proxiedUrl = `${currentOrigin}/api/stream/proxy?url=${encodeURIComponent(rawUrl)}&manifest=1`;
+          const proxiedUrl = `${currentOrigin}/api/stream/proxy.m3u8?url=${encodeURIComponent(rawUrl)}&manifest=1`;
           if (!primaryStreamUrl) primaryStreamUrl = proxiedUrl;
 
           // Categorize and label cleanly

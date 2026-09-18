@@ -23,13 +23,22 @@ export async function GET(
     const { path } = await context.params;
     const subPath = path.join('/');
 
-    if (subPath === 'proxy') {
+    if (
+      subPath === 'proxy' ||
+      subPath === 'proxy.m3u8' ||
+      subPath === 'proxy.ts' ||
+      subPath.startsWith('proxy') ||
+      subPath.endsWith('.m3u8') ||
+      subPath.endsWith('.ts') ||
+      subPath.endsWith('.mp4') ||
+      subPath.endsWith('.m4s')
+    ) {
       const { searchParams } = new URL(request.url);
       const rawUrl = searchParams.get('url');
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
       const decodedUrl = rawUrl;
-      const isManifest = searchParams.get('manifest') === '1' || decodedUrl.includes('.m3u8');
+      const isManifest = searchParams.get('manifest') === '1' || subPath.endsWith('.m3u8') || decodedUrl.includes('.m3u8');
       let upstreamHeaders: Record<string, string> = {};
       try {
         const serializedHeaders = searchParams.get('headers');
@@ -146,7 +155,8 @@ export async function GET(
             headers: JSON.stringify(upstreamHeaders),
           });
           if (manifest) params.set('manifest', '1');
-          return `${protocol}://${host}/api/stream/proxy?${params.toString()}`;
+          const endpoint = manifest ? 'proxy.m3u8' : 'proxy.ts';
+          return `${protocol}://${host}/api/stream/${endpoint}?${params.toString()}`;
         };
         const lines = manifestText.split('\n');
         const rewritten = lines.map(line => {

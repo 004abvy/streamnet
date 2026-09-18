@@ -104,9 +104,13 @@ export default function ArtPlayerComponent({
     // Store callback ref so it persists across renders
     const settingsClickRef = onSettingsClick;
 
+    const isMp4 = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('type=mp4');
+    const streamType = isMp4 ? 'mp4' : 'm3u8';
+
     const art = new Artplayer({
       container: containerRef.current,
       url: url,
+      type: streamType,
       poster: poster || '',
       volume: 0.85,
       isLive: false,
@@ -133,16 +137,18 @@ export default function ArtPlayerComponent({
         'webkit-playsinline': 'true',
         'x5-playsinline': 'true',
       },
-      subtitle: {
-        url: defaultSub?.url || 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A',
-        type: 'vtt' as const,
-        style: {
-          color: '#ffffff',
-          fontSize: '20px',
-          textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-        },
-        encoding: 'utf-8',
-      },
+      subtitle: defaultSub?.url
+        ? {
+            url: defaultSub.url,
+            type: 'vtt' as const,
+            style: {
+              color: '#ffffff',
+              fontSize: '20px',
+              textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+            },
+            encoding: 'utf-8',
+          }
+        : undefined,
       controls: [
         // Settings gear icon — positioned right, next to PiP
         {

@@ -44,13 +44,14 @@ export async function GET(
           headers: JSON.stringify(cleanHeaders),
         });
         if (stream.type === 'hls') proxyParams.set('manifest', '1');
+        const endpoint = stream.type === 'hls' ? 'proxy.m3u8' : 'proxy';
         return {
           id: stream.id || `provider-${index}`,
           provider: { id: stream.id || `provider-${index}`, name: stream.provider },
           name: stream.provider,
           quality: stream.quality || null,
           streamType: stream.type,
-          url: `${currentUrl.origin}/api/stream/proxy?${proxyParams.toString()}`,
+          url: `${currentUrl.origin}/api/stream/${endpoint}?${proxyParams.toString()}`,
           rawUrl: stream.url,
           audioTracks: [],
         };
