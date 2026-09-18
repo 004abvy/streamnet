@@ -486,7 +486,7 @@ export default function ArtPlayerComponent({
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full min-h-[360px] sm:min-h-[460px] md:min-h-[560px] lg:min-h-[620px] rounded-2xl overflow-hidden bg-black relative ${className}`}
+      className={`w-full h-full min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px] rounded-2xl overflow-hidden bg-black relative ${className}`}
     >
       {portalTarget && children
         ? createPortal(

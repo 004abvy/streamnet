@@ -419,10 +419,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   const getAspectRatioStyle = () => {
     switch (aspectRatio) {
-      case '4:3': return 'aspect-[4/3] max-h-[85vh]';
+      case '4:3': return 'aspect-[4/3] max-h-[88vh]';
       case '21:9': return 'aspect-[21/9]';
       case '16:9': return 'aspect-video';
-      default: return 'aspect-[16/11.5] min-h-[380px] sm:min-h-[480px] md:min-h-[580px] lg:min-h-[640px]';
+      default: return 'aspect-[16/12] min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px]';
     }
   };
 
@@ -460,7 +460,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       )}
 
       {/* Top Responsive Header Bar */}
-      <header className="w-full max-w-7xl flex items-center justify-between gap-1.5 sm:gap-3 py-1 sm:py-2 px-1 mb-2 sm:mb-3">
+      <header className="w-full max-w-[92rem] flex items-center justify-between gap-1.5 sm:gap-3 py-1 sm:py-2 px-1 mb-2 sm:mb-3">
         {/* Left: Back + Title */}
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <button
@@ -498,7 +498,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       </header>
 
       {/* Cinema Player Frame with Ambient Spill & ArtPlayer */}
-      <div className="w-full max-w-7xl relative mb-6" style={{ isolation: 'isolate' }}>
+      <div className="w-full max-w-[92rem] relative mb-6" style={{ isolation: 'isolate' }}>
         {/* Dynamic Ambient Glow (shades & colors subtly bleeding outside player frame in real time) */}
         {!isIOSDevice && (
           <div
