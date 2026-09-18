@@ -102,9 +102,12 @@ export default function ArtPlayerComponent({
     // Store callback ref so it persists across renders
     const settingsClickRef = onSettingsClick;
 
+    const isM3u8Url = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('m3u8') || url.toLowerCase().includes('/stream/') || url.toLowerCase().includes('/direct/') || url.toLowerCase().includes('hls');
+
     const art = new Artplayer({
       container: containerRef.current,
       url: url,
+      type: isM3u8Url ? 'm3u8' : undefined,
       poster: poster || '',
       volume: 0.85,
       isLive: false,
@@ -266,8 +269,12 @@ export default function ArtPlayerComponent({
             });
 
             artInstance.on('destroy', () => hls.destroy());
-          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          } else if (video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('audio/mpegurl')) {
             video.src = m3u8Url;
+            video.load();
+            if (autoPlay) {
+              video.play().catch(() => {});
+            }
             if (initialTime && initialTime > 0) {
               video.addEventListener('loadedmetadata', () => {
                 video.currentTime = initialTime;
