@@ -10,7 +10,6 @@ import { getPosterGradient, getVibrantColor } from '../../utils/colorHelper';
 import styles from './HeroCarousel.module.css';
 import {
   Bell,
-  Bot,
   User,
   Play,
   Bookmark,
@@ -214,14 +213,6 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
               onClick={() => router.push('/announcements')}
             >
               <Bell size={18} />
-            </button>
-            <div className={styles.topActionDivider} />
-            <button
-              className={styles.topActionBtn}
-              title="RiveAI Assistant"
-              onClick={() => router.push('/ai')}
-            >
-              <Bot size={18} color="#eab308" />
             </button>
             <div className={styles.topActionDivider} />
 

@@ -8,7 +8,6 @@ import styles from './Sidebar.module.css';
 import {
   Home,
   Search,
-  Bot,
   Film,
   Monitor,
   Trophy,
@@ -21,7 +20,6 @@ import {
   Library,
   Settings,
   Menu,
-  Command,
   Bell,
   User,
   X
@@ -96,7 +94,6 @@ export default function Sidebar() {
   const sidebarLinks = [
     { label: 'Home', link: '/', icon: Home },
     { label: 'Search', action: 'search', icon: Search },
-    { label: 'RiveAI', link: '/ai', icon: Bot, isAi: true },
     { label: 'Movies', link: '/movies', icon: Film },
     { label: 'TV Shows', link: '/tv', icon: Monitor },
     { label: 'Live TV', link: '/live-tv', icon: Tv },
@@ -245,12 +242,6 @@ export default function Sidebar() {
                 </Link>
                 <Link href="/search" className={styles.menuItem} onClick={() => setMobileMenuOpen(false)}>
                   <Search size={18} /> Search
-                </Link>
-                <Link href="/command" className={styles.menuItem}>
-                  <Command size={18} /> Command Menu
-                </Link>
-                <Link href="/ai" className={`${styles.menuItem} ${styles.riveAiItem}`}>
-                  <Bot size={18} color="#eab308" /> <span style={{ color: '#eab308', fontWeight: 600 }}>RiveAI</span>
                 </Link>
                 <Link href="/saved" className={styles.menuItem}>
                   <Library size={18} /> Library
