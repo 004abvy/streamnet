@@ -568,6 +568,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 activeSubtitleLabel={activeSubtitle}
                 onError={(err) => {
                   console.warn('Playback error on stream:', currentStreamUrl, err);
+                  if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1)) {
+                    return; // Video/audio is actively playing, ignore transient error
+                  }
                   const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
                   if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
                     const nextTrack = unifiedAudioTracks[currentIdx + 1];

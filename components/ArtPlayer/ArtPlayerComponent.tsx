@@ -364,6 +364,10 @@ export default function ArtPlayerComponent({
 
     art.on('error', (err: any) => {
       console.warn('[ArtPlayer] Error:', err);
+      // If video has loaded frames or is actively playing audio/video, ignore transient non-fatal errors
+      if (art.video && (art.video.currentTime > 0 || art.video.readyState >= 1)) {
+        return;
+      }
       onError?.(err);
     });
 
