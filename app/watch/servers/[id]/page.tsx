@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useState, useMemo, useRef } from 'react';
+import React, { use, useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -38,12 +38,7 @@ export interface UnifiedSubtitle {
   isDefault?: boolean;
 }
 
-export default function DirectPlayerHubPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+function DirectPlayerHubContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -87,6 +82,7 @@ export default function DirectPlayerHubPage({
   const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const [hasLiveGlow, setHasLiveGlow] = useState<boolean>(false);
+  const canvasTaintedRef = useRef<boolean>(false);
 
   // Real-time Canvas Ambilight Render Loop (Live video color projection outside player)
   useEffect(() => {
@@ -96,6 +92,7 @@ export default function DirectPlayerHubPage({
     const frameInterval = 1000 / FPS;
 
     const drawFrame = () => {
+      if (canvasTaintedRef.current) return;
       const video = containerRef.current?.querySelector('video');
       const canvas = ambientCanvasRef.current;
       if (!video || !canvas) return;
@@ -108,7 +105,8 @@ export default function DirectPlayerHubPage({
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             setHasLiveGlow(true);
           } catch {
-            // Tainted canvas fallback
+            // Tainted canvas fallback on iOS/Safari cross-origin
+            canvasTaintedRef.current = true;
           }
         }
       }
@@ -888,5 +886,26 @@ export default function DirectPlayerHubPage({
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DirectPlayerHubPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm font-semibold text-neutral-300">Loading VIP Cinema Player...</p>
+        </main>
+      }
+    >
+      <DirectPlayerHubContent id={id} />
+    </Suspense>
   );
 }

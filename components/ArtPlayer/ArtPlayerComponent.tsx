@@ -59,10 +59,15 @@ export default function ArtPlayerComponent({
   const gainNodeRef = useRef<GainNode | null>(null);
 
   // Setup Web Audio API for hardware-level Audio Boost (1x to 3x)
+  // Only activate when gainValue > 1 to prevent breaking iOS Safari native media pipeline
   const applyAudioBoost = (video: HTMLVideoElement, gainValue: number) => {
     try {
+      if (gainValue <= 1 && !audioContextRef.current) {
+        return;
+      }
       if (!audioContextRef.current) {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
         const ctx = new AudioCtx();
         const source = ctx.createMediaElementSource(video);
         const gain = ctx.createGain();
@@ -72,7 +77,7 @@ export default function ArtPlayerComponent({
         gainNodeRef.current = gain;
       }
       if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+        audioContextRef.current.resume().catch(() => {});
       }
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = gainValue;
@@ -124,8 +129,9 @@ export default function ArtPlayerComponent({
       theme: '#f59e0b',
       airplay: true,
       moreVideoAttr: {
-        crossOrigin: 'anonymous',
         playsInline: true,
+        'webkit-playsinline': 'true',
+        'x5-playsinline': 'true',
       },
       subtitle: {
         url: defaultSub?.url || 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A',
@@ -262,11 +268,21 @@ export default function ArtPlayerComponent({
 
             artInstance.on('destroy', () => hls.destroy());
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Native iOS Safari HLS Handling
+            video.setAttribute('playsinline', 'true');
+            video.setAttribute('webkit-playsinline', 'true');
             video.src = m3u8Url;
             if (initialTime && initialTime > 0) {
-              video.addEventListener('loadedmetadata', () => {
-                video.currentTime = initialTime;
-              }, { once: true });
+              const onSeek = () => {
+                try {
+                  video.currentTime = initialTime;
+                } catch {}
+              };
+              video.addEventListener('loadedmetadata', onSeek, { once: true });
+            }
+            video.load();
+            if (autoPlay) {
+              video.play().catch(() => {});
             }
           } else {
             artInstance.notice.show = 'Unsupported video format';
