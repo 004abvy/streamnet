@@ -220,6 +220,49 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     const fallbackDirectFetch = async () => {
       try {
+        const omssUrl =
+          type === 'tv'
+            ? `/api/direct/tv/${id}/${season}/${episode}`
+            : `/api/direct/movie/${id}`;
+
+        const omssRes = await fetch(omssUrl);
+        if (omssRes.ok) {
+          const omssData = await omssRes.json();
+          if (omssData && omssData.sources && omssData.sources.length > 0) {
+            const mappedTracks: UnifiedAudioTrack[] = omssData.sources.map((s: any, idx: number) => ({
+              id: s.id || `omss-${idx}`,
+              language: (s.quality || '').toLowerCase().includes('hindi') ? 'hi' : 'en',
+              label: s.name || `Direct Server ${idx + 1}`,
+              badge: s.quality || '1080p HD',
+              url: s.url,
+              quality: s.quality || '1080p',
+              isDefault: idx === 0,
+            }));
+
+            setUnifiedAudioTracks(mappedTracks);
+            if (!currentStreamUrl) {
+              const defaultTrack = mappedTracks.find(t => t.language === 'hi') || mappedTracks[0];
+              setCurrentStreamUrl(defaultTrack.url);
+              setActiveAudioLabel(defaultTrack.label);
+            }
+
+            if (omssData.subtitles && Array.isArray(omssData.subtitles) && omssData.subtitles.length > 0) {
+              setUnifiedSubtitles(omssData.subtitles.map((sub: any, idx: number) => ({
+                id: `sub-${idx}`,
+                language: sub.language || 'en',
+                label: sub.label || 'English',
+                url: sub.url,
+                isDefault: idx === 0,
+              })));
+            }
+
+            setFetchingStream(false);
+            setIsBackgroundScanning(false);
+            setScanStatusNotice(null);
+            return;
+          }
+        }
+
         const res = await fetch(`/api/rive-provider?provider=borealis&id=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`);
         const data = await res.json();
         if (data && data.data && data.data.sources && data.data.sources.length > 0) {
@@ -231,7 +274,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           setScanStatusNotice(null);
           return;
         }
-        throw new Error('Stream source offline.');
+        throw new Error('All direct streams are temporarily unavailable.');
       } catch (err: any) {
         setErrorMessage(err.message || 'Stream source offline.');
         setFetchingStream(false);
@@ -495,6 +538,15 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 subtitleOffset={subtitleOffset}
                 activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
                 activeSubtitleLabel={activeSubtitle}
+                onError={(err) => {
+                  console.warn('Playback error on stream:', currentStreamUrl, err);
+                  const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
+                  if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
+                    const nextTrack = unifiedAudioTracks[currentIdx + 1];
+                    setCurrentStreamUrl(nextTrack.url);
+                    setActiveAudioLabel(nextTrack.label);
+                  }
+                }}
                 onSettingsClick={() => {
                   setIsQuickMenuOpen(prev => !prev);
                   setActiveSubmenu(null);
@@ -874,12 +926,20 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
           <p className="text-amber-400 font-bold text-base">Stream Offline</p>
           <p className="text-xs text-neutral-400 max-w-md">{errorMessage || 'Stream could not be loaded.'}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg transition cursor-pointer mt-2"
-          >
-            Reload Stream
-          </button>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg transition cursor-pointer"
+            >
+              Reload Stream
+            </button>
+            <button
+              onClick={() => router.push(type === 'tv' ? `/watch/tv/${id}/${season}/${episode}` : `/watch/${id}`)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-lg transition cursor-pointer"
+            >
+              Back to Standard Player
+            </button>
+          </div>
         </div>
       )}
           </div>
