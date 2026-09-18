@@ -59,15 +59,13 @@ export default function ArtPlayerComponent({
   const gainNodeRef = useRef<GainNode | null>(null);
 
   // Setup Web Audio API for hardware-level Audio Boost (1x to 3x)
-  // Only activate when gainValue > 1 to prevent breaking iOS Safari native media pipeline
   const applyAudioBoost = (video: HTMLVideoElement, gainValue: number) => {
     try {
-      if (gainValue <= 1 && !audioContextRef.current) {
-        return;
-      }
+      const isIOS = typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
+      if (isIOS) return; // iOS Safari often fails or silences audio with createMediaElementSource on HLS
+
       if (!audioContextRef.current) {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
         const ctx = new AudioCtx();
         const source = ctx.createMediaElementSource(video);
         const gain = ctx.createGain();
@@ -77,7 +75,7 @@ export default function ArtPlayerComponent({
         gainNodeRef.current = gain;
       }
       if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume().catch(() => {});
+        audioContextRef.current.resume();
       }
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = gainValue;
@@ -104,13 +102,9 @@ export default function ArtPlayerComponent({
     // Store callback ref so it persists across renders
     const settingsClickRef = onSettingsClick;
 
-    const isMp4 = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('type=mp4');
-    const streamType = isMp4 ? 'mp4' : 'm3u8';
-
     const art = new Artplayer({
       container: containerRef.current,
       url: url,
-      type: streamType,
       poster: poster || '',
       volume: 0.85,
       isLive: false,
@@ -133,22 +127,19 @@ export default function ArtPlayerComponent({
       theme: '#f59e0b',
       airplay: true,
       moreVideoAttr: {
+        crossOrigin: 'anonymous',
         playsInline: true,
-        'webkit-playsinline': 'true',
-        'x5-playsinline': 'true',
       },
-      subtitle: defaultSub?.url
-        ? {
-            url: defaultSub.url,
-            type: 'vtt' as const,
-            style: {
-              color: '#ffffff',
-              fontSize: '20px',
-              textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-            },
-            encoding: 'utf-8',
-          }
-        : undefined,
+      subtitle: {
+        url: defaultSub?.url || 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A',
+        type: 'vtt' as const,
+        style: {
+          color: '#ffffff',
+          fontSize: '20px',
+          textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+        },
+        encoding: 'utf-8',
+      },
       controls: [
         // Settings gear icon — positioned right, next to PiP
         {
@@ -274,21 +265,11 @@ export default function ArtPlayerComponent({
 
             artInstance.on('destroy', () => hls.destroy());
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native iOS Safari HLS Handling
-            video.setAttribute('playsinline', 'true');
-            video.setAttribute('webkit-playsinline', 'true');
             video.src = m3u8Url;
             if (initialTime && initialTime > 0) {
-              const onSeek = () => {
-                try {
-                  video.currentTime = initialTime;
-                } catch {}
-              };
-              video.addEventListener('loadedmetadata', onSeek, { once: true });
-            }
-            video.load();
-            if (autoPlay) {
-              video.play().catch(() => {});
+              video.addEventListener('loadedmetadata', () => {
+                video.currentTime = initialTime;
+              }, { once: true });
             }
           } else {
             artInstance.notice.show = 'Unsupported video format';

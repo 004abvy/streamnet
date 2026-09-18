@@ -116,6 +116,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     const renderLoop = (timestamp: number) => {
       animFrameId = requestAnimationFrame(renderLoop);
 
+      const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
+      if (isIOS) return; // Disable expensive canvas extraction on iOS to prevent WebKit Jetsam memory crashes
+
       if (timestamp - lastDrawTime < frameInterval) return;
       lastDrawTime = timestamp;
 
