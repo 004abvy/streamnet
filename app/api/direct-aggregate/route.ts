@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             Referer: 'https://rivestream.ru/',
           },
-          signal: AbortSignal.timeout(7000),
+          signal: AbortSignal.timeout(2500),
         });
 
         if (!res.ok) return { provider, serverId, success: false, sources: [], captions: [] };

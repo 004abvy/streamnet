@@ -57,6 +57,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   // Current Active Playback State
   const [currentStreamUrl, setCurrentStreamUrl] = useState<string | null>(null);
+  const [embedFallbackUrl, setEmbedFallbackUrl] = useState<string | null>(null);
   const [activeAudioLabel, setActiveAudioLabel] = useState<string>('Hindi [Original / Dub]');
   const [activeSubtitle, setActiveSubtitle] = useState<string>('English');
   const [playbackTimestamp, setPlaybackTimestamp] = useState<number>(0);
@@ -178,24 +179,29 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   useEffect(() => {
     if (!id) return;
     setIsBackgroundScanning(true);
-    setScanStatusNotice('Scanning all audio languages & subtitles...');
+    setScanStatusNotice('Scanning audio languages & streams...');
 
     const aggregateUrl = `/api/direct-aggregate?id=${id}&type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`;
+
+    // Safety timeout to prevent spinner from getting stuck longer than 4.5s
+    const safetyTimeout = setTimeout(() => {
+      setFetchingStream(false);
+      setIsBackgroundScanning(false);
+      setScanStatusNotice(null);
+    }, 4500);
 
     fetch(aggregateUrl)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data && data.success) {
-          if (data.audioLanguages && data.audioLanguages.length > 0) {
-            setUnifiedAudioTracks(data.audioLanguages);
+        clearTimeout(safetyTimeout);
+        if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
+          setUnifiedAudioTracks(data.audioLanguages);
 
-            // If we haven't started playing, start the default stream (Hindi preferred if available)
-            if (!currentStreamUrl) {
-              const defaultAudio = data.audioLanguages.find((a: any) => a.language === 'hi') || data.audioLanguages[0];
-              setCurrentStreamUrl(defaultAudio.url);
-              setActiveAudioLabel(defaultAudio.label);
-              setFetchingStream(false);
-            }
+          if (!currentStreamUrl) {
+            const defaultAudio = data.audioLanguages.find((a: any) => a.language === 'hi') || data.audioLanguages[0];
+            setCurrentStreamUrl(defaultAudio.url);
+            setActiveAudioLabel(defaultAudio.label);
+            setFetchingStream(false);
           }
 
           if (data.subtitles && data.subtitles.length > 0) {
@@ -207,14 +213,14 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
 
           setIsBackgroundScanning(false);
-          setScanStatusNotice('All audio & subtitles ready');
-          setTimeout(() => setScanStatusNotice(null), 3500);
+          setScanStatusNotice('Streams ready');
+          setTimeout(() => setScanStatusNotice(null), 3000);
         } else {
-          // Fallback if aggregation returned no results
           fallbackDirectFetch();
         }
       })
       .catch(() => {
+        clearTimeout(safetyTimeout);
         fallbackDirectFetch();
       });
 
@@ -263,20 +269,18 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
         }
 
-        const res = await fetch(`/api/rive-provider?provider=borealis&id=${id}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`);
-        const data = await res.json();
-        if (data && data.data && data.data.sources && data.data.sources.length > 0) {
-          const hindiSource = data.data.sources.find((s: any) => (s.quality || '').toLowerCase().includes('hindi')) || data.data.sources[0];
-          setCurrentStreamUrl(hindiSource.url);
-          setActiveAudioLabel((hindiSource.quality || '').toLowerCase().includes('hindi') ? 'Hindi [Original / Dub]' : 'English [Original]');
-          setFetchingStream(false);
-          setIsBackgroundScanning(false);
-          setScanStatusNotice(null);
-          return;
-        }
-        throw new Error('All direct streams are temporarily unavailable.');
+        const screenscapeUrl = type === 'tv'
+          ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
+          : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
+        setEmbedFallbackUrl(screenscapeUrl);
+        setFetchingStream(false);
+        setIsBackgroundScanning(false);
+        setScanStatusNotice(null);
       } catch (err: any) {
-        setErrorMessage(err.message || 'Stream source offline.');
+        const screenscapeUrl = type === 'tv'
+          ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
+          : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
+        setEmbedFallbackUrl(screenscapeUrl);
         setFetchingStream(false);
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);
@@ -922,6 +926,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             </div>
           )}
         </ArtPlayerComponent>
+      ) : embedFallbackUrl ? (
+        <iframe
+          src={embedFallbackUrl}
+          className="w-full aspect-video border-0 bg-black"
+          allowFullScreen
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
+        />
       ) : (
         <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
           <p className="text-amber-400 font-bold text-base">Stream Offline</p>
