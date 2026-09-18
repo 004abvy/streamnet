@@ -189,30 +189,25 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   useEffect(() => {
     if (!id) return;
     setIsBackgroundScanning(true);
+    setFetchingStream(true);
     setScanStatusNotice('Scanning audio languages & streams...');
 
     const aggregateUrl = `/api/direct-aggregate?id=${id}&type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`;
 
-    // Safety timeout to prevent spinner from getting stuck longer than 4.5s
-    const safetyTimeout = setTimeout(() => {
-      setFetchingStream(false);
-      setIsBackgroundScanning(false);
-      setScanStatusNotice(null);
-    }, 4500);
+    // 10s Abort controller timeout for slow mobile networks
+    const controller = new AbortController();
+    const fetchTimeout = setTimeout(() => controller.abort(), 10000);
 
-    fetch(aggregateUrl)
+    fetch(aggregateUrl, { signal: controller.signal })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        clearTimeout(safetyTimeout);
+        clearTimeout(fetchTimeout);
         if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
           setUnifiedAudioTracks(data.audioLanguages);
 
-          if (!currentStreamUrl) {
-            const defaultAudio = data.audioLanguages.find((a: any) => a.language === 'hi') || data.audioLanguages[0];
-            setCurrentStreamUrl(defaultAudio.url);
-            setActiveAudioLabel(defaultAudio.label);
-            setFetchingStream(false);
-          }
+          const defaultAudio = data.audioLanguages.find((a: any) => a.language === 'hi') || data.audioLanguages[0];
+          setCurrentStreamUrl(defaultAudio.url);
+          setActiveAudioLabel(defaultAudio.label);
 
           if (data.subtitles && data.subtitles.length > 0) {
             setUnifiedSubtitles(data.subtitles);
@@ -222,6 +217,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             }
           }
 
+          setFetchingStream(false);
           setIsBackgroundScanning(false);
           setScanStatusNotice('Streams ready');
           setTimeout(() => setScanStatusNotice(null), 3000);
@@ -230,7 +226,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         }
       })
       .catch(() => {
-        clearTimeout(safetyTimeout);
+        clearTimeout(fetchTimeout);
         fallbackDirectFetch();
       });
 
