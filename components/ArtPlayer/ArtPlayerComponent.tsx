@@ -131,6 +131,12 @@ export default function ArtPlayerComponent({
       playsInline: true,
       theme: '#f59e0b',
       airplay: true,
+      layers: [
+        {
+          name: 'popupLayer',
+          html: '<div class="artplayer-react-popup-wrapper" style="position: absolute; inset: 0; pointer-events: none; z-index: 999999;"></div>',
+        },
+      ],
       moreVideoAttr: {
         playsInline: true,
         ...(typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document))
@@ -360,7 +366,10 @@ export default function ArtPlayerComponent({
       getInstance(art);
     }
 
-    if (art.template?.$player) {
+    const popupWrapper = art.template?.$layers?.querySelector('.artplayer-react-popup-wrapper') as HTMLElement;
+    if (popupWrapper) {
+      setPortalTarget(popupWrapper);
+    } else if (art.template?.$player) {
       setPortalTarget(art.template.$player);
     } else if (containerRef.current) {
       setPortalTarget(containerRef.current);
@@ -464,7 +473,14 @@ export default function ArtPlayerComponent({
       ref={containerRef}
       className={`w-full aspect-video rounded-xl overflow-hidden bg-black relative ${className}`}
     >
-      {portalTarget && children ? createPortal(children, portalTarget) : children}
+      {portalTarget && children
+        ? createPortal(
+            <div className="absolute inset-0 pointer-events-none z-[999999]">
+              {children}
+            </div>,
+            portalTarget
+          )
+        : children}
     </div>
   );
 }

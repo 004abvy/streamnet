@@ -609,9 +609,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             )}
           </div>
 
-          {/* 🌟 QUICK MENU POPUP — anchored bottom-right near ArtPlayer control bar gear icon 🌟 */}
+          {/* 🌟 QUICK MENU POPUP — anchored bottom-right inside ArtPlayer's z-axis layer 🌟 */}
           {isQuickMenuOpen && (
-            <div className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-50 w-72 sm:w-80 bg-[#0c0c12]/98 border border-white/20 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl p-2.5 animate-in fade-in zoom-in-95 duration-150 text-neutral-200 select-none max-h-[85vh] overflow-y-auto scrollbar-thin">
+            <div className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-[1000000] w-72 sm:w-80 bg-[#0c0c12]/98 border border-white/20 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl p-2.5 animate-in fade-in zoom-in-95 duration-150 text-neutral-200 select-none max-h-[80vh] overflow-y-auto scrollbar-thin pointer-events-auto">
               <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-1">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">
                   PLAYER OPTIONS
