@@ -434,7 +434,7 @@ export default function VideoPlayer({
             <span>Rive</span>
           </button>
 
-          {/* Secret 123 Passkey Enter Field to Unlock VIP Multi-Server Hub */}
+          {/* Secret Passkey Enter Field to Unlock VIP Multi-Server Hub */}
           <div className="w-px h-3.5 bg-white/15 mx-0.5 shrink-0" />
           <form
             onSubmit={(e) => {
@@ -450,7 +450,7 @@ export default function VideoPlayer({
           >
             <input
               type="text"
-              placeholder="123"
+              placeholder="Code"
               value={passkeyCode}
               onChange={(e) => {
                 const val = e.target.value;
@@ -462,8 +462,8 @@ export default function VideoPlayer({
                   router.push(targetUrl);
                 }
               }}
-              className="w-11 sm:w-16 px-1.5 sm:px-2 py-0.5 sm:py-1 text-center bg-white/[0.06] hover:bg-white/[0.1] focus:bg-amber-500/20 border border-white/15 focus:border-amber-400 rounded-full text-[11px] sm:text-xs font-mono font-bold text-amber-300 placeholder:text-neutral-500 focus:outline-none transition-all cursor-text shadow-inner"
-              title="Enter 123 to open the VIP Server Hub"
+              className="w-12 sm:w-16 px-1.5 sm:px-2 py-0.5 sm:py-1 text-center bg-white/[0.06] hover:bg-white/[0.1] focus:bg-amber-500/20 border border-white/15 focus:border-amber-400 rounded-full text-[11px] sm:text-xs font-mono font-bold text-amber-300 placeholder:text-neutral-500 focus:outline-none transition-all cursor-text shadow-inner"
+              title="Enter code to open the VIP Server Hub"
             />
           </form>
         </div>
