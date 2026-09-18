@@ -158,15 +158,11 @@ function AnimeContent() {
     return { title: 'Trending & Popular Anime', subtitle: 'Discover and stream the most popular anime series worldwide.' };
   };
 
-  const [expandedGenreId, setExpandedGenreId] = useState<string | null>(genreParam || null);
-
   const handleGenreCardClick = (gId: string) => {
-    if (expandedGenreId === gId || genreParam === gId) {
-      // 2nd tap: Card is open -> apply filter / navigate!
-      updateQueryParams(undefined, gId);
+    if (genreParam === gId) {
+      updateQueryParams(undefined, '');
     } else {
-      // 1st tap: Opens/expands card visually!
-      setExpandedGenreId(gId);
+      updateQueryParams(undefined, gId);
     }
   };
 
@@ -221,7 +217,7 @@ function AnimeContent() {
             <button
               key={g.id}
               type="button"
-              className={`${styles.genreCard} ${(genreParam === g.id || expandedGenreId === g.id) ? styles.activeGenreCard : ''}`}
+              className={`${styles.genreCard} ${genreParam === g.id ? styles.activeGenreCard : ''}`}
               onClick={() => handleGenreCardClick(g.id)}
             >
               <img
