@@ -664,6 +664,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 src={embedFallbackUrl}
                 className="w-full aspect-video border-0 bg-black"
                 allowFullScreen
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
               />
             ) : (
