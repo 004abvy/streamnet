@@ -205,10 +205,28 @@ export default function ArtPlayerComponent({
             // Extract real quality levels and audio tracks from HLS manifest
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
               applyInitialSeek();
-              if (m3u8Url.includes('audioTrack=1') && hls.audioTracks && hls.audioTracks.length > 1) {
-                hls.audioTrack = 1;
-              } else if (m3u8Url.includes('audioTrack=0') && hls.audioTracks && hls.audioTracks.length > 0) {
-                hls.audioTrack = 0;
+              if (hls.audioTracks && hls.audioTracks.length > 1) {
+                const wantsJap = m3u8Url.includes('lang=ja') || m3u8Url.includes('audioTrack=0');
+                const wantsEng = m3u8Url.includes('lang=en') || m3u8Url.includes('audioTrack=1');
+                
+                // If the URL explicitly forces a track index, use it unconditionally
+                const forceTrackMatch = m3u8Url.match(/forceTrack=(\d+)/);
+                if (forceTrackMatch) {
+                  hls.audioTrack = parseInt(forceTrackMatch[1], 10);
+                } else {
+                  let targetTrack = -1;
+                  if (wantsJap) {
+                    targetTrack = hls.audioTracks.findIndex(t => t.name?.toLowerCase().includes('jp') || t.name?.toLowerCase().includes('ja') || t.language?.toLowerCase().includes('ja'));
+                    if (targetTrack === -1) targetTrack = 0; // fallback
+                  } else if (wantsEng) {
+                    targetTrack = hls.audioTracks.findIndex(t => t.name?.toLowerCase().includes('en') || t.language?.toLowerCase().includes('en'));
+                    if (targetTrack === -1) targetTrack = 1; // fallback
+                  }
+                  
+                  if (targetTrack !== -1) {
+                    hls.audioTrack = targetTrack;
+                  }
+                }
               }
               if (hls.levels && hls.levels.length > 1) {
                 const qualityLevels = hls.levels.map((level, idx) => ({
@@ -256,6 +274,7 @@ export default function ArtPlayerComponent({
                     console.warn('[ArtPlayer HLS] Fatal network error, halting:', data);
                     hls.stopLoad();
                     artInstance.notice.show = 'Stream unreachable. Try another track.';
+                    artInstance.emit('error', data);
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
                     if (mediaErrorRecoveries < 1) {
@@ -266,11 +285,13 @@ export default function ArtPlayerComponent({
                       console.warn('[ArtPlayer HLS] Media error persists after recovery, stopping.');
                       hls.stopLoad();
                       artInstance.notice.show = 'Stream playback error. Try another track.';
+                      artInstance.emit('error', data);
                     }
                     break;
                   default:
                     hls.destroy();
                     artInstance.notice.show = 'Stream playback error.';
+                    artInstance.emit('error', data);
                     break;
                 }
               }

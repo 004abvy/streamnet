@@ -1,5 +1,5 @@
 import { webcrypto } from 'crypto';
-import type { PeachifyApiResponse } from './peachify.types.js';
+import type { PeachifyApiResponse } from './peachify.types';
 
 const { subtle } = webcrypto;
 

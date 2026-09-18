@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
 import Footer from '../../../components/Footer/Footer';
 import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
@@ -18,6 +19,16 @@ export default function MovieDetailsPage({
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const router = useRouter();
+
+  const handleVipAccess = () => {
+    const code = window.prompt('Enter VIP Access Code:');
+    if (code === '123') {
+      router.push(`/watch/servers/${movie.id}`);
+    } else if (code !== null) {
+      alert('Invalid code!');
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -143,6 +154,14 @@ export default function MovieDetailsPage({
             >
               <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
               {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
+            </button>
+            <button
+              type="button"
+              className={styles.playNowBtn}
+              style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
+              onClick={handleVipAccess}
+            >
+              VIP Server
             </button>
           </div>
 

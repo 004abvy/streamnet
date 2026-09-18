@@ -218,11 +218,11 @@ export default function VidstackPlayer({
           if (!tracks || !tmdbId) return;
           try {
             const trackList = (Array.isArray(tracks) ? tracks : Array.from(tracks)) as TextTrack[];
-            const showing = trackList.find((t) => t.mode === 'showing');
-            if (showing) {
-              localStorage.setItem(`streamnet_sub_${tmdbId}`, showing.label);
-            } else {
-              localStorage.setItem(`streamnet_sub_${tmdbId}`, 'off');
+            if (trackList.length > 0) {
+              const showing = trackList.find((t) => t.mode === 'showing');
+              if (showing) {
+                localStorage.setItem(`streamnet_sub_${tmdbId}`, showing.label);
+              }
             }
           } catch {}
         }}

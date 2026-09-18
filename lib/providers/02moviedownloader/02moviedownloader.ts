@@ -12,8 +12,8 @@ import {
     EncryptedResponse,
     MovieDownloaderResponse,
     Token
-} from './02moviedownloader.types.js';
-import { generateRandomUserAgent } from '../../utils/ua.js';
+} from './02moviedownloader.types';
+
 
 export class MovieDownloader extends BaseProvider {
     readonly id = '02moviedownloader';
@@ -114,7 +114,8 @@ export class MovieDownloader extends BaseProvider {
         media: ProviderMediaObject
     ): Promise<ProviderResult> {
         try {
-            this.HEADERS['User-Agent'] = generateRandomUserAgent();
+            const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
+            this.HEADERS['User-Agent'] = userAgent;
             const pageUrl = this.buildPageUrl(media);
 
             const token = await this.getToken(media);

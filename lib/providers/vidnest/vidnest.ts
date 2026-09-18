@@ -10,7 +10,7 @@ import type {
     SubtitleFormat
 } from '@omss/framework';
 
-import decrypt from './decrypt.js';
+import decrypt from './decrypt';
 import type {
     ServerMap,
     SupportedServer,
@@ -22,7 +22,7 @@ import type {
     purstreamResponse,
     deltaResponse,
     movieboxSource
-} from './vidnest.types.js';
+} from './vidnest.types';
 
 export class VidNestProvider extends BaseProvider {
     readonly id = 'vidnest';

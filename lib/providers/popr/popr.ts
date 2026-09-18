@@ -7,7 +7,7 @@ import type {
     SourceType,
     Subtitle
 } from '@omss/framework';
-import { VidnestResponse } from './popr.types.js';
+import { VidnestResponse } from './popr.types';
 
 export class PoprProvider extends BaseProvider {
     readonly id = 'popr';

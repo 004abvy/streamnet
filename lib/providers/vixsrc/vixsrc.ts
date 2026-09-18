@@ -6,7 +6,7 @@ import type {
     Source,
     Subtitle
 } from '@omss/framework';
-import { VixSrcApiResponse } from './vixsrc.types.js';
+import { VixSrcApiResponse } from './vixsrc.types';
 
 export class VixSrcProvider extends BaseProvider {
     readonly id = 'vixsrc';

@@ -4,10 +4,10 @@ import type {
     ProviderMediaObject,
     ProviderResult
 } from '@omss/framework';
-import { generateRandomUserAgent } from '../../utils/ua.js';
-import { TulnexApiResponse } from './tulnex.types.js';
-import { decryptPayload } from './decrypt.js';
-import { extractUrl } from './tulnex.mapper.js';
+import { generateRandomUserAgent } from '../../utils/ua';
+import { TulnexApiResponse } from './tulnex.types';
+import { decryptPayload } from './decrypt';
+import { extractUrl } from './tulnex.mapper';
 
 export class TulnexProvider extends BaseProvider {
     readonly id = 'tulnex';

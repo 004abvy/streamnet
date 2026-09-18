@@ -166,10 +166,13 @@ function convertSrtToVtt(raw: string): string {
     vtt = vtt.slice(1);
   }
 
-  // If already WebVTT, clean up any X-TIMESTAMP-MAP for standalone usage
+  // If already WebVTT, clean up and apply offset if X-TIMESTAMP-MAP is present
   if (vtt.startsWith('WEBVTT')) {
-    // Remove X-TIMESTAMP-MAP lines (they're only relevant for HLS segmented delivery)
-    vtt = vtt.replace(/^X-TIMESTAMP-MAP.*$/gm, '').replace(/\n{3,}/g, '\n\n');
+    if (vtt.includes('X-TIMESTAMP-MAP')) {
+      const offset = parseTimestampMapOffset(vtt);
+      const cues = extractCues(vtt, offset);
+      return `WEBVTT\n\n${cues.join('\n\n')}`;
+    }
     return vtt;
   }
 

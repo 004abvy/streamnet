@@ -268,7 +268,7 @@ export async function GET(request: NextRequest) {
                 language: 'ja',
                 label: 'Japanese [Original]',
                 badge: '4K HDR',
-                url: proxiedUrl,
+                url: `${proxiedUrl}&lang=ja&forceTrack=1`,
                 quality: '4K HDR',
                 isDefault: true,
               });
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
                 language: 'en-dub',
                 label: 'English [Dub]',
                 badge: '4K HDR',
-                url: `${proxiedUrl}&audioTrack=1`,
+                url: `${proxiedUrl}&lang=en&forceTrack=0`,
                 quality: '4K HDR',
                 isDefault: false,
               });
@@ -591,17 +591,49 @@ export async function GET(request: NextRequest) {
     });
 
     // Subtitle Sorting: English first, English CC second, Hindi third, then alphabetical
-    const sortedSubtitles = Array.from(subtitleMap.values()).sort((a, b) => {
+    let finalSubtitles = Array.from(subtitleMap.values());
+    
+    // Fallback: If no subtitles found from providers, query OpenSubtitles
+    if (finalSubtitles.length === 0) {
+      try {
+        const { getImdbIdFromTmdb, fetchOpenSubtitles } = await import('../../../lib/subtitles');
+        const imdbId = await getImdbIdFromTmdb(id, type as 'movie' | 'tv');
+        if (imdbId) {
+          const openSubs = await fetchOpenSubtitles(imdbId, type as 'movie' | 'tv', season ? season.toString() : '1', episode ? episode.toString() : '1');
+          if (openSubs && openSubs.length > 0) {
+            for (const s of openSubs) {
+              const rawLabel = (s.label || s.language || 'English').trim();
+              const norm = normalizeSubtitle(rawLabel, s.language || 'en');
+              finalSubtitles.push({
+                id: `sub-os-${norm.key}-${Math.random().toString(36).substr(2,9)}`,
+                language: norm.langCode,
+                label: norm.label,
+                url: `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(s.url)}`,
+                isDefault: norm.key === 'en',
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Soft fail OpenSubtitles
+      }
+    }
+
+    const sortedSubtitles = finalSubtitles.sort((a, b) => {
       const la = a.label.toLowerCase();
       const lb = b.label.toLowerCase();
       if (la === 'english') return -1;
       if (lb === 'english') return 1;
       if (la.includes('english [cc]')) return -1;
       if (lb.includes('english [cc]')) return 1;
-      if (la.includes('हिन्दी') || la.includes('hindi')) return -1;
-      if (lb.includes('हिन्दी') || lb.includes('hindi')) return 1;
+      if (la === 'hindi') return -1;
+      if (lb === 'hindi') return 1;
       return a.label.localeCompare(b.label);
     });
+
+    if (sortedSubtitles.length > 0 && !sortedSubtitles.some(s => s.isDefault)) {
+      sortedSubtitles[0].isDefault = true;
+    }
 
     // Determine default stream (Japanese for anime, Hindi 1080p for standard)
     const defaultTrack = isAnime

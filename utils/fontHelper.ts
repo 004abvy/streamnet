@@ -9,13 +9,16 @@ export async function getFontsList() {
   if (fetchPromise) return fetchPromise;
 
   fetchPromise = fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${GOOGLE_FONTS_API_KEY}&sort=trending`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) return { items: [] };
+      return res.json();
+    })
     .then(data => {
       cachedFonts = data.items || [];
       return cachedFonts;
     })
-    .catch(err => {
-      console.error('Failed to fetch Google Fonts', err);
+    .catch(() => {
+      fetchPromise = null;
       return [];
     });
 
