@@ -19,6 +19,7 @@ import {
   Share2
 } from 'lucide-react';
 import ArtPlayerComponent, { ArtPlayerSubtitle } from '../../../../components/ArtPlayer/ArtPlayerComponent';
+import VidstackPlayer, { VidstackTrack } from '../../../../components/VidstackPlayer';
 
 export interface UnifiedAudioTrack {
   id: string;
@@ -408,6 +409,18 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     }));
   }, [unifiedSubtitles]);
 
+  // Format subtitles for Vidstack Direct HLS Player (iOS Fallback)
+  const vidstackSubtitles: VidstackTrack[] = useMemo(() => {
+    return unifiedSubtitles.map(s => ({
+      src: s.url,
+      label: s.label,
+      language: s.language || (s.label.toLowerCase().includes('hindi') ? 'hi' : 'en'),
+      kind: 'subtitles',
+      default: s.isDefault,
+      type: 'vtt',
+    }));
+  }, [unifiedSubtitles]);
+
   const getAspectRatioStyle = () => {
     switch (aspectRatio) {
       case '4:3': return 'aspect-[4/3] max-h-[75vh]';
@@ -539,17 +552,39 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 </p>
               </div>
             ) : currentStreamUrl ? (
-              <ArtPlayerComponent
-                key={currentStreamUrl}
-                url={currentStreamUrl}
-                poster={backdropUrl || ''}
-                subtitles={artPlayerSubtitles}
-                autoPlay={true}
-                initialTime={playbackTimestamp}
-                audioBoost={audioBoost}
-                playbackRate={getNumericPlaySpeed(playSpeed)}
-                aspectRatio={aspectRatio}
-                videoFlip={videoFlip}
+              isIOSDevice ? (
+                <div className="w-full h-full bg-black relative">
+                  <VidstackPlayer
+                    key={currentStreamUrl}
+                    title={title}
+                    poster={backdropUrl || ''}
+                    src={currentStreamUrl}
+                    tracks={vidstackSubtitles}
+                    className="w-full h-full border-0 absolute inset-0"
+                    autoPlay={true}
+                    preferredLanguage={activeAudioLabel.toLowerCase().includes('hindi') ? 'hi' : 'en'}
+                    tmdbId={id}
+                  />
+                  {/* Provide a distinct button or hint for iOS users to access settings since Vidstack overlays it natively */}
+                  <button
+                    onClick={() => setIsQuickMenuOpen(prev => !prev)}
+                    className="absolute top-4 right-4 z-50 p-2 bg-black/60 hover:bg-black/80 rounded-full border border-white/20 text-white backdrop-blur-md shadow-lg transition-all"
+                  >
+                    <Sliders className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <ArtPlayerComponent
+                  key={currentStreamUrl}
+                  url={currentStreamUrl}
+                  poster={backdropUrl || ''}
+                  subtitles={artPlayerSubtitles}
+                  autoPlay={true}
+                  initialTime={playbackTimestamp}
+                  audioBoost={audioBoost}
+                  playbackRate={getNumericPlaySpeed(playSpeed)}
+                  aspectRatio={aspectRatio}
+                  videoFlip={videoFlip}
                 subtitleOffset={subtitleOffset}
                 activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
                 activeSubtitleLabel={activeSubtitle}
@@ -573,6 +608,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                       playbackTimeRef.current = art.video.currentTime;
                     }
                   });
+                }}
+                className="w-full h-full"
+              />
+            ) : (
                 }}
                 className="w-full h-full"
               >
