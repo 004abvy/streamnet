@@ -986,35 +986,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               )}
             </div>
           )}
-        </ArtPlayerComponent>
-      ) : embedFallbackUrl ? (
-        <iframe
-          src={embedFallbackUrl}
-          className="w-full aspect-video border-0 bg-black"
-          allowFullScreen
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
-        />
-      ) : (
-        <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
-          <p className="text-amber-400 font-bold text-base">Stream Offline</p>
-          <p className="text-xs text-neutral-400 max-w-md">{errorMessage || 'Stream could not be loaded.'}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg transition cursor-pointer"
-            >
-              Reload Stream
-            </button>
-            <button
-              onClick={() => router.push(type === 'tv' ? `/watch/tv/${id}/${season}/${episode}` : `/watch/${id}`)}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-lg transition cursor-pointer"
-            >
-              Back to Standard Player
-            </button>
-          </div>
-        </div>
-      )}
-          </div>
         </div>
       </div>
     </main>
