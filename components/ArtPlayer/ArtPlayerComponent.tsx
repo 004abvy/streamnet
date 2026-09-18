@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Artplayer from 'artplayer';
 import Hls from 'hls.js';
 
@@ -57,6 +58,7 @@ export default function ArtPlayerComponent({
   const artInstanceRef = useRef<Artplayer | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   // Setup Web Audio API for hardware-level Audio Boost (1x to 3x)
   const applyAudioBoost = (video: HTMLVideoElement, gainValue: number) => {
@@ -358,6 +360,12 @@ export default function ArtPlayerComponent({
       getInstance(art);
     }
 
+    if (art.template?.$player) {
+      setPortalTarget(art.template.$player);
+    } else if (containerRef.current) {
+      setPortalTarget(containerRef.current);
+    }
+
     art.on('video:ended', () => {
       onEnded?.();
     });
@@ -456,7 +464,7 @@ export default function ArtPlayerComponent({
       ref={containerRef}
       className={`w-full aspect-video rounded-xl overflow-hidden bg-black relative ${className}`}
     >
-      {children}
+      {portalTarget && children ? createPortal(children, portalTarget) : children}
     </div>
   );
 }
