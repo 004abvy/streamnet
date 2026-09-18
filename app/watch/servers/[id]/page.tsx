@@ -585,32 +585,33 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   playbackRate={getNumericPlaySpeed(playSpeed)}
                   aspectRatio={aspectRatio}
                   videoFlip={videoFlip}
-                subtitleOffset={subtitleOffset}
-                activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
-                activeSubtitleLabel={activeSubtitle}
-                onError={(err) => {
-                  console.warn('Playback error on stream:', currentStreamUrl, err);
-                  const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
-                  if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
-                    const nextTrack = unifiedAudioTracks[currentIdx + 1];
-                    setCurrentStreamUrl(nextTrack.url);
-                    setActiveAudioLabel(nextTrack.label);
-                  }
-                }}
-                onSettingsClick={() => {
-                  setIsQuickMenuOpen(prev => !prev);
-                  setActiveSubmenu(null);
-                }}
-                getInstance={(art) => {
-                  artRef.current = art;
-                  art.on('video:timeupdate', () => {
-                    if (art.video && art.video.currentTime > 0) {
-                      playbackTimeRef.current = art.video.currentTime;
+                  subtitleOffset={subtitleOffset}
+                  activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
+                  activeSubtitleLabel={activeSubtitle}
+                  onError={(err) => {
+                    console.warn('Playback error on stream:', currentStreamUrl, err);
+                    const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
+                    if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
+                      const nextTrack = unifiedAudioTracks[currentIdx + 1];
+                      setCurrentStreamUrl(nextTrack.url);
+                      setActiveAudioLabel(nextTrack.label);
                     }
-                  });
-                }}
-                className="w-full h-full"
-              />
+                  }}
+                  onSettingsClick={() => {
+                    setIsQuickMenuOpen(prev => !prev);
+                    setActiveSubmenu(null);
+                  }}
+                  getInstance={(art) => {
+                    artRef.current = art;
+                    art.on('video:timeupdate', () => {
+                      if (art.video && art.video.currentTime > 0) {
+                        playbackTimeRef.current = art.video.currentTime;
+                      }
+                    });
+                  }}
+                  className="w-full h-full"
+                />
+              )
             ) : (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
                 <p className="text-amber-400 font-bold text-base">Stream Offline</p>
