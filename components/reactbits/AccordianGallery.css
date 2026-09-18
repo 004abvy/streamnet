@@ -93,14 +93,14 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(180deg);
+  transform: translate(-50%, -50%);
   writing-mode: vertical-rl;
-  text-orientation: mixed;
+  text-orientation: upright;
   color: rgba(255, 255, 255, 0.85);
   font-family: 'Bebas Neue', 'Impact', sans-serif;
   font-size: clamp(1.1rem, 1.4vw, 1.6rem);
   font-weight: 800;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   pointer-events: none;
   z-index: 2;
@@ -231,14 +231,14 @@
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, -50%) rotate(180deg) !important;
+    transform: translate(-50%, -50%) !important;
     writing-mode: vertical-rl !important;
-    text-orientation: mixed !important;
+    text-orientation: upright !important;
     color: rgba(255, 255, 255, 0.9) !important;
     font-family: 'Bebas Neue', 'Impact', sans-serif !important;
-    font-size: 1.1rem !important;
+    font-size: 1.05rem !important;
     font-weight: 800 !important;
-    letter-spacing: 0.22em !important;
+    letter-spacing: 0.1em !important;
     text-transform: uppercase !important;
     pointer-events: none !important;
     z-index: 4 !important;
@@ -251,8 +251,8 @@
   .ag-panel--active .ag-panel__vertical-tag {
     opacity: 1 !important;
     color: #ffffff !important;
-    font-size: 1.25rem !important;
-    letter-spacing: 0.28em !important;
+    font-size: 1.15rem !important;
+    letter-spacing: 0.12em !important;
     text-shadow: 0 2px 16px rgba(0, 0, 0, 1), 0 0 14px rgba(0, 0, 0, 0.95) !important;
   }
 
