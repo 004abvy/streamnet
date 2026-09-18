@@ -552,66 +552,43 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 </p>
               </div>
             ) : currentStreamUrl ? (
-              isIOSDevice ? (
-                <div className="w-full h-full bg-black relative">
-                  <VidstackPlayer
-                    key={currentStreamUrl}
-                    title={title}
-                    poster={backdropUrl || ''}
-                    src={currentStreamUrl}
-                    tracks={vidstackSubtitles}
-                    className="w-full h-full border-0 absolute inset-0"
-                    autoPlay={true}
-                    preferredLanguage={activeAudioLabel.toLowerCase().includes('hindi') ? 'hi' : 'en'}
-                    tmdbId={id}
-                  />
-                  {/* Provide a distinct button or hint for iOS users to access settings since Vidstack overlays it natively */}
-                  <button
-                    onClick={() => setIsQuickMenuOpen(prev => !prev)}
-                    className="absolute top-4 right-4 z-50 p-2 bg-black/60 hover:bg-black/80 rounded-full border border-white/20 text-white backdrop-blur-md shadow-lg transition-all"
-                  >
-                    <Sliders className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <ArtPlayerComponent
-                  key={currentStreamUrl}
-                  url={currentStreamUrl}
-                  poster={backdropUrl || ''}
-                  subtitles={artPlayerSubtitles}
-                  autoPlay={true}
-                  initialTime={playbackTimestamp}
-                  audioBoost={audioBoost}
-                  playbackRate={getNumericPlaySpeed(playSpeed)}
-                  aspectRatio={aspectRatio}
-                  videoFlip={videoFlip}
-                  subtitleOffset={subtitleOffset}
-                  activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
-                  activeSubtitleLabel={activeSubtitle}
-                  onError={(err) => {
-                    console.warn('Playback error on stream:', currentStreamUrl, err);
-                    const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
-                    if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
-                      const nextTrack = unifiedAudioTracks[currentIdx + 1];
-                      setCurrentStreamUrl(nextTrack.url);
-                      setActiveAudioLabel(nextTrack.label);
+              <ArtPlayerComponent
+                key={currentStreamUrl}
+                url={currentStreamUrl}
+                poster={backdropUrl || ''}
+                subtitles={artPlayerSubtitles}
+                autoPlay={true}
+                initialTime={playbackTimestamp}
+                audioBoost={audioBoost}
+                playbackRate={getNumericPlaySpeed(playSpeed)}
+                aspectRatio={aspectRatio}
+                videoFlip={videoFlip}
+                subtitleOffset={subtitleOffset}
+                activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
+                activeSubtitleLabel={activeSubtitle}
+                onError={(err) => {
+                  console.warn('Playback error on stream:', currentStreamUrl, err);
+                  const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
+                  if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
+                    const nextTrack = unifiedAudioTracks[currentIdx + 1];
+                    setCurrentStreamUrl(nextTrack.url);
+                    setActiveAudioLabel(nextTrack.label);
+                  }
+                }}
+                onSettingsClick={() => {
+                  setIsQuickMenuOpen(prev => !prev);
+                  setActiveSubmenu(null);
+                }}
+                getInstance={(art) => {
+                  artRef.current = art;
+                  art.on('video:timeupdate', () => {
+                    if (art.video && art.video.currentTime > 0) {
+                      playbackTimeRef.current = art.video.currentTime;
                     }
-                  }}
-                  onSettingsClick={() => {
-                    setIsQuickMenuOpen(prev => !prev);
-                    setActiveSubmenu(null);
-                  }}
-                  getInstance={(art) => {
-                    artRef.current = art;
-                    art.on('video:timeupdate', () => {
-                      if (art.video && art.video.currentTime > 0) {
-                        playbackTimeRef.current = art.video.currentTime;
-                      }
-                    });
-                  }}
-                  className="w-full h-full"
-                />
-              )
+                  });
+                }}
+                className="w-full h-full"
+              />
             ) : (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
                 <p className="text-amber-400 font-bold text-base">Stream Offline</p>

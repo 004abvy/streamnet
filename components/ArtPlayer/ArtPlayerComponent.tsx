@@ -127,8 +127,10 @@ export default function ArtPlayerComponent({
       theme: '#f59e0b',
       airplay: true,
       moreVideoAttr: {
-        crossOrigin: 'anonymous',
         playsInline: true,
+        ...(typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document))
+          ? {}
+          : { crossOrigin: 'anonymous' }),
       },
       subtitle: {
         url: defaultSub?.url || 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A',
