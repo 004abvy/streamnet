@@ -109,18 +109,18 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
         return (
           <div className={styles.content}>
             {movie.credits?.cast?.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+              <div className={styles.creditsGrid}>
                 {movie.credits.cast.slice(0, 12).map((actor: any) => (
-                  <div key={actor.id} style={{ background: 'rgba(18, 18, 26, 0.45)', backdropFilter: 'blur(28px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '16px', overflow: 'hidden' }}>
-                     <img 
-                        src={actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'https://via.placeholder.com/200x300?text=No+Image'} 
-                        alt={actor.name}
-                        style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover' }}
-                      />
-                      <div style={{ padding: '0.8rem' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.2rem' }}>{actor.name}</div>
-                        <div style={{ color: '#888', fontSize: '0.8rem' }}>{actor.character}</div>
-                      </div>
+                  <div key={actor.id} className={styles.creditCard}>
+                    <img 
+                      src={actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'https://via.placeholder.com/200x300?text=No+Image'} 
+                      alt={actor.name}
+                      className={styles.creditImg}
+                    />
+                    <div className={styles.creditMeta}>
+                      <div className={styles.creditName}>{actor.name}</div>
+                      <div className={styles.creditChar}>{actor.character}</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -153,13 +153,13 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
         return (
           <div className={styles.content}>
             {movie.images?.backdrops && movie.images.backdrops.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+              <div className={styles.imagesGrid}>
                 {movie.images.backdrops.slice(0, 6).map((img: any, i: number) => (
                   <img 
                     key={i}
                     src={`https://image.tmdb.org/t/p/w500${img.file_path}`} 
                     alt="Backdrop"
-                    style={{ width: '100%', borderRadius: '8px', aspectRatio: '16/9', objectFit: 'cover' }}
+                    className={styles.imageItem}
                   />
                 ))}
               </div>
@@ -172,11 +172,11 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
         return (
           <div className={styles.content}>
             {movie.reviews?.results && movie.reviews.results.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div className={styles.reviewList}>
                 {movie.reviews.results.slice(0, 5).map((review: any) => (
-                  <div key={review.id} style={{ background: 'rgba(18, 18, 26, 0.45)', backdropFilter: 'blur(28px)', border: '1px solid rgba(255,255,255,0.12)', padding: '1.5rem', borderRadius: '16px' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '1.1rem', color: '#fff' }}>A review by {review.author}</div>
-                    <p style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.6' }}>{review.content.substring(0, 400)}...</p>
+                  <div key={review.id} className={styles.reviewCard}>
+                    <div className={styles.reviewAuthor}>A review by {review.author}</div>
+                    <p className={styles.reviewText}>{review.content.substring(0, 400)}...</p>
                   </div>
                 ))}
               </div>
