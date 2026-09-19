@@ -146,8 +146,9 @@ export default function Playeranime({
 
         setAnilistId(mediaId);
 
+        const anivexaUrl = process.env.NEXT_PUBLIC_ANIVEXA_URL || "http://localhost:4000";
         const epRes = await fetchWithTimeout(
-          `http://localhost:4000/episodes/anikoto/reanime/animegg/${mediaId}`,
+          `${anivexaUrl}/episodes/anikoto/reanime/animegg/${mediaId}`,
         );
         const epData = await epRes.json();
         setAnimeData(epData);
@@ -192,7 +193,8 @@ export default function Playeranime({
 
         // selectedEpisodeId is something like "watch/anikoto/11061/sub/anikoto-1"
         // Since Anivexa returns the full path in 'id', we can just use it directly!
-        const res = await fetch(`http://localhost:4000/${selectedEpisodeId}`);
+        const anivexaUrl = process.env.NEXT_PUBLIC_ANIVEXA_URL || "http://localhost:4000";
+        const res = await fetch(`${anivexaUrl}/${selectedEpisodeId}`);
         const streamData = await res.json();
 
         let allTracks = [];
