@@ -80,7 +80,7 @@ function extractCues(segmentText: string, offset: number): string[] {
   let currentCue: string[] = [];
   let inCue = false;
 
-  const timestampRegex = /^(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})(.*)/;
+  const timestampRegex = /^((?:\d{2}:)?\d{2}:\d{2}[.,]\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}[.,]\d{3})(.*)/;
 
   for (const line of lines) {
     const trimmed = line.trim();

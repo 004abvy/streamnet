@@ -322,7 +322,11 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
               
               <div className={styles.cardActions}>
                 <Link
-                  href={isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`}
+                  href={
+                    (currentMovie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || currentMovie?.genre_ids?.includes(16)) && (currentMovie?.original_language === 'ja' || currentMovie?.origin_country?.includes('JP'))
+                      ? (isTvShow ? `/tv/${currentMovie.id}?playAnime=true` : `/movie/${currentMovie.id}?playAnime=true`)
+                      : (isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`)
+                  }
                   className={styles.watchBtn}
                   style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#eab308', color: '#000000', border: 'none' }}
                   onClick={() => {

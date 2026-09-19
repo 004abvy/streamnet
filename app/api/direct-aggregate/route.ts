@@ -404,29 +404,23 @@ export async function GET(request: NextRequest) {
 
         const rawQuality = (stream.quality || stream.provider || '').toLowerCase();
         let badge = '1080p HD';
-        let label = 'English [Direct HD]';
+        let label = 'English';
 
         if (rawQuality.includes('2160') || rawQuality.includes('4k')) {
-          label = 'English [Direct UHD]';
           badge = '4K 2160p';
         } else if (rawQuality.includes('1080')) {
-          label = `English [Direct ${stream.provider.replace(/\s+/g, ' ')}]`;
           badge = '1080p Full HD';
         } else if (rawQuality.includes('720')) {
-          label = `English [Direct ${stream.provider.replace(/\s+/g, ' ')}]`;
           badge = '720p HD';
         } else if (rawQuality.includes('480')) {
-          label = `English [Direct ${stream.provider.replace(/\s+/g, ' ')}]`;
           badge = '480p SD';
         } else if (rawQuality.includes('360')) {
-          label = 'English [Data Saver]';
           badge = '360p SD';
         } else {
-          label = `English [Direct ${stream.provider.replace(/\s+/g, ' ')}]`;
           badge = 'HD';
         }
 
-        audioTracks.push({
+        audioTracks.unshift({
           id: `direct-${stream.id || idx}`,
           language: 'en',
           label,
@@ -442,19 +436,19 @@ export async function GET(request: NextRequest) {
             if (!s.url) continue;
             const rawLabel = (s.label || s.language || 'English').trim();
             const norm = normalizeSubtitle(rawLabel, s.language);
-            if (!subtitleMap.has(norm.key)) {
-              subtitleMap.set(norm.key, {
-                id: `sub-direct-${norm.key}`,
-                language: norm.langCode,
-                label: norm.label,
-                url: `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(s.url)}`,
-                isDefault: norm.key === 'en',
-              });
-            }
+            // Direct4K subtitles override Rivestream captions (better sync)
+            subtitleMap.set(norm.key, {
+              id: `sub-direct-${norm.key}`,
+              language: norm.langCode,
+              label: norm.label,
+              url: `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(s.url)}`,
+              isDefault: norm.key === 'en',
+            });
           }
         }
       });
     }
+
 
     // Live Health Verification: Filter out non-loading or errored streams
     const verificationResults = await Promise.allSettled(
@@ -478,23 +472,16 @@ export async function GET(request: NextRequest) {
 
     const validTracks = verifiedAudioTracks.length > 0 ? verifiedAudioTracks : audioTracks;
 
-    // ──────────────────────────────────────────────────────────
-    // Netflix-Style Language Grouping:
-    // Instead of one entry per provider, group by BASE language
-    // and keep only the best quality stream per language.
-    // Fallback URLs are stored so the frontend can retry.
-    // ──────────────────────────────────────────────────────────
-
+    // Netflix-style grouping: one entry per language, best quality wins
     const qualityRank = (badge: string): number => {
       if (badge.includes('4K') || badge.includes('2160')) return 4;
       if (badge.includes('1080')) return 3;
       if (badge.includes('720')) return 2;
       if (badge.includes('480')) return 1;
       if (badge.includes('360')) return 0;
-      return 1; // default 'HD'
+      return 1;
     };
 
-    // Derive a clean base language key for grouping
     const getBaseLang = (track: UnifiedAudioTrack): string => {
       const lang = track.language.toLowerCase();
       if (lang === 'ja') return 'ja';
@@ -504,9 +491,9 @@ export async function GET(request: NextRequest) {
       if (lang === 'fr') return 'fr';
       if (lang === 'ar') return 'ar';
       if (lang.startsWith('es')) return 'es';
-      if (lang === 'en-dub') return 'en-dub'; // Keep anime English dub separate
-      // Everything else English-like
-      return 'en';
+      if (lang === 'en-dub') return 'en-dub';
+      if (lang.startsWith('en')) return 'en';
+      return lang;
     };
 
     const cleanLabel = (baseLang: string): string => {
@@ -523,30 +510,24 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    // Group and pick best
     const langGroupMap = new Map<string, { best: UnifiedAudioTrack; fallbacks: string[] }>();
-
     for (const track of validTracks) {
       const base = getBaseLang(track);
       const rank = qualityRank(track.badge);
       const existing = langGroupMap.get(base);
-
       if (!existing) {
         langGroupMap.set(base, { best: track, fallbacks: [] });
       } else {
         const existingRank = qualityRank(existing.best.badge);
         if (rank > existingRank) {
-          // New track is better — demote old best to fallback
           existing.fallbacks.push(existing.best.url);
           existing.best = track;
         } else {
-          // Current best is better — add new track as fallback
           existing.fallbacks.push(track.url);
         }
       }
     }
 
-    // Build the final deduplicated track list
     const deduplicatedTracks: UnifiedAudioTrack[] = [];
     for (const [baseLang, group] of langGroupMap) {
       deduplicatedTracks.push({
@@ -554,7 +535,6 @@ export async function GET(request: NextRequest) {
         id: `lang-${baseLang}`,
         language: baseLang,
         label: cleanLabel(baseLang),
-        // Store fallback URLs in quality field as metadata (pipe-separated)
         quality: group.best.badge,
       });
     }
@@ -593,8 +573,9 @@ export async function GET(request: NextRequest) {
     // Subtitle Sorting: English first, English CC second, Hindi third, then alphabetical
     let finalSubtitles = Array.from(subtitleMap.values());
     
-    // Fallback: If no subtitles found from providers, query OpenSubtitles
-    if (finalSubtitles.length === 0) {
+    // Fetch OpenSubtitles if no English subs found from providers (same logic as Direct4K)
+    const hasEnglishSub = finalSubtitles.some(s => s.language === 'en' || s.label.toLowerCase().includes('english'));
+    if (!hasEnglishSub || finalSubtitles.length === 0) {
       try {
         const { getImdbIdFromTmdb, fetchOpenSubtitles } = await import('../../../lib/subtitles');
         const imdbId = await getImdbIdFromTmdb(id, type as 'movie' | 'tv');

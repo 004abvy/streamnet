@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import Artplayer from 'artplayer';
-import Hls from 'hls.js';
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import Artplayer from "artplayer";
+import Hls from "hls.js";
 
 export interface ArtPlayerSubtitle {
   url: string;
@@ -26,6 +26,8 @@ export interface ArtPlayerProps {
   subtitleOffset?: number;
   activeSubtitleUrl?: string;
   activeSubtitleLabel?: string;
+  portalTarget?: HTMLElement | null;
+  customSettings?: any[];
   onEnded?: () => void;
   onError?: (err: any) => void;
   onSettingsClick?: () => void;
@@ -38,13 +40,13 @@ export default function ArtPlayerComponent({
   poster,
   title,
   subtitles = [],
-  className = '',
+  className = "",
   autoPlay = false,
   initialTime = 0,
   audioBoost = 1,
   playbackRate = 1,
-  aspectRatio = 'Default',
-  videoFlip = 'Normal',
+  aspectRatio = "Default",
+  videoFlip = "Normal",
   subtitleOffset = 0,
   activeSubtitleUrl,
   activeSubtitleLabel,
@@ -52,6 +54,7 @@ export default function ArtPlayerComponent({
   onError,
   onSettingsClick,
   getInstance,
+  customSettings = [],
   children,
 }: ArtPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,11 +66,15 @@ export default function ArtPlayerComponent({
   // Setup Web Audio API for hardware-level Audio Boost (1x to 3x)
   const applyAudioBoost = (video: HTMLVideoElement, gainValue: number) => {
     try {
-      const isIOS = typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
+      const isIOS =
+        typeof window !== "undefined" &&
+        (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.userAgent.includes("Mac") && "ontouchend" in document));
       if (isIOS) return; // iOS Safari often fails or silences audio with createMediaElementSource on HLS
 
       if (!audioContextRef.current) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx =
+          window.AudioContext || (window as any).webkitAudioContext;
         const ctx = new AudioCtx();
         const source = ctx.createMediaElementSource(video);
         const gain = ctx.createGain();
@@ -76,14 +83,14 @@ export default function ArtPlayerComponent({
         audioContextRef.current = ctx;
         gainNodeRef.current = gain;
       }
-      if (audioContextRef.current.state === 'suspended') {
+      if (audioContextRef.current.state === "suspended") {
         audioContextRef.current.resume();
       }
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = gainValue;
       }
     } catch (err) {
-      console.warn('[ArtPlayer] Audio Boost note:', err);
+      console.warn("[ArtPlayer] Audio Boost note:", err);
     }
   };
 
@@ -96,7 +103,7 @@ export default function ArtPlayerComponent({
       artInstanceRef.current = null;
     }
 
-    const defaultSub = subtitles.find(s => s.default) || subtitles[0];
+    const defaultSub = subtitles.find((s) => s.default) || subtitles[0];
 
     // Settings gear SVG icon for the control bar
     const settingsIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.9;transition:transform 0.3s ease"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
@@ -104,13 +111,18 @@ export default function ArtPlayerComponent({
     // Store callback ref so it persists across renders
     const settingsClickRef = onSettingsClick;
 
-    const isM3u8Url = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('m3u8') || url.toLowerCase().includes('/stream/') || url.toLowerCase().includes('/direct/') || url.toLowerCase().includes('hls');
+    const isM3u8Url =
+      url.toLowerCase().includes(".m3u8") ||
+      url.toLowerCase().includes("m3u8") ||
+      url.toLowerCase().includes("/stream/") ||
+      url.toLowerCase().includes("/direct/") ||
+      url.toLowerCase().includes("hls");
 
     const art = new Artplayer({
       container: containerRef.current,
       url: url,
-      type: isM3u8Url ? 'm3u8' : undefined,
-      poster: poster || '',
+      type: isM3u8Url ? "m3u8" : undefined,
+      poster: poster || "",
       volume: 0.85,
       isLive: false,
       muted: false,
@@ -119,67 +131,80 @@ export default function ArtPlayerComponent({
       autoSize: false,
       autoMini: false,
       screenshot: false,
-      setting: false,
+      setting: onSettingsClick ? false : true,
       loop: false,
       flip: true,
       playbackRate: true,
       aspectRatio: true,
       fullscreen: true,
       fullscreenWeb: true,
-      subtitleOffset: false,
+      subtitleOffset: true,
       miniProgressBar: true,
       playsInline: true,
-      theme: '#f59e0b',
+      theme: "#f59e0b",
       airplay: true,
       layers: [
         {
-          name: 'popupLayer',
+          name: "popupLayer",
           html: '<div class="artplayer-react-popup-wrapper" style="position: absolute; inset: 0; pointer-events: none; z-index: 999999;"></div>',
         },
       ],
       moreVideoAttr: {
         playsInline: true,
-        ...(typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document))
-          ? {}
-          : { crossOrigin: 'anonymous' }),
       },
       subtitle: {
-        url: defaultSub?.url || 'data:text/vtt;charset=utf-8,WEBVTT%0A%0A',
-        type: 'vtt' as const,
+        url: defaultSub?.url || "data:text/vtt;charset=utf-8,WEBVTT%0A%0A",
+        type: "vtt" as const,
         style: {
-          color: '#ffffff',
-          fontSize: '20px',
-          textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+          color: "#ffffff",
+          fontSize: "20px",
+          textShadow: "0 2px 4px rgba(0,0,0,0.9)",
         },
-        encoding: 'utf-8',
+        encoding: "utf-8",
       },
       controls: [
-        // Settings gear icon — positioned right, next to PiP
         {
-          name: 'settings',
-          position: 'right',
-          html: settingsIconSvg,
-          tooltip: 'Settings',
+          name: "subtitles-toggle",
+          position: "right",
+          html: '<span style="font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">CC</span>',
+          tooltip: "Toggle Subtitles",
           click: function () {
-            if (settingsClickRef) settingsClickRef();
+            art.subtitle.show = !art.subtitle.show;
+          },
+        },
+        {
+          name: "settings",
+          position: "right",
+          html: settingsIconSvg,
+          tooltip: "Settings",
+          click: function () {
+            if (settingsClickRef) {
+              settingsClickRef();
+            } else if (art.setting) {
+              art.setting.show = !art.setting.show;
+            }
           },
         },
       ],
       customType: {
-        m3u8: function (video: HTMLVideoElement, m3u8Url: string, artInstance: any) {
+        m3u8: function (
+          video: HTMLVideoElement,
+          m3u8Url: string,
+          artInstance: any,
+        ) {
           if (Hls.isSupported()) {
             if (artInstance.hls) artInstance.hls.destroy();
             const hls = new Hls({
               enableWorker: true,
               lowLatencyMode: true,
               startPosition: initialTime && initialTime > 0 ? initialTime : -1,
-              // Strict retry limits to prevent infinite refresh loops on flaky streams (e.g. UHD)
-              fragLoadingMaxRetry: 2,
-              fragLoadingMaxRetryTimeout: 4000,
-              manifestLoadingMaxRetry: 2,
-              manifestLoadingMaxRetryTimeout: 4000,
-              levelLoadingMaxRetry: 2,
-              levelLoadingMaxRetryTimeout: 4000,
+              // Relaxed retry limits to support slower streaming proxy servers
+              fragLoadingMaxRetry: 6,
+              fragLoadingMaxRetryTimeout: 15000,
+              manifestLoadingMaxRetry: 6,
+              manifestLoadingMaxRetryTimeout: 15000,
+              levelLoadingMaxRetry: 6,
+              levelLoadingMaxRetryTimeout: 15000,
             });
             hls.loadSource(m3u8Url);
             hls.attachMedia(video);
@@ -190,7 +215,10 @@ export default function ArtPlayerComponent({
             const applyInitialSeek = () => {
               if (hasRestoredSeek || !initialTime || initialTime <= 0) return;
               try {
-                if (video.currentTime < initialTime - 0.8 || video.currentTime === 0) {
+                if (
+                  video.currentTime < initialTime - 0.8 ||
+                  video.currentTime === 0
+                ) {
                   video.currentTime = initialTime;
                   if (artInstance) artInstance.currentTime = initialTime;
                 }
@@ -206,9 +234,13 @@ export default function ArtPlayerComponent({
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
               applyInitialSeek();
               if (hls.audioTracks && hls.audioTracks.length > 1) {
-                const wantsJap = m3u8Url.includes('lang=ja') || m3u8Url.includes('audioTrack=0');
-                const wantsEng = m3u8Url.includes('lang=en') || m3u8Url.includes('audioTrack=1');
-                
+                const wantsJap =
+                  m3u8Url.includes("lang=ja") ||
+                  m3u8Url.includes("audioTrack=0");
+                const wantsEng =
+                  m3u8Url.includes("lang=en") ||
+                  m3u8Url.includes("audioTrack=1");
+
                 // If the URL explicitly forces a track index, use it unconditionally
                 const forceTrackMatch = m3u8Url.match(/forceTrack=(\d+)/);
                 if (forceTrackMatch) {
@@ -216,13 +248,22 @@ export default function ArtPlayerComponent({
                 } else {
                   let targetTrack = -1;
                   if (wantsJap) {
-                    targetTrack = hls.audioTracks.findIndex(t => t.name?.toLowerCase().includes('jp') || t.name?.toLowerCase().includes('ja') || t.language?.toLowerCase().includes('ja'));
+                    targetTrack = hls.audioTracks.findIndex(
+                      (t) =>
+                        t.name?.toLowerCase().includes("jp") ||
+                        t.name?.toLowerCase().includes("ja") ||
+                        t.language?.toLowerCase().includes("ja"),
+                    );
                     if (targetTrack === -1) targetTrack = 0; // fallback
                   } else if (wantsEng) {
-                    targetTrack = hls.audioTracks.findIndex(t => t.name?.toLowerCase().includes('en') || t.language?.toLowerCase().includes('en'));
+                    targetTrack = hls.audioTracks.findIndex(
+                      (t) =>
+                        t.name?.toLowerCase().includes("en") ||
+                        t.language?.toLowerCase().includes("en"),
+                    );
                     if (targetTrack === -1) targetTrack = 1; // fallback
                   }
-                  
+
                   if (targetTrack !== -1) {
                     hls.audioTrack = targetTrack;
                   }
@@ -239,16 +280,16 @@ export default function ArtPlayerComponent({
                 // Add Auto quality option
                 qualityLevels.unshift({
                   default: hls.currentLevel === -1,
-                  html: 'Auto Quality',
+                  html: "Auto Quality",
                   url: m3u8Url,
                   levelIndex: -1,
                 });
 
                 artInstance.setting.update({
-                  name: 'quality',
+                  name: "quality",
                   width: 150,
-                  html: 'Quality',
-                  tooltip: 'Auto',
+                  html: "Quality",
+                  tooltip: "Auto",
                   selector: qualityLevels,
                   onSelect: function (item: any) {
                     hls.currentLevel = item.levelIndex;
@@ -259,72 +300,96 @@ export default function ArtPlayerComponent({
             });
 
             hls.on(Hls.Events.LEVEL_LOADED, applyInitialSeek);
-            video.addEventListener('loadedmetadata', applyInitialSeek, { once: true });
-            video.addEventListener('canplay', applyInitialSeek, { once: true });
-            video.addEventListener('playing', () => {
-              if (!hasRestoredSeek && initialTime > 0) {
-                applyInitialSeek();
-              }
-            }, { once: true });
+            video.addEventListener("loadedmetadata", applyInitialSeek, {
+              once: true,
+            });
+            video.addEventListener("canplay", applyInitialSeek, { once: true });
+            video.addEventListener(
+              "playing",
+              () => {
+                if (!hasRestoredSeek && initialTime > 0) {
+                  applyInitialSeek();
+                }
+              },
+              { once: true },
+            );
 
             hls.on(Hls.Events.ERROR, (event: any, data: any) => {
               if (data.fatal) {
                 switch (data.type) {
                   case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.warn('[ArtPlayer HLS] Fatal network error, halting:', data);
+                    console.warn(
+                      "[ArtPlayer HLS] Fatal network error, halting:",
+                      data,
+                    );
                     hls.stopLoad();
-                    artInstance.notice.show = 'Stream unreachable. Try another track.';
-                    artInstance.emit('error', data);
+                    artInstance.notice.show =
+                      "Stream unreachable. Try another track.";
+                    artInstance.emit("error", data);
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
                     if (mediaErrorRecoveries < 1) {
                       mediaErrorRecoveries++;
-                      console.warn('[ArtPlayer HLS] Media error, attempting recovery (attempt ' + mediaErrorRecoveries + ')');
+                      console.warn(
+                        "[ArtPlayer HLS] Media error, attempting recovery (attempt " +
+                          mediaErrorRecoveries +
+                          ")",
+                      );
                       hls.recoverMediaError();
                     } else {
-                      console.warn('[ArtPlayer HLS] Media error persists after recovery, stopping.');
+                      console.warn(
+                        "[ArtPlayer HLS] Media error persists after recovery, stopping.",
+                      );
                       hls.stopLoad();
-                      artInstance.notice.show = 'Stream playback error. Try another track.';
-                      artInstance.emit('error', data);
+                      artInstance.notice.show =
+                        "Stream playback error. Try another track.";
+                      artInstance.emit("error", data);
                     }
                     break;
                   default:
                     hls.destroy();
-                    artInstance.notice.show = 'Stream playback error.';
-                    artInstance.emit('error', data);
+                    artInstance.notice.show = "Stream playback error.";
+                    artInstance.emit("error", data);
                     break;
                 }
               }
             });
 
-            artInstance.on('destroy', () => hls.destroy());
-          } else if (video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('audio/mpegurl')) {
+            artInstance.on("destroy", () => hls.destroy());
+          } else if (
+            video.canPlayType("application/vnd.apple.mpegurl") ||
+            video.canPlayType("audio/mpegurl")
+          ) {
             video.src = m3u8Url;
             video.load();
             if (autoPlay) {
               video.play().catch(() => {});
             }
             if (initialTime && initialTime > 0) {
-              video.addEventListener('loadedmetadata', () => {
-                video.currentTime = initialTime;
-              }, { once: true });
+              video.addEventListener(
+                "loadedmetadata",
+                () => {
+                  video.currentTime = initialTime;
+                },
+                { once: true },
+              );
             }
           } else {
-            artInstance.notice.show = 'Unsupported video format';
+            artInstance.notice.show = "Unsupported video format";
           }
         },
       },
       settings: [
         // Native Audio Boost (1x to 3x) in ArtPlayer's setting menu
         {
-          html: 'Audio Boost',
+          html: "Audio Boost",
           width: 200,
-          tooltip: '1x (Normal)',
+          tooltip: "1x (Normal)",
           selector: [
-            { default: true, html: 'Normal (1x)', value: 1 },
-            { html: 'Boost 1.5x (+50%)', value: 1.5 },
-            { html: 'Double Boost 2x (+100%)', value: 2 },
-            { html: 'Super Boost 3x (+200%)', value: 3 },
+            { default: true, html: "Normal (1x)", value: 1 },
+            { html: "Boost 1.5x (+50%)", value: 1.5 },
+            { html: "Double Boost 2x (+100%)", value: 2 },
+            { html: "Super Boost 3x (+200%)", value: 3 },
           ],
           onSelect: function (item: any) {
             applyAudioBoost(art.video, item.value);
@@ -332,40 +397,41 @@ export default function ArtPlayerComponent({
           },
         },
         // Subtitle Selector in ArtPlayer's setting menu
-        ...(subtitles.length > 0
-          ? [
-              {
-                html: 'Subtitles',
-                width: 200,
-                tooltip: defaultSub?.label || 'Subtitles',
-                selector: [
-                  ...subtitles.map(sub => ({
+        {
+          name: "subtitles-menu",
+          html: "Subtitles",
+          width: 200,
+          tooltip: defaultSub?.label || "None",
+          selector:
+            subtitles.length > 0
+              ? [
+                  ...subtitles.map((sub) => ({
                     default: sub.default,
                     html: sub.label,
                     url: sub.url,
                   })),
-                  { html: 'Turn Off', url: '' },
-                ],
-                onSelect: function (item: any) {
-                  if (item.url) {
-                    art.subtitle.switch(item.url, { name: item.html });
-                    art.subtitle.show = true;
-                  } else {
-                    art.subtitle.show = false;
-                  }
-                  return item.html;
-                },
-              },
-            ]
-          : []),
+                  { html: "Turn Off", url: "" },
+                ]
+              : [{ html: "None", url: "" }],
+          onSelect: function (item: any) {
+            if (item.url) {
+              art.subtitle.switch(item.url, { name: item.html });
+              art.subtitle.show = true;
+            } else {
+              art.subtitle.show = false;
+            }
+            return item.html;
+          },
+        },
+        ...customSettings,
         // Download current source
         {
-          html: 'Download Stream',
+          html: "Download Stream",
           width: 180,
-          tooltip: 'Direct Link',
+          tooltip: "Direct Link",
           onSelect: function () {
-            window.open(url, '_blank');
-            return 'Opening...';
+            window.open(url, "_blank");
+            return "Opening...";
           },
         },
       ],
@@ -374,7 +440,9 @@ export default function ArtPlayerComponent({
     artInstanceRef.current = art;
 
     const updatePortalTarget = () => {
-      const popupWrapper = art.template?.$layers?.querySelector('.artplayer-react-popup-wrapper') as HTMLElement;
+      const popupWrapper = art.template?.$layers?.querySelector(
+        ".artplayer-react-popup-wrapper",
+      ) as HTMLElement;
       if (popupWrapper) {
         setPortalTarget(popupWrapper);
       } else if (art.template?.$player) {
@@ -384,7 +452,7 @@ export default function ArtPlayerComponent({
       }
     };
 
-    art.on('ready', () => {
+    art.on("ready", () => {
       updatePortalTarget();
       if (initialTime && initialTime > 0) {
         try {
@@ -395,11 +463,11 @@ export default function ArtPlayerComponent({
       }
     });
 
-    art.on('fullscreen', () => {
+    art.on("fullscreen", () => {
       updatePortalTarget();
     });
 
-    art.on('fullscreenWeb', () => {
+    art.on("fullscreenWeb", () => {
       updatePortalTarget();
     });
 
@@ -411,14 +479,17 @@ export default function ArtPlayerComponent({
       getInstance(art);
     }
 
-    art.on('video:ended', () => {
+    art.on("video:ended", () => {
       onEnded?.();
     });
 
-    art.on('error', (err: any) => {
-      console.warn('[ArtPlayer] Error:', err);
+    art.on("error", (err: any) => {
+      console.warn("[ArtPlayer] Error:", err);
       // If video has loaded frames or is actively playing audio/video, ignore transient non-fatal errors
-      if (art.video && (art.video.currentTime > 0 || art.video.readyState >= 1)) {
+      if (
+        art.video &&
+        (art.video.currentTime > 0 || art.video.readyState >= 1)
+      ) {
         return;
       }
       onError?.(err);
@@ -454,7 +525,8 @@ export default function ArtPlayerComponent({
   useEffect(() => {
     if (artInstanceRef.current && aspectRatio) {
       try {
-        artInstanceRef.current.aspectRatio = aspectRatio === 'Default' ? 'default' : aspectRatio;
+        artInstanceRef.current.aspectRatio =
+          aspectRatio === "Default" ? "default" : aspectRatio;
       } catch (e) {
         // Handled gracefully
       }
@@ -464,15 +536,20 @@ export default function ArtPlayerComponent({
   // Synchronize videoFlip
   useEffect(() => {
     if (artInstanceRef.current && videoFlip) {
-      if (videoFlip === 'Flip Horizontal') artInstanceRef.current.flip = 'horizontal';
-      else if (videoFlip === 'Flip Vertical') artInstanceRef.current.flip = 'vertical';
-      else artInstanceRef.current.flip = 'normal';
+      if (videoFlip === "Flip Horizontal")
+        artInstanceRef.current.flip = "horizontal";
+      else if (videoFlip === "Flip Vertical")
+        artInstanceRef.current.flip = "vertical";
+      else artInstanceRef.current.flip = "normal";
     }
   }, [videoFlip]);
 
   // Synchronize subtitleOffset
   useEffect(() => {
-    if (artInstanceRef.current?.subtitle && typeof subtitleOffset === 'number') {
+    if (
+      artInstanceRef.current?.subtitle &&
+      typeof subtitleOffset === "number"
+    ) {
       artInstanceRef.current.subtitleOffset = subtitleOffset;
     }
   }, [subtitleOffset]);
@@ -481,9 +558,11 @@ export default function ArtPlayerComponent({
   useEffect(() => {
     if (artInstanceRef.current?.subtitle) {
       if (activeSubtitleUrl) {
-        artInstanceRef.current.subtitle.switch(activeSubtitleUrl, { name: activeSubtitleLabel || 'Subtitle' });
+        artInstanceRef.current.subtitle.switch(activeSubtitleUrl, {
+          name: activeSubtitleLabel || "Subtitle",
+        });
         artInstanceRef.current.subtitle.show = true;
-      } else if (activeSubtitleUrl === '') {
+      } else if (activeSubtitleUrl === "") {
         artInstanceRef.current.subtitle.show = false;
       }
     }
@@ -491,15 +570,57 @@ export default function ArtPlayerComponent({
 
   // Synchronize subtitles list arrival
   useEffect(() => {
-    if (artInstanceRef.current?.subtitle && subtitles.length > 0 && activeSubtitleUrl !== '') {
+    if (
+      artInstanceRef.current?.subtitle &&
+      subtitles.length > 0 &&
+      activeSubtitleUrl !== ""
+    ) {
       const targetSub =
-        subtitles.find(s => s.label === activeSubtitleLabel) ||
-        subtitles.find(s => s.url === activeSubtitleUrl) ||
-        subtitles.find(s => s.default) ||
+        subtitles.find((s) => s.label === activeSubtitleLabel) ||
+        subtitles.find((s) => s.url === activeSubtitleUrl) ||
+        subtitles.find((s) => s.default) ||
         subtitles[0];
       if (targetSub) {
-        artInstanceRef.current.subtitle.switch(targetSub.url, { name: targetSub.label });
+        artInstanceRef.current.subtitle.switch(targetSub.url, {
+          name: targetSub.label,
+        });
         artInstanceRef.current.subtitle.show = true;
+      }
+
+      // Attempt to dynamically update the settings menu for subtitles
+      try {
+        const newSelector = [
+          ...subtitles.map((sub) => ({
+            default: sub.default,
+            html: sub.label,
+            url: sub.url,
+          })),
+          { html: "Turn Off", url: "" },
+        ];
+
+        // Try to update existing setting if art.setting has an update method (Artplayer v5+)
+        if (typeof artInstanceRef.current.setting.update === "function") {
+          artInstanceRef.current.setting.update({
+            name: "subtitles-menu",
+            html: "Subtitles",
+            width: 200,
+            tooltip: targetSub?.label || "Subtitles",
+            selector: newSelector,
+            onSelect: function (item: any) {
+              if (item.url) {
+                artInstanceRef.current!.subtitle.switch(item.url, {
+                  name: item.html,
+                });
+                artInstanceRef.current!.subtitle.show = true;
+              } else {
+                artInstanceRef.current!.subtitle.show = false;
+              }
+              return item.html;
+            },
+          });
+        }
+      } catch (e) {
+        console.warn("Could not dynamically update settings", e);
       }
     }
   }, [subtitles]);
@@ -507,14 +628,14 @@ export default function ArtPlayerComponent({
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px] rounded-2xl overflow-hidden bg-black relative ${className}`}
+      className={`w-full h-full min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px] rounded-2xl overflow-hidden bg-black text-white relative ${className}`}
     >
       {portalTarget && children
         ? createPortal(
             <div className="absolute inset-0 pointer-events-none z-[999999]">
               {children}
             </div>,
-            portalTarget
+            portalTarget,
           )
         : children}
     </div>

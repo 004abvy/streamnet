@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
+import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 
 import '@vidstack/react/player/styles/default/theme.css';
@@ -176,7 +176,6 @@ export default function VidstackPlayer({
         src={formattedMediaSrc}
         poster={poster}
         autoPlay={autoPlay}
-        crossOrigin="anonymous"
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
         onError={(err: any) => {
           console.warn('[VidstackPlayer] Stream error encountered:', err?.detail || err, 'Advancing to next available stream source...');
@@ -204,6 +203,18 @@ export default function VidstackPlayer({
         }}
         className="w-full h-full text-white font-sans"
         playsInline
+        onProviderChange={(provider) => {
+          if (isHLSProvider(provider)) {
+            provider.config = {
+              ...provider.config,
+              fragLoadingMaxRetry: 6,
+              fragLoadingMaxRetryTimeout: 15000,
+              manifestLoadingMaxRetry: 6,
+              manifestLoadingMaxRetryTimeout: 15000,
+              levelLoadingMaxRetry: 6,
+            };
+          }
+        }}
         onAudioTracksChange={(tracks) => {
           if (!tracks || !tmdbId) return;
           try {

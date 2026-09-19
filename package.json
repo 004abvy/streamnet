@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"npm run backend\"",
+    "dev": "concurrently \"next dev\" \"npm run backend\" \"npm run anime-api\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "backend": "cd aPi-embeds-m3u8s/core && npm run dev"
+    "backend": "cd aPi-embeds-m3u8s/core && npm run dev",
+    "anime-api": "cd Anivexa-API && npm start"
   },
   "dependencies": {
+    "@consumet/extensions": "^1.8.8",
     "@omss/framework": "^1.1.26",
     "@use-gesture/react": "^10.3.1",
     "@videojs/hlsjs-video": "^10.0.0-rc.2",

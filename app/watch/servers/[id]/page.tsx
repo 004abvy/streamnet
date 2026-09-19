@@ -98,6 +98,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
+  const [hasAbsorbedClick, setHasAbsorbedClick] = useState<boolean>(false);
   const [hasLiveGlow, setHasLiveGlow] = useState<boolean>(false);
   const [isIOSDevice, setIsIOSDevice] = useState<boolean>(false);
   const canvasTaintedRef = useRef<boolean>(false);
@@ -183,6 +184,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     };
   }, [currentStreamUrl]);
 
+  useEffect(() => {
+    setHasAbsorbedClick(false);
+  }, [currentStreamUrl]);
+
   // Fetch TMDB metadata
   useEffect(() => {
     if (!id) return;
@@ -226,27 +231,154 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     fetch(aggregateUrl, { signal: controller.signal })
       .then(res => (res.ok ? res.json() : null))
-      .then(data => {
+      .then(async data => {
         clearTimeout(fetchTimeout);
         if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
-          setUnifiedAudioTracks(data.audioLanguages);
+          
+          setScanStatusNotice('Verifying stream integrity...');
 
-          const defaultAudio = data.audioLanguages.find((a: any) => a.language === 'hi') || data.audioLanguages[0];
-          setCurrentStreamUrl(defaultAudio.url);
-          setActiveAudioLabel(defaultAudio.label);
+          // Test all audio streams in parallel and extract actual languages
+          const audioResults = await Promise.allSettled(
+            data.audioLanguages.map(async (track: any) => {
+              try {
+                const ac = new AbortController();
+                const tid = setTimeout(() => ac.abort(), 4000);
+                // Use GET instead of HEAD to read manifest contents
+                const r = await fetch(track.url, { method: 'GET', signal: ac.signal });
+                clearTimeout(tid);
+                
+                if (!r.ok) return null;
+                
+                const text = await r.text();
+                
+                if (text.includes('#EXT-X-MEDIA:TYPE=AUDIO')) {
+                  const audioNames = [...text.matchAll(/#EXT-X-MEDIA:TYPE=AUDIO.*?NAME="([^"]+)"/gi)].map(m => m[1]);
+                  const langCodes = [...text.matchAll(/#EXT-X-MEDIA:TYPE=AUDIO.*?LANGUAGE="([^"]+)"/gi)].map(m => m[1]);
+                  
+                  const isValidLangName = (n: string) => {
+                    const low = n.toLowerCase();
+                    return !low.includes('audio') && !low.includes('track') && !low.includes('und') && low.length > 1 && low !== 'unknown';
+                  };
 
+                  const codeToLang = (code: string) => {
+                    const c = code.toLowerCase();
+                    if (c.startsWith('hi')) return 'Hindi';
+                    if (c.startsWith('en')) return 'English';
+                    if (c.startsWith('ru')) return 'Russian';
+                    if (c.startsWith('ta')) return 'Tamil';
+                    if (c.startsWith('te')) return 'Telugu';
+                    if (c.startsWith('fr')) return 'French';
+                    if (c.startsWith('it')) return 'Italian';
+                    if (c.startsWith('es')) return 'Spanish';
+                    if (c.startsWith('ja') || c.startsWith('jp')) return 'Japanese';
+                    if (c.startsWith('de')) return 'German';
+                    if (c.startsWith('ko')) return 'Korean';
+                    if (c.startsWith('zh')) return 'Chinese';
+                    return null;
+                  };
+
+                  const validNames = audioNames.filter(isValidLangName).map(n => {
+                    if (n.length === 2) return codeToLang(n) || n;
+                    return n;
+                  });
+
+                  const validFromCodes = langCodes.map(codeToLang).filter(Boolean) as string[];
+
+                  let finalLangs = Array.from(new Set([...validNames, ...validFromCodes]));
+
+                  if (finalLangs.length > 0) {
+                    let baseLabel = finalLangs.length > 1 
+                      ? `Multi-Audio [${finalLangs.slice(0, 2).map(n => n.substring(0,3)).join('/')}]`
+                      : finalLangs[0];
+
+                    if (track.label.includes('[')) {
+                      const bracketSuffix = track.label.substring(track.label.indexOf('['));
+                      track.label = `${baseLabel} ${bracketSuffix}`;
+                    } else {
+                      track.label = baseLabel;
+                    }
+
+                    const firstLang = finalLangs[0].toLowerCase();
+                    if (firstLang.includes('hin')) track.language = 'hi';
+                    else if (firstLang.includes('eng')) track.language = 'en';
+                    else if (firstLang.includes('rus')) track.language = 'ru';
+                    else if (firstLang.includes('tam')) track.language = 'ta';
+                    else if (firstLang.includes('tel')) track.language = 'te';
+                    else if (firstLang.includes('fre') || firstLang.includes('fra')) track.language = 'fr';
+                    else if (firstLang.includes('ita')) track.language = 'it';
+                    else if (firstLang.includes('spa')) track.language = 'es';
+                    else track.language = firstLang.substring(0,2);
+                  }
+                }
+                
+                return track;
+              } catch {
+                return null;
+              }
+            })
+          );
+          
+          const workingAudio = audioResults
+            .filter((r) => r.status === 'fulfilled' && r.value !== null)
+            .map((r: any) => r.value);
+
+          // Group and sort: Hindi first, then English, then others, sorted by quality
+          workingAudio.sort((a: any, b: any) => {
+            const getRank = (lang: string) => {
+              if (lang === 'hi' || lang.includes('hi-')) return 0;
+              if (lang === 'en' || lang.includes('en-')) return 1;
+              return 2;
+            };
+            const rankA = getRank(a.language);
+            const rankB = getRank(b.language);
+            if (rankA !== rankB) return rankA - rankB;
+            const getQ = (q: string) => q.includes('4K') ? 0 : q.includes('1080') ? 1 : q.includes('720') ? 2 : 3;
+            return getQ(a.quality) - getQ(b.quality);
+          });
+
+          // Test all subtitles in parallel
+          let workingSubs: any[] = [];
           if (data.subtitles && data.subtitles.length > 0) {
-            setUnifiedSubtitles(data.subtitles);
-            const defaultSub = data.subtitles.find((s: any) => s.isDefault) || data.subtitles[0];
-            if (defaultSub && (!activeSubtitle || activeSubtitle === 'English')) {
-              setActiveSubtitle(defaultSub.label);
-            }
+             const subResults = await Promise.allSettled(
+               data.subtitles.map(async (sub: any) => {
+                 try {
+                   const ac = new AbortController();
+                   const tid = setTimeout(() => ac.abort(), 3000);
+                   const r = await fetch(sub.url, { method: 'GET', signal: ac.signal });
+                   clearTimeout(tid);
+                   return r.ok ? sub : null;
+                 } catch {
+                   return null;
+                 }
+               })
+             );
+             workingSubs = subResults
+               .filter((r) => r.status === 'fulfilled' && r.value !== null)
+               .map((r: any) => r.value);
           }
 
-          setFetchingStream(false);
-          setIsBackgroundScanning(false);
-          setScanStatusNotice('Streams ready');
-          setTimeout(() => setScanStatusNotice(null), 3000);
+          if (workingAudio.length > 0) {
+            setUnifiedAudioTracks(workingAudio);
+
+            const defaultAudio = workingAudio.find((a: any) => a.language === 'hi') || workingAudio[0];
+            setCurrentStreamUrl(defaultAudio.url);
+            setActiveAudioLabel(defaultAudio.label);
+
+            if (workingSubs.length > 0) {
+              setUnifiedSubtitles(workingSubs);
+              const defaultSub = workingSubs.find((s: any) => s.isDefault) || workingSubs[0];
+              if (defaultSub && (!activeSubtitle || activeSubtitle === 'English')) {
+                setActiveSubtitle(defaultSub.label);
+              }
+            }
+
+            setFetchingStream(false);
+            setIsBackgroundScanning(false);
+            setScanStatusNotice('Streams verified and ready');
+            setTimeout(() => setScanStatusNotice(null), 3000);
+          } else {
+            fallbackDirectFetch();
+          }
         } else {
           fallbackDirectFetch();
         }
@@ -277,21 +409,112 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               isDefault: idx === 0,
             }));
 
-            setUnifiedAudioTracks(mappedTracks);
-            if (!currentStreamUrl) {
-              const defaultTrack = mappedTracks.find(t => t.language === 'hi') || mappedTracks[0];
-              setCurrentStreamUrl(defaultTrack.url);
-              setActiveAudioLabel(defaultTrack.label);
+            // Test fallback audio streams in parallel and extract languages
+            setScanStatusNotice('Verifying stream integrity...');
+            const audioResults = await Promise.allSettled(
+              mappedTracks.map(async (track: any) => {
+                try {
+                  const ac = new AbortController();
+                  const tid = setTimeout(() => ac.abort(), 4000);
+                  const r = await fetch(track.url, { method: 'GET', signal: ac.signal });
+                  clearTimeout(tid);
+                  
+                  if (!r.ok) return null;
+                  
+                  const text = await r.text();
+                  if (text.includes('#EXT-X-MEDIA:TYPE=AUDIO')) {
+                    const audioNames = [...text.matchAll(/#EXT-X-MEDIA:TYPE=AUDIO.*?NAME="([^"]+)"/gi)].map(m => m[1]);
+                    const langCodes = [...text.matchAll(/#EXT-X-MEDIA:TYPE=AUDIO.*?LANGUAGE="([^"]+)"/gi)].map(m => m[1]);
+                    
+                    if (audioNames.length > 0) {
+                      const uniqueNames = Array.from(new Set(audioNames));
+                      // Replace "English" base label with the extracted names
+                      let baseLabel = uniqueNames.length > 1 
+                        ? `Multi-Audio [${uniqueNames.slice(0, 2).map(n => n.substring(0,3)).join('/')}]`
+                        : uniqueNames[0];
+                      
+                      if (track.label.includes('[')) {
+                        const bracketSuffix = track.label.substring(track.label.indexOf('['));
+                        track.label = `${baseLabel} ${bracketSuffix}`;
+                      } else {
+                        track.label = baseLabel;
+                      }
+
+                      const firstLang = (uniqueNames[0] || langCodes[0] || '').toLowerCase();
+                      if (firstLang.includes('hin') || firstLang === 'hi') track.language = 'hi';
+                      else if (firstLang.includes('eng') || firstLang === 'en') track.language = 'en';
+                      else if (firstLang.includes('rus') || firstLang === 'ru') track.language = 'ru';
+                      else if (firstLang.includes('tam') || firstLang === 'ta') track.language = 'ta';
+                      else if (firstLang.includes('tel') || firstLang === 'te') track.language = 'te';
+                      else if (firstLang.includes('fre') || firstLang.includes('fra') || firstLang === 'fr') track.language = 'fr';
+                      else if (firstLang.includes('ita') || firstLang === 'it') track.language = 'it';
+                      else if (firstLang.includes('spa') || firstLang === 'es') track.language = 'es';
+                      else track.language = firstLang.substring(0,2);
+                    }
+                  }
+                  
+                  return track;
+                } catch {
+                  return null;
+                }
+              })
+            );
+            
+            const workingAudio = audioResults
+              .filter((r) => r.status === 'fulfilled' && r.value !== null)
+              .map((r: any) => r.value);
+
+            workingAudio.sort((a: any, b: any) => {
+              const getRank = (lang: string) => {
+                if (lang === 'hi' || lang.includes('hi-')) return 0;
+                if (lang === 'en' || lang.includes('en-')) return 1;
+                return 2;
+              };
+              const rankA = getRank(a.language);
+              const rankB = getRank(b.language);
+              if (rankA !== rankB) return rankA - rankB;
+              const getQ = (q: string) => q.includes('4K') ? 0 : q.includes('1080') ? 1 : q.includes('720') ? 2 : 3;
+              return getQ(a.quality) - getQ(b.quality);
+            });
+
+            if (workingAudio.length > 0) {
+              setUnifiedAudioTracks(workingAudio);
+              if (!currentStreamUrl) {
+                const defaultTrack = workingAudio.find((t: any) => t.language === 'hi') || workingAudio[0];
+                setCurrentStreamUrl(defaultTrack.url);
+                setActiveAudioLabel(defaultTrack.label);
+              }
             }
 
             if (omssData.subtitles && Array.isArray(omssData.subtitles) && omssData.subtitles.length > 0) {
-              setUnifiedSubtitles(omssData.subtitles.map((sub: any, idx: number) => ({
+              const mappedSubs = omssData.subtitles.map((sub: any, idx: number) => ({
                 id: `sub-${idx}`,
                 language: sub.language || 'en',
                 label: sub.label || 'English',
                 url: sub.url,
                 isDefault: idx === 0,
-              })));
+              }));
+
+              const subResults = await Promise.allSettled(
+                mappedSubs.map(async (sub: any) => {
+                  try {
+                    const ac = new AbortController();
+                    const tid = setTimeout(() => ac.abort(), 3000);
+                    const r = await fetch(sub.url, { method: 'GET', signal: ac.signal });
+                    clearTimeout(tid);
+                    return r.ok ? sub : null;
+                  } catch {
+                    return null;
+                  }
+                })
+              );
+              const workingSubs = subResults
+                .filter((r) => r.status === 'fulfilled' && r.value !== null)
+                .map((r: any) => r.value);
+
+              if (workingSubs.length > 0) {
+                setUnifiedSubtitles(workingSubs);
+              }
             }
 
             setFetchingStream(false);
@@ -664,7 +887,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 src={embedFallbackUrl}
                 className="w-full aspect-video border-0 bg-black"
                 allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
               />
             ) : (

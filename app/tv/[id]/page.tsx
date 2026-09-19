@@ -2,9 +2,10 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
 import Footer from '../../../components/Footer/Footer';
+import Playeranime from '../../../components/Playeranime';
 import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
 import styles from '../../movie/[id]/movieDetails.module.css';
 import { Play, Bookmark } from 'lucide-react';
@@ -19,7 +20,15 @@ export default function TVDetailsPage({
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [showAnimePlayer, setShowAnimePlayer] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('playAnime') === 'true') {
+      setShowAnimePlayer(true);
+    }
+  }, [searchParams]);
 
   const handleVipAccess = () => {
     const code = window.prompt('Enter VIP Access Code:');
@@ -78,7 +87,9 @@ export default function TVDetailsPage({
     }
   };
 
-  const handlePlayNow = () => {
+  const isAnime = movie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') && (movie?.original_language === 'ja' || movie?.origin_country?.includes('JP'));
+
+  const handlePlayNow = (e: any) => {
     if (!movie) return;
     try {
       const stored = localStorage.getItem('continueWatching');
@@ -89,6 +100,12 @@ export default function TVDetailsPage({
       saveContinueWatching(list);
     } catch (e) {
       console.error("Failed to save to continue watching", e);
+    }
+    
+    if (isAnime) {
+      e.preventDefault();
+      setShowAnimePlayer(true);
+      return;
     }
   };
 
@@ -122,6 +139,14 @@ export default function TVDetailsPage({
 
   return (
     <main className={styles.container}>
+      {showAnimePlayer && (
+        <Playeranime 
+          animeTitle={displayTitle} 
+          tmdbId={movie.id}
+          type="tv"
+          onClose={() => setShowAnimePlayer(false)} 
+        />
+      )}
       {/* Full-Bleed Background Backdrop */}
       <div className={styles.heroBackground}>
         <img
@@ -156,14 +181,16 @@ export default function TVDetailsPage({
               <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
               {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
             </button>
-            <button
-              type="button"
-              className={styles.playNowBtn}
-              style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
-              onClick={handleVipAccess}
-            >
-              VIP Server
-            </button>
+            {!isAnime && (
+              <button
+                type="button"
+                className={styles.playNowBtn}
+                style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
+                onClick={handleVipAccess}
+              >
+                VIP Server
+              </button>
+            )}
           </div>
 
           {/* Bottom Left: Top Cast / Actors */}

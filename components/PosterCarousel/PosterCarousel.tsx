@@ -201,8 +201,15 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
           const season = movie.last_season || movie.season || 1;
           const episode = movie.last_episode || movie.episode || 1;
 
-          const playerHref = isTV ? `/watch/tv/${movie.id}/${season}/${episode}` : `/watch/${movie.id}`;
+          const isAnime = (movie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || movie?.genre_ids?.includes(16)) && (movie?.original_language === 'ja' || movie?.origin_country?.includes('JP'));
+
+          let playerHref = isTV ? `/watch/tv/${movie.id}/${season}/${episode}` : `/watch/${movie.id}`;
           const detailsHref = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+          
+          if (isAnime) {
+             playerHref = `${detailsHref}?playAnime=true`;
+          }
+
           const linkHref = isContinue ? playerHref : detailsHref;
           
           return (

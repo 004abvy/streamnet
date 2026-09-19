@@ -145,7 +145,10 @@ export async function GET(
         return new NextResponse(`Stream Fetch Error (${response.status})`, { status: response.status });
       }
 
-      if (isManifest) {
+      const contentType = response.headers.get('content-type') || '';
+      const isActuallyManifest = isManifest || contentType.toLowerCase().includes('mpegurl') || decodedUrl.includes('playlist');
+
+      if (isActuallyManifest) {
         const manifestText = await response.text();
         const host = request.headers.get('host') || 'localhost:3000';
         const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
@@ -164,7 +167,8 @@ export async function GET(
           if (uriMatch) {
             try {
               const mediaUrl = new URL(uriMatch[1], decodedUrl).href;
-              return line.replace(uriMatch[1], proxyUrl(mediaUrl, /\.m3u8(?:\?|$)/i.test(mediaUrl)));
+              const isSubManifest = /\.m3u8(?:\?|$)/i.test(mediaUrl) || mediaUrl.includes('playlist');
+              return line.replace(uriMatch[1], proxyUrl(mediaUrl, isSubManifest));
             } catch {
               return line;
             }
@@ -174,7 +178,8 @@ export async function GET(
           if (trimmed && !trimmed.startsWith('#')) {
             try {
               const fullChunkUrl = new URL(trimmed, decodedUrl).href;
-              return proxyUrl(fullChunkUrl, /\.m3u8(?:\?|$)/i.test(fullChunkUrl));
+              const isSubManifest = /\.m3u8(?:\?|$)/i.test(fullChunkUrl) || fullChunkUrl.includes('playlist');
+              return proxyUrl(fullChunkUrl, isSubManifest);
             } catch {
               return line;
             }
