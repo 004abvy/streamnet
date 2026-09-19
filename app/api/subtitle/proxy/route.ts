@@ -216,12 +216,26 @@ export async function GET(request: NextRequest) {
       referer = 'https://www.opensubtitles.org/';
     }
 
+    let customHeaders: Record<string, string> = {};
+    try {
+      const serializedHeaders = searchParams.get('headers');
+      if (serializedHeaders) {
+        const parsed = JSON.parse(serializedHeaders);
+        for (const [key, value] of Object.entries(parsed)) {
+          if (typeof value === 'string' && !/^host$/i.test(key)) {
+            customHeaders[key] = value;
+          }
+        }
+      }
+    } catch {}
+
     const fetchHeaders: Record<string, string> = {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       Referer: referer,
+      ...customHeaders,
     };
 
     let response: Response | null = null;

@@ -200,8 +200,9 @@ export default function Playeranime({
         let allTracks = [];
 
         if (streamData.subtitles && Array.isArray(streamData.subtitles)) {
+          const streamHeaders = streamData.headers || {};
           const rawTracks = streamData.subtitles.map((sub: any) => ({
-            src: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
+            src: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}&headers=${encodeURIComponent(JSON.stringify(streamHeaders))}`,
             label: sub.lang || sub.label || sub.language || "Subtitle",
             kind: "subtitles",
             language: sub.lang || sub.srclang || "en",

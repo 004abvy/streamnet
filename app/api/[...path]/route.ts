@@ -477,7 +477,7 @@ export async function GET(
     }
 
     // 15. /api/stream/proxy
-    if (pathStr === 'stream/proxy') {
+    if (pathStr === 'stream/proxy' || pathStr === 'stream/proxy.m3u8') {
       const rawUrl = searchParams.get('url');
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
