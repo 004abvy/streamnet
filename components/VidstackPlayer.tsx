@@ -212,6 +212,7 @@ export default function VidstackPlayer({
               manifestLoadingMaxRetry: 6,
               manifestLoadingMaxRetryTimeout: 15000,
               levelLoadingMaxRetry: 6,
+              renderTextTracksNatively: false,
             };
           }
         }}
