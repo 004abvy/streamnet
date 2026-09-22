@@ -100,10 +100,12 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const [hasAbsorbedClick, setHasAbsorbedClick] = useState<boolean>(false);
   const [hasLiveGlow, setHasLiveGlow] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState<boolean>(false);
   const canvasTaintedRef = useRef<boolean>(false);
 
   useEffect(() => {
+    setMounted(true);
     const checkIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
     setIsIOSDevice(checkIOS);
   }, []);
@@ -248,6 +250,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 clearTimeout(tid);
                 
                 if (!r.ok) return null;
+                
+                const contentType = r.headers.get('content-type') || '';
+                if (contentType.includes('text/html')) return null;
                 
                 const text = await r.text();
                 
@@ -420,6 +425,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   clearTimeout(tid);
                   
                   if (!r.ok) return null;
+                  
+                  const contentType = r.headers.get('content-type') || '';
+                  if (contentType.includes('text/html')) return null;
                   
                   const text = await r.text();
                   if (text.includes('#EXT-X-MEDIA:TYPE=AUDIO')) {
@@ -741,7 +749,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-3 sm:px-6 md:px-8 py-10 sm:py-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
       {/* Cinematic Ambient Background Backdrop */}
-      {backdropUrl && !isIOSDevice && (
+      {mounted && backdropUrl && !isIOSDevice && (
         <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
           <img
             src={backdropUrl}
@@ -793,7 +801,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       {/* Cinema Player Frame with Ambient Spill & ArtPlayer */}
       <div className="w-full max-w-[92rem] relative mb-6" style={{ isolation: 'isolate' }}>
         {/* Dynamic Ambient Glow (shades & colors subtly bleeding outside player frame in real time) */}
-        {!isIOSDevice && (
+        {mounted && !isIOSDevice && (
           <div
             className={`absolute -inset-3 sm:-inset-5 md:-inset-7 z-0 pointer-events-none transition-opacity duration-500 select-none overflow-visible ${
               isVideoPlaying ? 'opacity-75 sm:opacity-80' : 'opacity-50 sm:opacity-55'
@@ -886,6 +894,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               <iframe
                 src={embedFallbackUrl}
                 className="w-full aspect-video border-0 bg-black"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
                 allowFullScreen
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; screen-wake-lock"
               />
