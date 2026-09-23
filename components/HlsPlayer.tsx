@@ -149,7 +149,7 @@ export default function HlsPlayer({
         triedIndicesRef.current.clear();
 
         const controller = new AbortController();
-        const apiTimeout = setTimeout(() => controller.abort(), 15000); // 15s timeout to allow full scraper responses
+        const apiTimeout = setTimeout(() => controller.abort(), 45000); // 45s timeout to allow full scraper responses
 
         // For rivestream, try multiple providers in sequence if first fails
         let data: any = null;
