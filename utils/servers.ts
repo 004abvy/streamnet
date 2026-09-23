@@ -29,7 +29,7 @@ export const SERVERS: StreamingServer[] = [
   {
     id: 'rivestream',
     name: 'RiveStream',
-    category: 'direct',
+    category: 'iframe',
     enabled: true,
     buildUrl: ({ tmdbId, type, season, episode }) => 
       type === 'movie'
