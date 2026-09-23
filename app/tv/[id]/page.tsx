@@ -167,7 +167,7 @@ export default function TVDetailsPage({
           {/* Action Buttons: Play Now & Wishlist */}
           <div className={styles.editorialActions}>
             <Link
-              href={`/watch/tv/${movie.id}/1/1`}
+              href={`/watch/servers/${movie.id}?type=tv&season=1&episode=1`}
               className={styles.playNowBtn}
               onClick={handlePlayNow}
             >
@@ -182,14 +182,14 @@ export default function TVDetailsPage({
               {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
             </button>
             {!isAnime && (
-              <button
-                type="button"
+              <Link
+                href={`/watch/servers/${movie.id}?type=tv&season=1&episode=1`}
                 className={styles.playNowBtn}
                 style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
-                onClick={handleVipAccess}
+                onClick={handlePlayNow}
               >
                 VIP Server
-              </button>
+              </Link>
             )}
           </div>
 

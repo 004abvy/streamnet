@@ -95,6 +95,7 @@ const INITIAL_GENRES: Genre[] = [
 export default function GenreExplorerSection() {
   const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
   const [genres, setGenres] = useState<Genre[]>(INITIAL_GENRES);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -149,9 +150,13 @@ export default function GenreExplorerSection() {
           }
         }
 
-        if (isMounted) setGenres(updatedGenres);
+        if (isMounted) {
+          setGenres(updatedGenres);
+          setIsLoading(false);
+        }
       } catch (err) {
         console.error('Error fetching latest genre posters:', err);
+        if (isMounted) setIsLoading(false);
       }
     };
     
@@ -186,8 +191,15 @@ export default function GenreExplorerSection() {
         </div>
 
         <div className={styles.contentSection}>
-          <AccordionGallery
-            items={genres.map(genre => {
+          {isLoading ? (
+            <div style={{ display: 'flex', height: 460, gap: 12 }}>
+              {INITIAL_GENRES.map((_, i) => (
+                <div key={i} style={{ flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '24px' }} className={styles.pulse} />
+              ))}
+            </div>
+          ) : (
+            <AccordionGallery
+              items={genres.map(genre => {
               const genreId = contentType === 'tv' ? (genre.tvId || genre.id) : genre.id;
               const route = contentType === 'tv' ? `/tv?genre=${genreId}` : `/movies?genre=${genreId}`;
               return {
@@ -207,6 +219,7 @@ export default function GenreExplorerSection() {
             showLabels={true}
             grayscale={false}
           />
+          )}
         </div>
       </div>
     </section>

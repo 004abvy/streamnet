@@ -227,9 +227,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     const aggregateUrl = `/api/direct-aggregate?id=${id}&type=${type}${type === 'tv' ? `&season=${season}&episode=${episode}` : ''}`;
 
-    // 10s Abort controller timeout for slow mobile networks
+    // 25s Abort controller timeout for slow streams
     const controller = new AbortController();
-    const fetchTimeout = setTimeout(() => controller.abort(), 10000);
+    const fetchTimeout = setTimeout(() => controller.abort(), 25000);
 
     fetch(aggregateUrl, { signal: controller.signal })
       .then(res => (res.ok ? res.json() : null))
@@ -244,7 +244,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             data.audioLanguages.map(async (track: any) => {
               try {
                 const ac = new AbortController();
-                const tid = setTimeout(() => ac.abort(), 4000);
+                const tid = setTimeout(() => ac.abort(), 20000);
                 // Use GET instead of HEAD to read manifest contents
                 const r = await fetch(track.url, { method: 'GET', signal: ac.signal });
                 clearTimeout(tid);
@@ -348,7 +348,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                data.subtitles.map(async (sub: any) => {
                  try {
                    const ac = new AbortController();
-                   const tid = setTimeout(() => ac.abort(), 3000);
+                   const tid = setTimeout(() => ac.abort(), 6000);
                    const r = await fetch(sub.url, { method: 'GET', signal: ac.signal });
                    clearTimeout(tid);
                    return r.ok ? sub : null;
@@ -420,7 +420,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               mappedTracks.map(async (track: any) => {
                 try {
                   const ac = new AbortController();
-                  const tid = setTimeout(() => ac.abort(), 4000);
+                  const tid = setTimeout(() => ac.abort(), 20000);
                   const r = await fetch(track.url, { method: 'GET', signal: ac.signal });
                   clearTimeout(tid);
                   
@@ -492,6 +492,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 setCurrentStreamUrl(defaultTrack.url);
                 setActiveAudioLabel(defaultTrack.label);
               }
+            } else {
+              throw new Error("All fallback direct streams failed the integrity check.");
             }
 
             if (omssData.subtitles && Array.isArray(omssData.subtitles) && omssData.subtitles.length > 0) {
@@ -507,7 +509,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 mappedSubs.map(async (sub: any) => {
                   try {
                     const ac = new AbortController();
-                    const tid = setTimeout(() => ac.abort(), 3000);
+                    const tid = setTimeout(() => ac.abort(), 20000);
                     const r = await fetch(sub.url, { method: 'GET', signal: ac.signal });
                     clearTimeout(tid);
                     return r.ok ? sub : null;
@@ -548,6 +550,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);
       }
+    };
+
+    return () => {
+      controller.abort();
     };
   }, [id, type, season, episode]);
 
@@ -674,11 +680,35 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     }));
   }, [unifiedSubtitles]);
 
+  const customPlayerSettings = useMemo(() => {
+    const settings = [];
+    if (unifiedAudioTracks.length > 0) {
+      settings.push({
+        name: "audio-language-menu",
+        html: "Audio Language",
+        width: 250,
+        tooltip: activeAudioLabel,
+        selector: unifiedAudioTracks.map(track => ({
+          default: activeAudioLabel === track.label,
+          html: `${track.label} <span style="font-size:10px; color:#aaa; margin-left:6px">${track.badge}</span>`,
+          value: track.id,
+          track: track,
+        })),
+        onSelect: function (item: any) {
+          handleSelectAudioTrack(item.track);
+          return item.track.label;
+        },
+      });
+    }
+    return settings;
+  }, [unifiedAudioTracks, activeAudioLabel]);
+
+
   const getAspectRatioStyle = () => {
     switch (aspectRatio) {
       case '4:3': return 'aspect-[4/3] max-h-[88vh]';
       case '21:9': return 'aspect-[21/9]';
-      case '16:9': return 'aspect-video';
+      case '16:9': return 'aspect-[4/3] sm:aspect-video';
       default: return 'aspect-[16/12] min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px]';
     }
   };
@@ -876,10 +906,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                     setActiveAudioLabel(nextTrack.label);
                   }
                 }}
-                onSettingsClick={() => {
-                  setIsQuickMenuOpen(prev => !prev);
-                  setActiveSubmenu(null);
-                }}
+                customSettings={customPlayerSettings}
                 getInstance={(art) => {
                   artRef.current = art;
                   art.on('video:timeupdate', () => {
@@ -912,367 +939,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             )}
           </div>
 
-          {/* 🌟 QUICK MENU POPUP — anchored bottom-right inside ArtPlayer's z-axis layer 🌟 */}
-          {isQuickMenuOpen && (
-            <div className="absolute bottom-16 sm:bottom-20 right-4 sm:right-6 z-[1000000] w-72 sm:w-80 bg-[#0c0c12]/98 border border-white/20 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl p-2.5 animate-in fade-in zoom-in-95 duration-150 text-neutral-200 select-none max-h-[80vh] overflow-y-auto scrollbar-thin pointer-events-auto">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-1">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">
-                  PLAYER OPTIONS
-                </span>
-                <button
-                  onClick={() => {
-                    setIsQuickMenuOpen(false);
-                    setActiveSubmenu(null);
-                  }}
-                  className="text-xs text-neutral-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-white/10 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
 
-              {/* Submenu: Audio Tracks (Netflix-style unified list) */}
-              {activeSubmenu === 'audio' ? (
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 px-1 pb-1">
-                    Select Audio Language
-                  </p>
-                  <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-thin">
-                    {unifiedAudioTracks.length > 0 ? (
-                      unifiedAudioTracks.map(track => {
-                        const isSelected = activeAudioLabel === track.label;
-                        return (
-                          <button
-                            key={track.id}
-                            onClick={() => handleSelectAudioTrack(track)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
-                              isSelected
-                                ? 'bg-amber-500 text-black font-bold shadow-md'
-                                : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                            }`}
-                          >
-                            <span className="truncate mr-2">{track.label}</span>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                                isSelected ? 'bg-black/20 text-black' : 'bg-white/10 text-neutral-300'
-                              }`}>
-                                {track.badge}
-                              </span>
-                              {isSelected && <Check className="w-3.5 h-3.5" />}
-                            </div>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="p-3 text-center">
-                        <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                        <p className="text-xs text-neutral-400">Scanning audio languages in background...</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : activeSubmenu === 'subtitles' ? (
-                /* Submenu: Subtitles (Unified list) */
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 px-1 pb-1">
-                    Select Subtitle
-                  </p>
-                  <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-thin">
-                    {/* Off Option */}
-                    <button
-                      onClick={() => handleSelectSubtitle('Off')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                        activeSubtitle === 'Off' ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                      }`}
-                    >
-                      <span>Off</span>
-                      {activeSubtitle === 'Off' && <Check className="w-3.5 h-3.5" />}
-                    </button>
-
-                    {unifiedSubtitles.map(sub => {
-                      const isSelected = activeSubtitle === sub.label;
-                      return (
-                        <button
-                          key={sub.id}
-                          onClick={() => handleSelectSubtitle(sub.label)}
-                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                            isSelected ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                          }`}
-                        >
-                          <span className="truncate">{sub.label}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : activeSubmenu === 'quality' ? (
-                /* Submenu: Quality Selection */
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 px-1 pb-1">
-                    Stream Resolution
-                  </p>
-                  {['Auto', '4K HDR', '1080P', '720P', '480P'].map(q => {
-                    const isSelected = streamQuality === q;
-                    return (
-                      <button
-                        key={q}
-                        onClick={() => handleSelectQuality(q)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                          isSelected ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                        }`}
-                      >
-                        <span>{q === 'Auto' ? 'Auto (Best for network)' : q}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : activeSubmenu === 'speed' ? (
-                /* Submenu: Play Speed */
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  {['0.5x', '0.75x', 'Normal', '1.25x', '1.5x', '2x'].map(s => (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        setPlaySpeed(s);
-                        setActiveSubmenu(null);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                        playSpeed === s ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                      }`}
-                    >
-                      <span>{s}</span>
-                      {playSpeed === s && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                </div>
-              ) : activeSubmenu === 'aspect' ? (
-                /* Submenu: Aspect Ratio */
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  {['Default', '16:9', '4:3', '21:9'].map(a => (
-                    <button
-                      key={a}
-                      onClick={() => {
-                        setAspectRatio(a);
-                        setActiveSubmenu(null);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                        aspectRatio === a ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                      }`}
-                    >
-                      <span>{a}</span>
-                      {aspectRatio === a && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                </div>
-              ) : activeSubmenu === 'flip' ? (
-                /* Submenu: Video Flip */
-                <div className="p-2 space-y-1">
-                  <button
-                    onClick={() => setActiveSubmenu(null)}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:underline mb-2 cursor-pointer font-bold"
-                  >
-                    ← Back to Options
-                  </button>
-                  {['Normal', 'Flip Horizontal', 'Flip Vertical'].map(f => (
-                    <button
-                      key={f}
-                      onClick={() => {
-                        setVideoFlip(f);
-                        setActiveSubmenu(null);
-                      }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer ${
-                        videoFlip === f ? 'bg-amber-500 text-black font-bold' : 'hover:bg-white/10 text-neutral-300 hover:text-white'
-                      }`}
-                    >
-                      <span>{f}</span>
-                      {videoFlip === f && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                /* Main Quick Menu List (EXACTLY MATCHING USER SCREENSHOT + USER REQUEST) */
-                <div className="divide-y divide-white/10 text-xs font-medium">
-                  {/* 1. Audio Language Track Selector */}
-                  <button
-                    onClick={() => setActiveSubmenu('audio')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Radio className="w-4 h-4 text-amber-400" />
-                      <span className="font-bold text-white">Audio</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400 min-w-0">
-                      <span className="truncate max-w-[120px] text-amber-300 font-semibold">{activeAudioLabel}</span>
-                      <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-                    </div>
-                  </button>
-
-                  {/* 2. Subtitle Selector */}
-                  <button
-                    onClick={() => setActiveSubmenu('subtitles')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Subtitles className="w-4 h-4 text-amber-400" />
-                      <span className="font-bold text-white">Subtitle</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                      <span className="truncate max-w-[120px]">{activeSubtitle}</span>
-                      <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-                    </div>
-                  </button>
-
-                  {/* 3. Quality Selector */}
-                  <button
-                    onClick={() => setActiveSubmenu('quality')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Layers className="w-4 h-4 text-amber-400" />
-                      <span className="font-bold text-white">Quality</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                      <span className="text-amber-300 font-semibold">{streamQuality}</span>
-                      <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-                    </div>
-                  </button>
-
-                  {/* 4. Play Speed */}
-                  <button
-                    onClick={() => setActiveSubmenu('speed')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Play className="w-4 h-4 text-neutral-400" />
-                      <span>Play Speed</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                      <span>{playSpeed}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-
-                  {/* 5. Aspect Ratio */}
-                  <button
-                    onClick={() => setActiveSubmenu('aspect')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Maximize2 className="w-4 h-4 text-neutral-400" />
-                      <span>Aspect Ratio</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                      <span>{aspectRatio}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-
-                  {/* 6. Video Flip */}
-                  <button
-                    onClick={() => setActiveSubmenu('flip')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <RotateCw className="w-4 h-4 text-neutral-400" />
-                      <span>Video Flip</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-neutral-400">
-                      <span>{videoFlip}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
-
-
-                  {/* 7. Subtitle Offset (Interactive Slider with Cyan Accent) */}
-                  <div className="px-3 py-2.5 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Sliders className="w-4 h-4 text-neutral-400" />
-                        <span>Subtitle Offset</span>
-                      </div>
-                      <span className="text-neutral-400 text-[11px] font-mono">{subtitleOffset}s</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="-5"
-                      max="5"
-                      step="0.5"
-                      value={subtitleOffset}
-                      onChange={e => setSubtitleOffset(parseFloat(e.target.value))}
-                      className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00b4d8]"
-                    />
-                  </div>
-
-                  {/* 8. Audio Boost (Slider with Cyan Accent) */}
-                  <div className="px-3 py-2.5 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Volume2 className="w-4 h-4 text-neutral-400" />
-                        <span>Audio Boost</span>
-                      </div>
-                      <span className="text-neutral-400 text-[11px] font-mono">{audioBoost}x</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="3"
-                      step="0.25"
-                      value={audioBoost}
-                      onChange={e => setAudioBoost(parseFloat(e.target.value))}
-                      className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00b4d8]"
-                    />
-                  </div>
-
-                  {/* 9. Download */}
-                  {currentStreamUrl && (
-                    <a
-                      href={currentStreamUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-white/10 transition-colors text-left text-neutral-200 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Download className="w-4 h-4 text-neutral-400" />
-                        <span>Download</span>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

@@ -123,10 +123,20 @@ export default function MovieDetailsPage({
   const topCast = movie.credits?.cast?.slice(0, 4) || [];
 
   let formattedDate = 'N/A';
+  let estimatedQuality = 'HD';
   if (movie.release_date) {
     try {
       const d = new Date(movie.release_date);
       formattedDate = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      
+      const now = new Date();
+      const diffTime = now.getTime() - d.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // If the movie was released in the last 60 days, streams are highly likely to be CAM versions
+      if (diffDays >= 0 && diffDays <= 60) {
+        estimatedQuality = 'CAM';
+      }
     } catch {
       formattedDate = movie.release_date;
     }
@@ -160,13 +170,18 @@ export default function MovieDetailsPage({
       <div className={styles.editorialGrid}>
         {/* Left Column: Title, Synopsis, Play & Wishlist Buttons, Actors */}
         <div className={styles.leftCol}>
-          <h1 className={styles.editorialTitle}>{displayTitle}</h1>
+          <h1 className={styles.editorialTitle}>
+            {displayTitle}
+            <span className={estimatedQuality === 'CAM' ? styles.camBadge : styles.hdBadge}>
+              {estimatedQuality}
+            </span>
+          </h1>
           <p className={styles.editorialOverview}>{movie.overview}</p>
 
           {/* Action Buttons: Play Now & Wishlist */}
           <div className={styles.editorialActions}>
             <Link
-              href={`/watch/${movie.id}`}
+              href={`/watch/servers/${movie.id}`}
               className={styles.playNowBtn}
               onClick={handlePlayNow}
             >
@@ -181,14 +196,14 @@ export default function MovieDetailsPage({
               {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
             </button>
             {!isAnime && (
-              <button
-                type="button"
+              <Link
+                href={`/watch/servers/${movie.id}`}
                 className={styles.playNowBtn}
                 style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
-                onClick={handleVipAccess}
+                onClick={handlePlayNow}
               >
                 VIP Server
-              </button>
+              </Link>
             )}
           </div>
 

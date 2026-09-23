@@ -12,6 +12,7 @@ const withPWA = withPWAInit({
 });
 // @ts-ignore
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['192.168.1.5', 'localhost'],
   turbopack: {},
   typescript: {
     // !! WARN !!

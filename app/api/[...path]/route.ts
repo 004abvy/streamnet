@@ -101,9 +101,20 @@ export async function GET(
 
     // 3.1 /api/search/movie
     if (pathStr === 'search/movie') {
-      const query = searchParams.get('query') || searchParams.get('q') || '';
+      let query = searchParams.get('query') || searchParams.get('q') || '';
       if (!query) return NextResponse.json({ results: [] });
-      const data = await fetchFromTMDB('/search/movie', { query, language: 'en-US' });
+
+      let year = '';
+      const yearMatch = query.match(/\b(19\d{2}|20\d{2})\b/);
+      if (yearMatch) {
+        year = yearMatch[1];
+        query = query.replace(yearMatch[0], '').trim() || query;
+      }
+
+      const params: Record<string, string> = { query, language: 'en-US' };
+      if (year) params.primary_release_year = year;
+
+      const data = await fetchFromTMDB('/search/movie', params);
       return NextResponse.json(data);
     }
 
@@ -322,9 +333,32 @@ export async function GET(
 
     // 12. /api/search
     if (pathStr === 'search') {
-      const query = searchParams.get('q');
+      let query = searchParams.get('q');
       const page = searchParams.get('page') || '1';
       if (!query) return NextResponse.json({ results: [], total_pages: 0, total_results: 0 });
+
+      const yearMatch = query.match(/\b(19\d{2}|20\d{2})\b/);
+      if (yearMatch) {
+        const year = yearMatch[1];
+        const cleanQuery = query.replace(yearMatch[0], '').trim() || query;
+        
+        // If year is provided, split search into movie and tv since multi doesn't support year
+        const [movieData, tvData] = await Promise.all([
+          fetchFromTMDB('/search/movie', { query: cleanQuery, primary_release_year: year, page, language: 'en-US' }).catch(() => ({ results: [] })),
+          fetchFromTMDB('/search/tv', { query: cleanQuery, first_air_date_year: year, page, language: 'en-US' }).catch(() => ({ results: [] }))
+        ]);
+
+        const combinedResults = [
+          ...(movieData.results || []).map((m: any) => ({ ...m, media_type: 'movie' })),
+          ...(tvData.results || []).map((t: any) => ({ ...t, media_type: 'tv' }))
+        ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+        return NextResponse.json({
+          results: combinedResults,
+          total_pages: Math.max(movieData.total_pages || 1, tvData.total_pages || 1),
+          total_results: (movieData.total_results || 0) + (tvData.total_results || 0)
+        });
+      }
 
       const data = await fetchFromTMDB('/search/multi', {
         query,

@@ -167,6 +167,8 @@
   background: #101018;
   text-decoration: none;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .posterCard:hover {
@@ -183,6 +185,8 @@
   object-fit: cover;
   object-position: center;
   transition: transform 0.4s ease;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .posterCard:hover .posterImg {
@@ -279,6 +283,8 @@
   background: #0d0d14;
   text-decoration: none;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .heroCard:hover {
@@ -294,6 +300,8 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .heroCard:hover .heroBackdrop {

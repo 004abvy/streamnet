@@ -27,7 +27,9 @@ export async function GET(
     const season = path[2] || '1';
     const episode = path[3] || '1';
 
-    const currentUrl = new URL(request.url);
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+    const currentOrigin = `${protocol}://${host}`;
     const resolved = await resolveAllStreams(tmdbId, mediaType, season, episode);
 
     if (resolved.length > 0) {
@@ -51,7 +53,7 @@ export async function GET(
           name: stream.provider,
           quality: stream.quality || null,
           streamType: stream.type,
-          url: `${currentUrl.origin}/api/stream/${endpoint}?${proxyParams.toString()}`,
+          url: `${currentOrigin}/api/stream/${endpoint}?${proxyParams.toString()}`,
           rawUrl: stream.url,
           audioTracks: [],
         };
@@ -89,7 +91,7 @@ export async function GET(
         const langCode = sub.language || (isEng ? 'en' : rawLabel.toLowerCase().includes('hin') ? 'hi' : rawLabel.slice(0, 2).toLowerCase());
 
         subtitles.push({
-          url: `${currentUrl.origin}/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
+          url: `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
           label: rawLabel,
           language: langCode,
           format: 'vtt',

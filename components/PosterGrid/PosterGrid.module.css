@@ -144,7 +144,7 @@
   background: #ffffff;
   color: #000000;
   font-weight: 800;
-  font-size: clamp(0.65rem, 0.75vw, 1.8rem);
+  font-size: clamp(0.85rem, 1vw, 2rem);
   padding: clamp(0.15rem, 0.2vw, 0.6rem) clamp(0.4rem, 0.5vw, 1.5rem);
   border-radius: 12px;
   align-self: flex-start;
@@ -154,7 +154,7 @@
 
 .movieTitle {
   color: #ffffff;
-  font-size: clamp(0.95rem, 1.05vw, 2.8rem);
+  font-size: clamp(1.2rem, 1.3vw, 3.2rem);
   font-weight: 700;
   margin: 0;
   white-space: nowrap;
@@ -165,7 +165,7 @@
 
 .year {
   color: #aaaabb;
-  font-size: clamp(0.8rem, 0.9vw, 2.2rem);
+  font-size: clamp(1rem, 1.1vw, 2.5rem);
   font-weight: 500;
   margin: 0;
 }
@@ -199,11 +199,11 @@
     gap: 0.6rem;
   }
   .movieTitle {
-    font-size: 0.85rem;
+    font-size: 1.1rem;
   }
   .rating {
-    font-size: 0.75rem;
-    padding: 0.15rem 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.2rem 0.6rem;
   }
 }
 

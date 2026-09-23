@@ -26,6 +26,7 @@ function AnimeContent() {
 
   const [shows, setShows] = useState<any[]>([]);
   const [genreList, setGenreList] = useState(INITIAL_GENRES);
+  const [loadingGenres, setLoadingGenres] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -61,9 +62,11 @@ function AnimeContent() {
 
         if (isMounted) {
           setGenreList(updated);
+          setLoadingGenres(false);
         }
       } catch (err) {
         console.error('Failed to fetch live anime genre posters:', err);
+        if (isMounted) setLoadingGenres(false);
       }
     };
 
@@ -213,7 +216,12 @@ function AnimeContent() {
 
         {/* Widescreen Cinematic Genre Cards Hub */}
         <div className={styles.genreCardsRow}>
-          {genreList.map((g) => (
+          {loadingGenres ? (
+            INITIAL_GENRES.map((g, i) => (
+              <div key={i} className={styles.genreCard} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }} />
+            ))
+          ) : (
+          genreList.map((g) => (
             <button
               key={g.id}
               type="button"
@@ -235,7 +243,8 @@ function AnimeContent() {
                 <span className={styles.genreCardDot} />
               </div>
             </button>
-          ))}
+          ))
+          )}
         </div>
       </div>
 

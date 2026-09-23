@@ -133,12 +133,12 @@ export default function ArtPlayerComponent({
       screenshot: false,
       setting: onSettingsClick ? false : true,
       loop: false,
-      flip: true,
-      playbackRate: true,
-      aspectRatio: true,
+      flip: false,
+      playbackRate: false,
+      aspectRatio: false,
       fullscreen: true,
       fullscreenWeb: true,
-      subtitleOffset: true,
+      subtitleOffset: false,
       miniProgressBar: true,
       playsInline: true,
       theme: "#f59e0b",
@@ -163,28 +163,21 @@ export default function ArtPlayerComponent({
         encoding: "utf-8",
       },
       controls: [
-        {
-          name: "subtitles-toggle",
-          position: "right",
-          html: '<span style="font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">CC</span>',
-          tooltip: "Toggle Subtitles",
-          click: function () {
-            art.subtitle.show = !art.subtitle.show;
-          },
-        },
-        {
-          name: "settings",
-          position: "right",
-          html: settingsIconSvg,
-          tooltip: "Settings",
-          click: function () {
-            if (settingsClickRef) {
-              settingsClickRef();
-            } else if (art.setting) {
-              art.setting.show = !art.setting.show;
-            }
-          },
-        },
+        ...(onSettingsClick
+          ? [
+              {
+                name: "settings",
+                position: "right" as const,
+                html: settingsIconSvg,
+                tooltip: "Settings",
+                click: function () {
+                  if (settingsClickRef) {
+                    settingsClickRef();
+                  }
+                },
+              },
+            ]
+          : []),
       ],
       customType: {
         m3u8: function (
@@ -423,6 +416,86 @@ export default function ArtPlayerComponent({
             return item.html;
           },
         },
+        // Playback Speed
+        {
+          name: "play-speed-menu",
+          html: "Play Speed",
+          width: 200,
+          tooltip: "Normal",
+          selector: [
+            { html: "0.5x", value: 0.5 },
+            { html: "0.75x", value: 0.75 },
+            { default: true, html: "Normal", value: 1 },
+            { html: "1.25x", value: 1.25 },
+            { html: "1.5x", value: 1.5 },
+            { html: "2x", value: 2 },
+          ],
+          onSelect: function (item: any) {
+            art.playbackRate = item.value;
+            return item.html;
+          },
+        },
+        // Aspect Ratio
+        {
+          name: "aspect-ratio-menu",
+          html: "Aspect Ratio",
+          width: 200,
+          tooltip: "Default",
+          selector: [
+            { default: true, html: "Default", value: "" },
+            { html: "16:9", value: "16:9" },
+            { html: "4:3", value: "4:3" },
+            { html: "21:9", value: "21:9" },
+          ],
+          onSelect: function (item: any) {
+            art.aspectRatio = item.value;
+            return item.html;
+          },
+        },
+        // Video Flip
+        {
+          name: "video-flip-menu",
+          html: "Video Flip",
+          width: 200,
+          tooltip: "Normal",
+          selector: [
+            { default: true, html: "Normal", value: "normal" },
+            { html: "Horizontal", value: "horizontal" },
+            { html: "Vertical", value: "vertical" },
+          ],
+          onSelect: function (item: any) {
+            if (item.value === "normal") {
+              art.flip = "normal";
+            } else {
+              art.flip = item.value;
+            }
+            return item.html;
+          },
+        },
+        // Subtitle Offset
+        {
+          name: "subtitle-offset-menu",
+          html: "Subtitle Offset",
+          width: 200,
+          tooltip: "0s",
+          selector: [
+            { html: "-2s", value: -2 },
+            { html: "-1s", value: -1 },
+            { html: "-0.5s", value: -0.5 },
+            { default: true, html: "0s", value: 0 },
+            { html: "+0.5s", value: 0.5 },
+            { html: "+1s", value: 1 },
+            { html: "+2s", value: 2 },
+          ],
+          onSelect: function (item: any) {
+            try {
+              art.subtitleOffset = item.value;
+            } catch (err) {
+              console.warn("[ArtPlayer] Subtitle offset unsupported natively:", err);
+            }
+            return item.html;
+          },
+        },
         ...customSettings,
         // Download current source
         {
@@ -550,7 +623,11 @@ export default function ArtPlayerComponent({
       artInstanceRef.current?.subtitle &&
       typeof subtitleOffset === "number"
     ) {
-      artInstanceRef.current.subtitleOffset = subtitleOffset;
+      try {
+        artInstanceRef.current.subtitleOffset = subtitleOffset;
+      } catch (err) {
+        console.warn("[ArtPlayer] Subtitle offset unsupported natively:", err);
+      }
     }
   }, [subtitleOffset]);
 
@@ -628,7 +705,7 @@ export default function ArtPlayerComponent({
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px] rounded-2xl overflow-hidden bg-black text-white relative ${className}`}
+      className={`w-full h-full rounded-2xl overflow-hidden bg-black text-white relative ${className}`}
     >
       {portalTarget && children
         ? createPortal(

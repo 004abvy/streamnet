@@ -92,11 +92,9 @@ export default function VideoPlayer({
   const isDirectMode = currentServerObj?.category === 'omss' || currentServerObj?.category === 'direct' || activeServer === 'auto-fast';
 
   let embedUrl = '';
-  let sandboxAttr: string | undefined = undefined;
 
   if (!isDirectMode && currentServerObj) {
     embedUrl = currentServerObj.buildUrl({ tmdbId, type, season, episode, imdbId, language: selectedLanguage });
-    sandboxAttr = 'allow-scripts allow-same-origin allow-forms allow-presentation';
   }
 
   // Auto-dismiss notification after 5s
@@ -349,7 +347,7 @@ export default function VideoPlayer({
           className="w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10"
         >
           {isDirectMode ? (
-            <div className="w-full aspect-video">
+            <div className="w-full aspect-[4/3] sm:aspect-video">
               <HlsPlayer
                 key={activeServer}
                 serverId={activeServer}
@@ -370,9 +368,8 @@ export default function VideoPlayer({
               src={embedUrl}
               allowFullScreen
               {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
-              {...(sandboxAttr ? { sandbox: sandboxAttr } : {})}
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-              className={`w-full aspect-video border-0 ${vpStyles.embedIframe}`}
+              className={`w-full aspect-[4/3] sm:aspect-video border-0 ${vpStyles.embedIframe}`}
               title="Video Player"
             />
           )}

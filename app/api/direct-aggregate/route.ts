@@ -102,13 +102,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cached.data);
   }
 
-  const currentOrigin = new URL(request.url).origin;
+  const host = request.headers.get('host') || 'localhost:3000';
+  const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+  const currentOrigin = `${protocol}://${host}`;
 
   // Detect if current title is Japanese anime
   let isAnime = false;
   try {
     const tmdbRes = await fetch(`${currentOrigin}/api/${type === 'tv' ? 'tv' : 'movies'}/${id}`, {
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(10000),
     });
     if (tmdbRes.ok) {
       const tmdbData = await tmdbRes.json();
@@ -151,7 +153,7 @@ export async function GET(request: NextRequest) {
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             Referer: 'https://rivestream.ru/',
           },
-          signal: AbortSignal.timeout(2500),
+          signal: AbortSignal.timeout(20000),
         });
 
         if (!res.ok) return { provider, serverId, success: false, sources: [], captions: [] };
@@ -207,7 +209,15 @@ export async function GET(request: NextRequest) {
           if (!rawUrl || seenUrls.has(rawUrl)) return;
           seenUrls.add(rawUrl);
 
-          const proxiedUrl = `${currentOrigin}/api/stream/proxy.m3u8?url=${encodeURIComponent(rawUrl)}&manifest=1`;
+          const proxyParams = new URLSearchParams({
+            url: rawUrl,
+            manifest: '1',
+            headers: JSON.stringify({
+              'Referer': 'https://rivestream.ru/',
+              'Origin': 'https://rivestream.ru'
+            })
+          });
+          const proxiedUrl = `${currentOrigin}/api/stream/proxy.m3u8?${proxyParams.toString()}`;
           if (!primaryStreamUrl) primaryStreamUrl = proxiedUrl;
 
           // Categorize and label cleanly
@@ -457,7 +467,7 @@ export async function GET(request: NextRequest) {
           const res = await fetch(track.url, {
             method: 'GET',
             headers: { Range: 'bytes=0-128' },
-            signal: AbortSignal.timeout(1800),
+            signal: AbortSignal.timeout(20000),
           });
           return res.ok ? track : null;
         } catch {
@@ -492,7 +502,11 @@ export async function GET(request: NextRequest) {
       if (lang === 'ar') return 'ar';
       if (lang.startsWith('es')) return 'es';
       if (lang === 'en-dub') return 'en-dub';
-      if (lang.startsWith('en')) return 'en';
+      if (lang.startsWith('en')) {
+        if (track.badge.includes('4K') || track.badge.includes('2160')) return 'en-4k';
+        if (track.badge.includes('1080')) return 'en-1080';
+        return 'en';
+      }
       return lang;
     };
 
@@ -506,6 +520,8 @@ export async function GET(request: NextRequest) {
         case 'ar': return 'Arabic';
         case 'es': return 'Spanish';
         case 'en-dub': return 'English [Dub]';
+        case 'en-4k': return 'English 4K';
+        case 'en-1080': return 'English 1080p';
         default: return 'English';
       }
     };

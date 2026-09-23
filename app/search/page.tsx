@@ -14,7 +14,16 @@ function SearchContent() {
   const queryParam = searchParams.get('q') || '';
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
-  const [inputQuery, setInputQuery] = useState(queryParam);
+  let initialSearch = queryParam;
+  let initialYear = '';
+  const yearMatch = queryParam.match(/\b(19\d{2}|20\d{2})\b$/);
+  if (yearMatch) {
+    initialYear = yearMatch[1];
+    initialSearch = queryParam.replace(yearMatch[0], '').trim();
+  }
+
+  const [inputQuery, setInputQuery] = useState(initialSearch);
+  const [inputYear, setInputYear] = useState(initialYear);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -25,6 +34,13 @@ function SearchContent() {
   const trendingMoviesRef = useRef<any[]>([]);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [showDome, setShowDome] = useState(false);
+
+  // Delay DomeGallery rendering until page transition completes
+  useEffect(() => {
+    const timer = setTimeout(() => setShowDome(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -61,7 +77,16 @@ function SearchContent() {
 
   // Fetch full search results when queryParam or pageParam in URL changes
   useEffect(() => {
-    setInputQuery(queryParam);
+    let newSearch = queryParam;
+    let newYear = '';
+    const ym = queryParam.match(/\b(19\d{2}|20\d{2})\b$/);
+    if (ym) {
+      newYear = ym[1];
+      newSearch = queryParam.replace(ym[0], '').trim();
+    }
+    
+    setInputQuery(newSearch);
+    setInputYear(newYear);
     setShowSuggestions(false);
     setSuggestions([]);
     if (!queryParam) {
@@ -91,14 +116,15 @@ function SearchContent() {
 
   // Fetch suggestions live as user types in the input box
   useEffect(() => {
-    if (!isInputFocused || !inputQuery.trim() || inputQuery.trim().length < 2) {
+    const fullQuery = inputYear.trim() ? `${inputQuery.trim()} ${inputYear.trim()}` : inputQuery.trim();
+    if (!isInputFocused || !fullQuery || fullQuery.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
     const timer = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(inputQuery.trim())}`)
+      fetch(`/api/search?q=${encodeURIComponent(fullQuery)}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.results) {
@@ -124,11 +150,12 @@ function SearchContent() {
 
   const handleSearchFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputQuery.trim()) {
+    const finalQuery = inputYear.trim() ? `${inputQuery.trim()} ${inputYear.trim()}` : inputQuery.trim();
+    if (finalQuery) {
       setShowSuggestions(false);
       setSuggestions([]);
       inputRef.current?.blur();
-      router.push(`/search?q=${encodeURIComponent(inputQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(finalQuery)}`);
     }
   };
 
@@ -186,6 +213,33 @@ function SearchContent() {
               transition: 'all 0.3s ease'
             }}
           />
+          <input
+            type="text"
+            value={inputYear}
+            onChange={(e) => {
+              setInputYear(e.target.value);
+            }}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => {
+              setTimeout(() => setIsInputFocused(false), 200);
+            }}
+            placeholder="Year"
+            style={{
+              width: '90px',
+              padding: '0.8rem 1rem',
+              borderRadius: '9999px',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              background: 'rgba(18, 18, 24, 0.55)',
+              backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+              WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.05)',
+              color: '#fff',
+              fontSize: '1rem',
+              outline: 'none',
+              transition: 'all 0.3s ease',
+              textAlign: 'center'
+            }}
+          />
           <button
             type="submit"
             style={{
@@ -230,7 +284,10 @@ function SearchContent() {
               return (
                 <div
                   key={item.id}
-                  onClick={() => handleSelectSuggestion(item)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelectSuggestion(item);
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -300,7 +357,7 @@ function SearchContent() {
         </div>
       ) : (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, overflow: 'hidden' }}>
-          {trendingPosters.length > 0 && (
+          {trendingPosters.length > 0 && showDome && (
             <DomeGallery
               images={trendingPosters}
               autoRotate={true}

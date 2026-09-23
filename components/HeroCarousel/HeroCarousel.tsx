@@ -42,6 +42,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const [movieFonts, setMovieFonts] = useState<Record<number, string>>({});
   const [movieColors, setMovieColors] = useState<Record<number, string>>({});
   const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>({});
+  const [isStylesLoading, setIsStylesLoading] = useState(true);
 
   const profileMenuTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -92,8 +93,14 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const visibleMovieIds = visibleMovies.map(m => m.id).join(',');
 
   useEffect(() => {
-    if (!visibleMovies.length) return;
     let isMounted = true;
+    if (!visibleMovies.length) {
+      // If there are no movies yet, keep styles loading true so it shows the skeleton
+      setIsStylesLoading(true);
+      return;
+    }
+    
+    setIsStylesLoading(true);
 
     async function loadFonts() {
       try {
@@ -144,8 +151,11 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             document.head.appendChild(link);
           }
         });
+        
+        if (isMounted) setIsStylesLoading(false);
       } catch (err) {
         console.error('Error preloading fonts', err);
+        if (isMounted) setIsStylesLoading(false);
       }
     }
 
@@ -168,7 +178,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
     return () => clearInterval(interval);
   }, [loopMovies.length]);
 
-  if (isLoading) {
+  if (isLoading || isStylesLoading) {
     return (
       <div className={styles.heroWrapper}>
         <div className={styles.skeletonHero} aria-label="Loading hero spotlight">
@@ -178,7 +188,16 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
     );
   }
 
-  if (loopMovies.length === 0) return null;
+  if (loopMovies.length === 0) {
+    // If no movies are loaded yet, still render the skeleton to preserve layout height
+    return (
+      <div className={styles.heroWrapper}>
+        <div className={styles.skeletonHero} aria-label="Loading hero spotlight">
+          <div className={styles.skeletonBackdropShimmer} />
+        </div>
+      </div>
+    );
+  }
 
   const currentMovie = loopMovies[currentIndex] || loopMovies[0];
   const displayTitle = currentMovie.title || currentMovie.name || 'Featured Title';
@@ -198,10 +217,18 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
 
   return (
     <div className={styles.heroWrapper}>
-      <div 
-        className={styles.heroBackgroundBlur} 
-        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${currentMovie.backdrop_path})` }}
-      />
+      {loopMovies.map((movie, index) => (
+        <div 
+          key={`blur-${movie.id}-${index}`}
+          className={styles.heroBackgroundBlur} 
+          style={{ 
+            backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`,
+            opacity: currentIndex === index ? 1 : 0,
+            transition: 'opacity 1s ease-in-out',
+            willChange: 'opacity'
+          }}
+        />
+      ))}
       <div className={styles.container}>
         {/* Rounded Backdrop Frame (Clips backdrop image & top right actions) */}
         <div className={styles.backdropFrame}>
@@ -266,7 +293,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
           {/* Carousel Track */}
           <div
             className={styles.track}
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            style={{ transform: `translate3d(-${currentIndex * 100}%, 0, 0)` }}
           >
             {loopMovies.map((movie, index) => (
               <div key={`${movie.id}-${index}`} className={styles.slide}>

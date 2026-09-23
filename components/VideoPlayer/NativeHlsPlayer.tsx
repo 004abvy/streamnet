@@ -86,7 +86,7 @@ export default function NativeHlsPlayer({
         if (!settled) {
           fail('HLS connection timeout.');
         }
-      }, 7000);
+      }, 25000);
 
       const hls = new Hls({
         enableWorker: true,

@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import HeroCarousel from '../components/HeroCarousel/HeroCarousel';
 import PosterCarousel from '../components/PosterCarousel/PosterCarousel';
 import TrendingSection from '../components/TrendingSection/TrendingSection';
 import ProvidersSection from '../components/ProvidersSection/ProvidersSection';
 import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplorerSection';
 import Footer from '../components/Footer/Footer';
+import SlingButton from '../components/reactbits/SlingButton';
 import { useAuth } from '../context/AuthContext';
 import { saveContinueWatching } from '../utils/userStorage';
+import { motion } from 'framer-motion';
 import styles from './page.module.css';
 
 interface HomeMediaItem {
@@ -30,6 +33,15 @@ export default function Home() {
   const [trendingTv, setTrendingTv] = useState<HomeMediaItem[]>([]);
   const [continueWatching, setContinueWatching] = useState<HomeMediaItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const handleScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     // Force scroll to top on page refresh
@@ -112,10 +124,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!loading && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       window.scrollTo(0, 0);
-      if (document.body) document.body.scrollTop = 0;
-      if (document.documentElement) document.documentElement.scrollTop = 0;
     }
   }, [loading]);
 
@@ -124,25 +134,99 @@ export default function Home() {
       <HeroCarousel movies={trendingMovies} isLoading={loading} />
 
       <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>
-        <ProvidersSection />
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        >
+          <ProvidersSection />
+        </motion.div>
 
         {continueWatching.length > 0 && !loading && (
-          <PosterCarousel
-            title="Continue Watching"
-            movies={continueWatching}
-            viewAllLink="/continue-watching"
-            onClear={handleClearContinueWatching}
-            onRemoveItem={handleRemoveContinueWatchingItem}
-          />
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            whileInView={{ opacity: 1, y: 0 }} 
+            viewport={{ once: true, margin: '-50px' }} 
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+          >
+            <PosterCarousel
+              title="Continue Watching"
+              movies={continueWatching}
+              viewAllLink="/continue-watching"
+              onClear={handleClearContinueWatching}
+              onRemoveItem={handleRemoveContinueWatchingItem}
+            />
+          </motion.div>
         )}
 
-        <GenreExplorerSection />
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+        >
+          <GenreExplorerSection />
+        </motion.div>
 
-        <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" isLoading={loading} />
-        <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+        >
+          <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" isLoading={loading} />
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+        >
+          <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
+        </motion.div>
       </div>
 
       <Footer />
+      
+      {/* Scroll to Top Sling Button (Rendered via Portal to escape Framer Motion transforms) */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '15%',
+            right: '2rem',
+            zIndex: 99999, // Guaranteed to be on top of everything
+            opacity: showScrollTop ? 1 : 0,
+            pointerEvents: showScrollTop ? 'auto' : 'none',
+            transform: showScrollTop ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.3s ease-out'
+          }}
+        >
+          <SlingButton
+            onSend={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            padColor="#f5f5f5"
+            iconColor="#18181b"
+            accentColor="#f5f5f5"
+            wellColor="#27272a"
+            bandColor="#f59e0b"
+            size={56}
+            strokeWidth={3}
+            armAt={48}
+            maxPull={160}
+            launchSpeed={2600}
+            recoil={0.2}
+            flight={120}
+            particles={14}
+            spread={60}
+            axis="vertical"
+            tapSends
+            disabled={!showScrollTop}
+          />
+        </div>,
+        document.body
+      )}
     </main>
   );
 }

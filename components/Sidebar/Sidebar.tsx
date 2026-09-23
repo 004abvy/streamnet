@@ -14,7 +14,7 @@ import {
   Tv,
   Radio,
   BookOpen,
-  Eye,
+  Swords,
   VenetianMask,
   FolderOpen,
   Library,
@@ -50,7 +50,7 @@ export default function Sidebar() {
     }
     collapseTimerRef.current = setTimeout(() => {
       setIsExpanded(false);
-    }, 1500);
+    }, 200);
   };
 
   useEffect(() => {
@@ -93,11 +93,11 @@ export default function Sidebar() {
 
   const sidebarLinks = [
     { label: 'Home', link: '/', icon: Home },
-    { label: 'Search', action: 'search', icon: Search },
+    { label: 'Search', link: '/search', action: 'search', icon: Search },
     { label: 'Movies', link: '/movies', icon: Film },
     { label: 'TV Shows', link: '/tv', icon: Monitor },
     { label: 'Live TV', link: '/live-tv', icon: Tv },
-    { label: 'Anime', link: '/anime', icon: Eye },
+    { label: 'Anime', link: '/anime', icon: Swords },
     { label: 'Collections', link: '/collections', icon: FolderOpen },
     { label: 'Library', link: '/saved', icon: Library },
     { label: 'Announcements', link: '/announcements', icon: Bell }
@@ -106,6 +106,7 @@ export default function Sidebar() {
   const activeIndex = sidebarLinks.findIndex(item => {
     if (!item.link) return false;
     if (item.link === '/') return pathname === '/';
+    if (item.link === '/movies' && pathname.startsWith('/movie/')) return true;
     return pathname.startsWith(item.link);
   });
   const currentActiveIndex = activeIndex === -1 ? 0 : activeIndex;
@@ -113,6 +114,7 @@ export default function Sidebar() {
   const isPathActive = (link?: string) => {
     if (!link) return false;
     if (link === '/') return pathname === '/';
+    if (link === '/movies' && pathname.startsWith('/movie/')) return true;
     return pathname.startsWith(link);
   };
 
@@ -130,6 +132,12 @@ export default function Sidebar() {
         onMouseLeave={handleMouseLeave}
       >
         <div className={styles.sidebarInner}>
+          <div 
+            className={styles.activeBubble}
+            style={{
+              transform: `translateY(${isExpanded ? currentActiveIndex * 48 + 2 : 3}px)`
+            }}
+          />
           {sidebarLinks.map((item, idx) => {
             const Icon = item.icon;
             const active = isPathActive(item.link);
@@ -262,7 +270,7 @@ export default function Sidebar() {
                   <Monitor size={18} /> Tv shows
                 </Link>
                 <Link href="/anime" className={styles.menuItem}>
-                  <Eye size={18} /> Anime
+                  <Swords size={18} /> Anime
                 </Link>
                 <Link href="/collections" className={styles.menuItem}>
                   <FolderOpen size={18} /> Collections

@@ -75,6 +75,7 @@ interface MasonryProps {
   hoverScale?: number;
   blurToFocus?: boolean;
   colorShiftOnHover?: boolean;
+  onHoverChange?: (item: Item | null) => void;
 }
 
 const Masonry: React.FC<MasonryProps> = ({
@@ -86,7 +87,8 @@ const Masonry: React.FC<MasonryProps> = ({
   scaleOnHover = true,
   hoverScale = 0.95,
   blurToFocus = true,
-  colorShiftOnHover = false
+  colorShiftOnHover = false,
+  onHoverChange
 }) => {
   const columns = useMedia(
     ['(min-width:1500px)', '(min-width:1000px)', '(min-width:600px)', '(min-width:400px)'],
@@ -213,6 +215,10 @@ const Masonry: React.FC<MasonryProps> = ({
     const element = e.currentTarget as HTMLElement;
     const selector = `[data-key="${item.id}"]`;
 
+    if (onHoverChange) {
+      onHoverChange(item);
+    }
+
     if (scaleOnHover) {
       gsap.to(selector, {
         scale: hoverScale,
@@ -236,6 +242,10 @@ const Masonry: React.FC<MasonryProps> = ({
   const handleMouseLeave = (e: React.MouseEvent, item: GridItem) => {
     const element = e.currentTarget as HTMLElement;
     const selector = `[data-key="${item.id}"]`;
+
+    if (onHoverChange) {
+      onHoverChange(null);
+    }
 
     if (scaleOnHover) {
       gsap.to(selector, {

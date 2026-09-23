@@ -87,10 +87,10 @@ export async function resolveAllStreams(
   
   // Custom fetchers
   const customResolvers = [
-    { name: 'VixSrc', fn: () => withTimeout(resolveVixSrc(tmdbId, mediaType, season, episode), 6000) },
-    { name: 'AutoEmbed', fn: () => withTimeout(resolveAutoembed(tmdbId, mediaType, season, episode), 6000) },
-    { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 6000) },
-    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 6000) },
+    { name: 'VixSrc', fn: () => withTimeout(resolveVixSrc(tmdbId, mediaType, season, episode), 20000) },
+    { name: 'AutoEmbed', fn: () => withTimeout(resolveAutoembed(tmdbId, mediaType, season, episode), 20000) },
+    { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 20000) },
+    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 20000) },
   ];
 
   // Instantiate OMSS Providers
@@ -114,7 +114,7 @@ export async function resolveAllStreams(
 
   const omssResolvers = omssProviders.map(provider => ({
     name: provider.name || 'OMSS Provider',
-    fn: () => withTimeout(runOmssProvider(provider, tmdbId, mediaType, season, episode), 6000)
+    fn: () => withTimeout(runOmssProvider(provider, tmdbId, mediaType, season, episode), 20000)
   }));
 
   const allResolvers = [...customResolvers, ...omssResolvers];
