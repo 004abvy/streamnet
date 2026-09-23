@@ -367,6 +367,7 @@ export default function VideoPlayer({
             <iframe
               src={embedUrl}
               allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
               allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
               className={`w-full aspect-[4/3] sm:aspect-video border-0 ${vpStyles.embedIframe}`}

@@ -90,10 +90,19 @@ export default function HlsPlayer({
               : ""
             : "";
 
-        const omssUrl =
-          type === "movie"
+        // Build API URL based on server type
+        let omssUrl: string;
+        if (serverId === 'rivestream') {
+          // RiveStream uses its own scraper API with multiple providers
+          const riveProvider = 'nova'; // Primary provider
+          omssUrl = type === "movie"
+            ? `${protocol}//${hostname}${port}/api/rive-provider?provider=${riveProvider}&id=${tmdbId}`
+            : `${protocol}//${hostname}${port}/api/rive-provider?provider=${riveProvider}&id=${tmdbId}&season=${season}&episode=${episode}`;
+        } else {
+          omssUrl = type === "movie"
             ? `${protocol}//${hostname}${port}/api/direct/movie/${tmdbId}`
             : `${protocol}//${hostname}${port}/api/direct/tv/${tmdbId}/${season}/${episode}`;
+        }
 
         // 0ms INSTANT MEMORY CACHE CHECK
         const cached = streamMemoryCache.get(omssUrl);
@@ -142,9 +151,46 @@ export default function HlsPlayer({
         const controller = new AbortController();
         const apiTimeout = setTimeout(() => controller.abort(), 15000); // 15s timeout to allow full scraper responses
 
-        const res = await fetch(omssUrl, { signal: controller.signal });
-        clearTimeout(apiTimeout);
-        const data = await res.json();
+        // For rivestream, try multiple providers in sequence if first fails
+        let data: any = null;
+        if (serverId === 'rivestream') {
+          const riveProviders = ['nova', 'citadel', 'primevids', 'astra', 'orion'];
+          for (const rp of riveProviders) {
+            try {
+              const rpUrl = type === "movie"
+                ? `${protocol}//${hostname}${port}/api/rive-provider?provider=${rp}&id=${tmdbId}`
+                : `${protocol}//${hostname}${port}/api/rive-provider?provider=${rp}&id=${tmdbId}&season=${season}&episode=${episode}`;
+              const rpRes = await fetch(rpUrl, { signal: controller.signal });
+              const rpData = await rpRes.json();
+              // Normalize rive response: data.sources -> sources
+              if (rpData?.data?.sources && rpData.data.sources.length > 0) {
+                data = {
+                  sources: rpData.data.sources.map((s: any, idx: number) => ({
+                    url: s.url,
+                    rawUrl: s.rawUrl || s.url,
+                    quality: s.quality || 'Auto',
+                    provider: { id: `rive-${rp}`, name: `Rive ${rp.charAt(0).toUpperCase() + rp.slice(1)}` },
+                    name: `Rive ${rp.charAt(0).toUpperCase() + rp.slice(1)}`,
+                    audioTracks: [],
+                  })),
+                  subtitles: rpData.data.subtitles || rpData.data.captions || [],
+                };
+                // Update cache key to the primary URL
+                break;
+              }
+            } catch (e) {
+              console.warn(`[HlsPlayer] Rive provider ${rp} failed, trying next...`);
+            }
+          }
+          clearTimeout(apiTimeout);
+          if (!data || !data.sources || data.sources.length === 0) {
+            throw new Error('No streams available from RiveStream. Try another server.');
+          }
+        } else {
+          const res = await fetch(omssUrl, { signal: controller.signal });
+          clearTimeout(apiTimeout);
+          data = await res.json();
+        }
 
         if (!data || !data.sources || data.sources.length === 0) {
           console.error(
