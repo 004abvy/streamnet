@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ArtPlayerComponent, { ArtPlayerSubtitle } from '../../../../components/ArtPlayer/ArtPlayerComponent';
 import VidstackPlayer, { VidstackTrack } from '../../../../components/VidstackPlayer';
+import SeasonEpisodeSelector from '../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
 import { RIVE_SERVERS, buildRiveServerUrl } from '../../../../utils/riveServers';
 import { MonitorPlay } from 'lucide-react';
 
@@ -747,11 +748,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 text-center">
         <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-2xl p-8 shadow-2xl">
           <h1 className="text-2xl font-bold mb-2">VIP Access Required</h1>
-          <p className="text-neutral-400 mb-6 text-sm">Please enter the VIP code to access premium 4K servers.</p>
+          <p className="text-neutral-400 mb-6 text-sm">
+            Enter <span className="text-amber-400 font-bold font-mono px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">123</span> to access premium 4K VIP servers.
+          </p>
           <form onSubmit={handleAuth} className="flex flex-col gap-4">
             <input 
-              type="password"
-              placeholder="Enter Code..."
+              type="text"
+              placeholder="Enter 123"
               value={authCode}
               onChange={(e) => setAuthCode(e.target.value)}
               className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-400 transition-colors text-center font-mono tracking-widest text-lg"
@@ -945,82 +948,16 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
       {/* Series Player / Episode Selector */}
       {type === 'tv' && movie?.seasons && (
-        <div className="w-full max-w-[1200px] mx-auto mt-8 px-6 pb-20">
-          <h2 className="text-2xl font-bold mb-6 text-white tracking-wide">Episodes</h2>
-          
-          {/* Season Selector */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {movie.seasons
-              .filter((s: any) => s.season_number > 0)
-              .map((s: any) => {
-                const isActive = s.season_number === season;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => router.push(`/watch/servers/${id}?type=tv&season=${s.season_number}&episode=1`)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                      isActive 
-                        ? 'bg-[#00b4d8] text-white shadow-[0_0_15px_rgba(0,180,216,0.4)]' 
-                        : 'bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    Season {s.season_number}
-                  </button>
-                );
-            })}
-          </div>
-
-          {/* Episode Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {seasonEpisodes.map((ep: any) => {
-              const isCurrent = ep.episode_number === episode;
-              return (
-                <button
-                  key={ep.id}
-                  onClick={() => router.push(`/watch/servers/${id}?type=tv&season=${season}&episode=${ep.episode_number}`)}
-                  className={`relative overflow-hidden rounded-xl text-left transition-all duration-300 group border ${
-                    isCurrent 
-                      ? 'border-[#00b4d8] ring-2 ring-[#00b4d8]/30 shadow-[0_0_30px_rgba(0,180,216,0.15)] bg-black/60' 
-                      : 'border-white/5 hover:border-white/20 bg-black/40'
-                  }`}
-                >
-                  <div className="aspect-video relative overflow-hidden bg-neutral-900">
-                    {ep.still_path ? (
-                      <img 
-                        src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} 
-                        alt={ep.name} 
-                        className={`w-full h-full object-cover transition-transform duration-500 ${isCurrent ? 'scale-105' : 'group-hover:scale-105'}`}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-neutral-600">
-                        <MonitorPlay size={32} />
-                      </div>
-                    )}
-                    {/* Play Overlay */}
-                    <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isCurrent ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md ${isCurrent ? 'bg-[#00b4d8]/90 text-white' : 'bg-white/20 text-white'}`}>
-                        {isCurrent ? <Sparkles size={20} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isCurrent ? 'bg-[#00b4d8]/20 text-[#00b4d8]' : 'bg-white/10 text-neutral-300'}`}>
-                        EP {ep.episode_number}
-                      </span>
-                      <span className="text-xs text-neutral-400 font-medium">
-                        {ep.runtime ? `${ep.runtime}m` : ''}
-                      </span>
-                    </div>
-                    <h3 className={`text-sm font-semibold truncate ${isCurrent ? 'text-white' : 'text-neutral-200'}`}>
-                      {ep.name}
-                    </h3>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        <div className="w-full max-w-[1200px] mx-auto mt-4 px-3 sm:px-6 pb-20">
+          <SeasonEpisodeSelector
+            tvId={id}
+            seasons={movie.seasons || []}
+            currentSeason={season}
+            currentEpisode={episode}
+            onEpisodeSelect={(newSeason, newEpisode) => {
+              router.push(`/watch/servers/${id}?type=tv&season=${newSeason}&episode=${newEpisode}`);
+            }}
+          />
         </div>
       )}
     </main>

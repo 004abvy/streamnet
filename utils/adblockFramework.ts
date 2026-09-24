@@ -362,6 +362,34 @@ export function installAdblockProtection(
   // Ensure document-start JavaScript Injector is fully running
   JavaScriptInjector.init();
 
+  // Safeguard React DOM Reconciliation against third-party iframe unmounting crashes
+  if (typeof Node !== 'undefined' && Node.prototype) {
+    try {
+      const origRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function <T extends Node>(child: T): T {
+        if (!child || child.parentNode !== this) {
+          if (child && child.parentNode) {
+            try {
+              return child.parentNode.removeChild(child);
+            } catch (e) {
+              return child;
+            }
+          }
+          return child;
+        }
+        return origRemoveChild.call(this, child) as T;
+      };
+
+      const origInsertBefore = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function <T extends Node>(newNode: T, referenceNode: Node | null): T {
+        if (referenceNode && referenceNode.parentNode !== this) {
+          return this.appendChild(newNode) as T;
+        }
+        return origInsertBefore.call(this, newNode, referenceNode) as T;
+      };
+    } catch (e) {}
+  }
+
   const cleanups: Array<() => void> = [];
 
   // =========================================================================
@@ -735,13 +763,16 @@ export function installAdblockProtection(
     const defuseElement = (node: Node) => {
       if (!(node instanceof HTMLElement)) return;
 
-      // Never touch legitimate StreamNet components
+      // Never touch legitimate StreamNet components or React-managed content
       if (
         node.closest('[class*="VideoPlayer"]') ||
+        node.closest('[class*="Playeranime"]') ||
+        node.closest('[class*="aspect-video"]') ||
         node.closest('[class*="Navbar"]') ||
         node.closest('[class*="SeasonEpisodeSelector"]') ||
         node.closest('[class*="DetailsTabs"]') ||
         node.closest('#__next') ||
+        node.closest('main') ||
         node.tagName === 'NEXT-ROUTE-ANNOUNCER'
       ) {
         return;
@@ -751,17 +782,25 @@ export function installAdblockProtection(
       const cls = (node.className && typeof node.className === 'string' ? node.className : '').toLowerCase();
       const tag = node.tagName.toLowerCase();
 
-      // Detect rogue third-party iframes injected outside VideoPlayer
+      // Detect rogue third-party iframes injected outside player
       if (tag === 'iframe') {
         const iframe = node as HTMLIFrameElement;
-        if (iframe.closest('[class*="VideoPlayer"]')) {
+        if (
+          iframe.closest('[class*="VideoPlayer"]') ||
+          iframe.closest('[class*="Playeranime"]') ||
+          iframe.closest('[class*="aspect-video"]') ||
+          iframe.closest('main') ||
+          iframe.closest('#__next')
+        ) {
           return;
         }
         iframe.style.setProperty('z-index', '-99999', 'important');
         iframe.style.setProperty('pointer-events', 'none', 'important');
         iframe.style.setProperty('display', 'none', 'important');
         try {
-          iframe.remove();
+          if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
         } catch (e) {}
         onBlockedAction?.('rogue_iframe_blocked', iframe.src || 'unknown');
         return;
@@ -795,20 +834,13 @@ export function installAdblockProtection(
         node.style.setProperty('display', 'none', 'important');
         node.style.setProperty('visibility', 'hidden', 'important');
         try {
-          node.remove();
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
         } catch (e) {}
         onBlockedAction?.('z_axis_defused', tag);
       }
     };
-
-    try {
-      const allIframes = document.querySelectorAll('iframe');
-      allIframes.forEach((iframe) => {
-        if (!iframe.closest('[class*="VideoPlayer"]')) {
-          iframe.remove();
-        }
-      });
-    } catch (e) {}
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((m) => {

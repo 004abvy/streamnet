@@ -30,15 +30,6 @@ export default function MovieDetailsPage({
     }
   }, [searchParams]);
 
-  const handleVipAccess = () => {
-    const code = window.prompt('Enter VIP Access Code:');
-    if (code === '123') {
-      router.push(`/watch/servers/${movie.id}?type=movie`);
-    } else if (code !== null) {
-      alert('Invalid code!');
-    }
-  };
-
   useEffect(() => {
     if (!id) return;
 
@@ -181,7 +172,7 @@ export default function MovieDetailsPage({
           {/* Action Buttons: Play Now & Wishlist */}
           <div className={styles.editorialActions}>
             <Link
-              href={`/watch/servers/${movie.id}`}
+              href={`/watch/${movie.id}`}
               className={styles.playNowBtn}
               onClick={handlePlayNow}
             >

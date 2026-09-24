@@ -30,15 +30,6 @@ export default function TVDetailsPage({
     }
   }, [searchParams]);
 
-  const handleVipAccess = () => {
-    const code = window.prompt('Enter VIP Access Code:');
-    if (code === '123') {
-      router.push(`/watch/servers/${movie.id}?type=tv&season=1&episode=1`);
-    } else if (code !== null) {
-      alert('Invalid code!');
-    }
-  };
-
   useEffect(() => {
     if (!id) return;
 
@@ -167,7 +158,7 @@ export default function TVDetailsPage({
           {/* Action Buttons: Play Now & Wishlist */}
           <div className={styles.editorialActions}>
             <Link
-              href={`/watch/servers/${movie.id}?type=tv&season=1&episode=1`}
+              href={`/watch/tv/${movie.id}/1/1`}
               className={styles.playNowBtn}
               onClick={handlePlayNow}
             >

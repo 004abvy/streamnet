@@ -43,7 +43,9 @@ export default function VideoPlayer({
   const router = useRouter();
   const [activeServer, setActiveServer] = useState<string>('auto-fast');
   const [autoFallbackNotice, setAutoFallbackNotice] = useState<string | null>(null);
-  const [passkeyCode, setPasskeyCode] = useState<string>('');
+  const [showVipModal, setShowVipModal] = useState<boolean>(false);
+  const [vipInputCode, setVipInputCode] = useState<string>('');
+  const [vipError, setVipError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -432,40 +434,98 @@ export default function VideoPlayer({
             <span>Rive</span>
           </button>
 
-          {/* Secret Passkey Enter Field to Unlock VIP Multi-Server Hub */}
+          {/* VIP Server Access Button */}
           <div className="w-px h-3.5 bg-white/15 mx-0.5 shrink-0" />
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (passkeyCode.trim() === '123') {
-                const targetUrl = type === 'tv'
-                  ? `/watch/servers/${tmdbId}?type=tv&season=${season || 1}&episode=${episode || 1}`
-                  : `/watch/servers/${tmdbId}`;
-                router.push(targetUrl);
-              }
-            }}
-            className="flex items-center gap-1 pl-0.5 pr-1 shrink-0"
+          <button
+            type="button"
+            onClick={() => setShowVipModal(true)}
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all duration-200 cursor-pointer shrink-0"
+            title="Unlock VIP Player"
           >
-            <input
-              type="text"
-              placeholder="Code"
-              value={passkeyCode}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPasskeyCode(val);
-                if (val.trim() === '123') {
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
+            <span>VIP</span>
+          </button>
+        </div>
+      </div>
+
+      {/* VIP Passkey Modal */}
+      {showVipModal && (
+        <div 
+          className="fixed inset-0 z-[999999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => {
+            setShowVipModal(false);
+            setVipError(null);
+            setVipInputCode('');
+          }}
+        >
+          <div 
+            className="w-full max-w-sm bg-neutral-900 border border-amber-500/30 rounded-2xl p-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] flex flex-col items-center text-center relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <Sparkles className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white mb-1">Enter VIP Code</h3>
+            <p className="text-xs text-neutral-400 mb-4">
+              Enter <span className="text-amber-400 font-bold font-mono px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">123</span> to unlock premium VIP servers.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (vipInputCode.trim() === '123') {
+                  sessionStorage.setItem('vip_auth', '123');
+                  setShowVipModal(false);
                   const targetUrl = type === 'tv'
                     ? `/watch/servers/${tmdbId}?type=tv&season=${season || 1}&episode=${episode || 1}`
                     : `/watch/servers/${tmdbId}`;
                   router.push(targetUrl);
+                } else {
+                  setVipError('Invalid VIP Code. Please enter 123.');
                 }
               }}
-              className="w-12 sm:w-16 px-1.5 sm:px-2 py-0.5 sm:py-1 text-center bg-white/[0.06] hover:bg-white/[0.1] focus:bg-amber-500/20 border border-white/15 focus:border-amber-400 rounded-full text-[11px] sm:text-xs font-mono font-bold text-amber-300 placeholder:text-neutral-500 focus:outline-none transition-all cursor-text shadow-inner"
-              title="Enter code to open the VIP Server Hub"
-            />
-          </form>
+              className="w-full flex flex-col gap-3"
+            >
+              <input
+                type="text"
+                placeholder="Enter 123"
+                value={vipInputCode}
+                onChange={(e) => {
+                  setVipInputCode(e.target.value);
+                  setVipError(null);
+                }}
+                className="w-full bg-black/80 border border-white/15 focus:border-amber-400 rounded-xl px-4 py-2.5 text-center text-white font-mono tracking-widest text-base focus:outline-none transition-all shadow-inner"
+                autoFocus
+              />
+
+              {vipError && (
+                <p className="text-xs text-red-400 font-semibold">{vipError}</p>
+              )}
+
+              <div className="flex items-center gap-2 w-full mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVipModal(false);
+                    setVipError(null);
+                    setVipInputCode('');
+                  }}
+                  className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black text-xs font-bold transition-all shadow-md cursor-pointer"
+                >
+                  Unlock
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
