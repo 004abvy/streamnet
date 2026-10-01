@@ -248,13 +248,19 @@ export default function ArtPlayerComponent({
                         t.language?.toLowerCase().includes("ja"),
                     );
                     if (targetTrack === -1) targetTrack = 0; // fallback
-                  } else if (wantsEng) {
+                  } else {
                     targetTrack = hls.audioTracks.findIndex(
                       (t) =>
                         t.name?.toLowerCase().includes("en") ||
-                        t.language?.toLowerCase().includes("en"),
+                        t.language?.toLowerCase().includes("en")
                     );
-                    if (targetTrack === -1) targetTrack = 1; // fallback
+                    // If no English track found, try finding Hindi, otherwise fallback to 0
+                    if (targetTrack === -1) {
+                      targetTrack = hls.audioTracks.findIndex(
+                        (t) => t.name?.toLowerCase().includes("hin") || t.language?.toLowerCase().includes("hi")
+                      );
+                    }
+                    if (targetTrack === -1) targetTrack = 0; // fallback
                   }
 
                   if (targetTrack !== -1) {

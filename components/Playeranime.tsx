@@ -48,6 +48,10 @@ export default function Playeranime({
   const [vipInputCode, setVipInputCode] = useState<string>("");
   const [vipError, setVipError] = useState<string | null>(null);
 
+  // Source selector
+  type AnimeSource = "anivexa" | "megaplay";
+  const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
+
   // Helper to fetch with timeout
   const fetchWithTimeout = async (
     url: string,
@@ -151,7 +155,7 @@ export default function Playeranime({
     }
   };
 
-  // 1. Search anime by title via AniList GraphQL
+  // 1. Search anime by title via AniList GraphQL + Anivexa
   useEffect(() => {
     async function init() {
       try {
@@ -208,6 +212,8 @@ export default function Playeranime({
     init();
   }, [animeTitle]);
 
+  // Removed extra sources effects
+
   // Handle Audio Type toggle
   const handleAudioToggle = (type: "sub" | "dub") => {
     setAudioType(type);
@@ -227,6 +233,29 @@ export default function Playeranime({
   // 2. Fetch stream URL when an episode is selected
   useEffect(() => {
     if (!selectedEpisodeId || !anilistId || !selectedProvider) return;
+
+    if (activeSource === "megaplay") {
+      const epNum = episodes.find((e) => e.id === selectedEpisodeId)?.number || 1;
+      const megaUrl = `https://megaplay.buzz/stream/ani/${anilistId}/${epNum}/${audioType}`;
+      // Proxy the HTML to inject popup blockers since we don't use sandbox
+      setStreamUrl(`/api/proxy?url=${encodeURIComponent(megaUrl)}&referer=${encodeURIComponent('https://megaplay.buzz/')}`);
+      setIsIframe(true);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (activeSource === "vidplus") {
+      const epNum = episodes.find((e) => e.id === selectedEpisodeId)?.number || 1;
+      const dubStr = audioType === "dub" ? "true" : "false";
+      setStreamUrl(`https://player.vidplus.to/embed/anime/${anilistId}/${epNum}?dub=${dubStr}`);
+      setIsIframe(true);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (activeSource !== "anivexa") return;
 
     async function fetchServer() {
       try {
@@ -248,7 +277,7 @@ export default function Playeranime({
             src: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
             label: sub.lang || sub.label || sub.language || "Subtitle",
             kind: "subtitles",
-            language: sub.lang || sub.srclang || "en",
+            language: (sub.lang || sub.srclang || "en").substring(0, 2).toLowerCase(),
             default: sub.default || false,
             type: "vtt",
           }));
@@ -267,28 +296,7 @@ export default function Playeranime({
             }
           });
 
-          const workingTracks: any[] = [];
-          await Promise.allSettled(
-            rawTracks.map(async (track: any) => {
-              try {
-                const controller = new AbortController();
-                const id = setTimeout(
-                  () => controller.abort(new Error("Timeout checking subtitle")),
-                  3000,
-                );
-                const res = await fetch(track.src, {
-                  method: "HEAD",
-                  signal: controller.signal,
-                });
-                clearTimeout(id);
-                if (res.ok) workingTracks.push(track);
-              } catch {
-                // Ignore broken
-              }
-            }),
-          );
-
-          allTracks = workingTracks;
+          allTracks = rawTracks;
         }
 
         setSubtitles(allTracks);
@@ -455,10 +463,27 @@ export default function Playeranime({
       }
     }
     fetchServer();
-  }, [selectedEpisodeId, anilistId, selectedProvider]);
+  }, [selectedEpisodeId, anilistId, selectedProvider, activeSource, audioType, episodes]);
 
   const sortedSubtitles = useMemo(() => {
-    return [...subtitles].sort((a, b) => {
+    // Vidstack internally uses 'kind-label' as a key and will crash if labels duplicate.
+    // We will append (1), (2), etc. to duplicate labels to keep them all.
+    const usedLabels = new Set<string>();
+    const uniqueTracks = subtitles.map(track => {
+      let baseLabel = track.label || "English";
+      let finalLabel = baseLabel;
+      let counter = 2;
+      
+      while (usedLabels.has(finalLabel.toLowerCase())) {
+        finalLabel = `${baseLabel} (${counter})`;
+        counter++;
+      }
+      
+      usedLabels.add(finalLabel.toLowerCase());
+      return { ...track, label: finalLabel };
+    });
+
+    return uniqueTracks.sort((a, b) => {
       const labelA = (a.label || "English").toLowerCase();
       const labelB = (b.label || "English").toLowerCase();
       const isEngA = labelA.includes("english") || labelA.includes("eng");
@@ -542,8 +567,30 @@ export default function Playeranime({
               </div>
             </div>
 
-            {/* Top Right Controls: Sub/Dub, Provider, VIP Code Input, Close */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Top Right Controls: Sub/Dub, Source, Provider, VIP Code Input, Close */}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+              {/* Source Selector */}
+              <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10 gap-0.5 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
+                {(["anivexa", "megaplay"] as const).map((src) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => {
+                      setActiveSource(src);
+                      setStreamUrl(null);
+                      setError(null);
+                    }}
+                    className={`px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold transition-all uppercase shrink-0 ${
+                      activeSource === src
+                        ? "bg-violet-600 text-white shadow-sm"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                  >
+                    {src === "anivexa" ? "AniVexa" : "MegaPlay"}
+                  </button>
+                ))}
+              </div>
+
               {/* Audio Type Selector */}
               <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10">
                 <button
@@ -631,7 +678,6 @@ export default function Playeranime({
                     src={streamUrl}
                     className="w-full h-full border-0 bg-black"
                     allowFullScreen
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
                   />
                 </div>
               ) : (
@@ -648,8 +694,9 @@ export default function Playeranime({
             ) : null}
           </div>
 
-          {/* Episode Selector - Exact Local Design */}
-          {episodes.length > 0 && (
+
+          {/* Shared Episode Selector - Anivexa, MegaPlay */}
+          {(activeSource === "anivexa" || activeSource === "megaplay") && episodes.length > 0 && (
             <div className={styles.container}>
               {/* Header */}
               <div className={styles.header}>
@@ -657,8 +704,8 @@ export default function Playeranime({
                   <h3 className={styles.title}>Episodes</h3>
                 </div>
 
-                {/* Provider Selector if multiple */}
-                {availableProviders.length > 1 && (
+                {/* Provider Selector if multiple (Only relevant for Anivexa, but harmless to show) */}
+                {availableProviders.length > 1 && activeSource === "anivexa" && (
                   <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
                     <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
                       Server:

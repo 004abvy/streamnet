@@ -328,11 +328,11 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
             .map((r: any) => r.value);
 
-          // Group and sort: Hindi first, then English, then others, sorted by quality
+          // Group and sort: English first, then Hindi, then others, sorted by quality
           workingAudio.sort((a: any, b: any) => {
             const getRank = (lang: string) => {
-              if (lang === 'hi' || lang.includes('hi-')) return 0;
-              if (lang === 'en' || lang.includes('en-')) return 1;
+              if (lang === 'en' || lang.includes('en-')) return 0;
+              if (lang === 'hi' || lang.includes('hi-')) return 1;
               return 2;
             };
             const rankA = getRank(a.language);
@@ -345,8 +345,14 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           // Test all subtitles in parallel
           let workingSubs: any[] = [];
           if (data.subtitles && data.subtitles.length > 0) {
+             const proxiedSubtitles = data.subtitles.map((sub: any) => {
+               if (sub.url && !sub.url.startsWith(window.location.origin) && !sub.url.startsWith('/')) {
+                 return { ...sub, url: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}` };
+               }
+               return sub;
+             });
              const subResults = await Promise.allSettled(
-               data.subtitles.map(async (sub: any) => {
+               proxiedSubtitles.map(async (sub: any) => {
                  try {
                    const ac = new AbortController();
                    const tid = setTimeout(() => ac.abort(), 6000);
@@ -366,7 +372,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           if (workingAudio.length > 0) {
             setUnifiedAudioTracks(workingAudio);
 
-            const defaultAudio = workingAudio.find((a: any) => a.language === 'hi') || workingAudio[0];
+            const defaultAudio = workingAudio.find((a: any) => a.language === 'en') || workingAudio[0];
             setCurrentStreamUrl(defaultAudio.url);
             setActiveAudioLabel(defaultAudio.label);
 
@@ -475,8 +481,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
             workingAudio.sort((a: any, b: any) => {
               const getRank = (lang: string) => {
-                if (lang === 'hi' || lang.includes('hi-')) return 0;
-                if (lang === 'en' || lang.includes('en-')) return 1;
+                if (lang === 'en' || lang.includes('en-')) return 0;
+                if (lang === 'hi' || lang.includes('hi-')) return 1;
                 return 2;
               };
               const rankA = getRank(a.language);
@@ -489,7 +495,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             if (workingAudio.length > 0) {
               setUnifiedAudioTracks(workingAudio);
               if (!currentStreamUrl) {
-                const defaultTrack = workingAudio.find((t: any) => t.language === 'hi') || workingAudio[0];
+                const defaultTrack = workingAudio.find((t: any) => t.language === 'en') || workingAudio[0];
                 setCurrentStreamUrl(defaultTrack.url);
                 setActiveAudioLabel(defaultTrack.label);
               }
@@ -498,13 +504,19 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             }
 
             if (omssData.subtitles && Array.isArray(omssData.subtitles) && omssData.subtitles.length > 0) {
-              const mappedSubs = omssData.subtitles.map((sub: any, idx: number) => ({
-                id: `sub-${idx}`,
-                language: sub.language || 'en',
-                label: sub.label || 'English',
-                url: sub.url,
-                isDefault: idx === 0,
-              }));
+              const mappedSubs = omssData.subtitles.map((sub: any, idx: number) => {
+                let subUrl = sub.url;
+                if (subUrl && !subUrl.startsWith(window.location.origin) && !subUrl.startsWith('/')) {
+                  subUrl = `/api/subtitle/proxy?url=${encodeURIComponent(subUrl)}`;
+                }
+                return {
+                  id: `sub-${idx}`,
+                  language: sub.language || 'en',
+                  label: sub.label || 'English',
+                  url: subUrl,
+                  isDefault: idx === 0,
+                };
+              });
 
               const subResults = await Promise.allSettled(
                 mappedSubs.map(async (sub: any) => {
@@ -709,8 +721,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     switch (aspectRatio) {
       case '4:3': return 'aspect-[4/3] max-h-[88vh]';
       case '21:9': return 'aspect-[21/9]';
-      case '16:9': return 'aspect-[4/3] sm:aspect-video';
-      default: return 'aspect-[16/12] min-h-[440px] sm:min-h-[560px] md:min-h-[680px] lg:min-h-[760px]';
+      case '16:9': return 'aspect-video';
+      default: return 'aspect-video';
     }
   };
 

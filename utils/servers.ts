@@ -36,6 +36,36 @@ export const SERVERS: StreamingServer[] = [
         ? `https://rivestream.ru/embed?type=movie&id=${tmdbId}`
         : `https://rivestream.ru/embed?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`
   },
+  {
+    id: 'rive-torrent',
+    name: 'Rive Torrent',
+    category: 'iframe',
+    enabled: true,
+    buildUrl: ({ tmdbId, type, season, episode }) => 
+      type === 'movie'
+        ? `https://rivestream.ru/embed/torrent?type=movie&id=${tmdbId}`
+        : `https://rivestream.ru/embed/torrent?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`
+  },
+  {
+    id: 'rive-agg',
+    name: 'Rive Aggregator',
+    category: 'iframe',
+    enabled: true,
+    buildUrl: ({ tmdbId, type, season, episode }) => 
+      type === 'movie'
+        ? `https://rivestream.ru/embed/agg?type=movie&id=${tmdbId}`
+        : `https://rivestream.ru/embed/agg?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`
+  },
+  {
+    id: 'rive-download',
+    name: 'Rive Download',
+    category: 'iframe',
+    enabled: true,
+    buildUrl: ({ tmdbId, type, season, episode }) => 
+      type === 'movie'
+        ? `https://rivestream.ru/download?type=movie&id=${tmdbId}`
+        : `https://rivestream.ru/download?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`
+  },
 
   // Deactivated / Backup Iframe Servers (Kept for future activation)
   {

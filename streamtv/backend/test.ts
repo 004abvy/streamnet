@@ -1,0 +1,1 @@
+import { resolveAllStreams } from './src/providers/index'; resolveAllStreams('502356', 'movie').then(console.log).catch(console.error);

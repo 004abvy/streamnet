@@ -168,7 +168,7 @@ export default function VidstackPlayer({
   }, [src, preferredLanguage, tmdbId]);
 
   return (
-    <div className={`relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ${className}`}>
+    <div className={`relative w-full rounded-xl overflow-hidden shadow-2xl bg-black ${className || 'aspect-video'}`}>
 
       <MediaPlayer
         ref={player}
@@ -219,7 +219,7 @@ export default function VidstackPlayer({
         onAudioTracksChange={(tracks) => {
           if (!tracks || !tmdbId) return;
           try {
-            const trackList = (Array.isArray(tracks) ? tracks : Array.from(tracks)) as AudioTrack[];
+            const trackList = (Array.isArray(tracks) ? tracks : Array.prototype.slice.call(tracks)) as AudioTrack[];
             const selected = trackList.find((t) => t.selected);
             if (selected) {
               localStorage.setItem(`streamnet_audio_${tmdbId}`, selected.label);
@@ -229,7 +229,7 @@ export default function VidstackPlayer({
         onTextTracksChange={(tracks) => {
           if (!tracks || !tmdbId) return;
           try {
-            const trackList = (Array.isArray(tracks) ? tracks : Array.from(tracks)) as TextTrack[];
+            const trackList = (Array.isArray(tracks) ? tracks : Array.prototype.slice.call(tracks)) as TextTrack[];
             if (trackList.length > 0) {
               const showing = trackList.find((t) => t.mode === 'showing');
               if (showing) {
@@ -258,17 +258,23 @@ export default function VidstackPlayer({
               alt={title || 'Video poster'}
             />
           )}
-          {tracks.map((track, idx) => (
-            <Track
-              key={track.src || `track-${idx}`}
-              src={track.src}
-              kind={track.kind}
-              label={track.label}
-              lang={track.language}
-              default={track.default}
-              type={(track.type as "vtt" | "srt") || 'vtt'}
-            />
-          ))}
+          {tracks.map((track, idx) => {
+            const isFirstEnglish = track.label?.toLowerCase().includes('english') && 
+                                   tracks.findIndex(t => t.label?.toLowerCase().includes('english')) === idx;
+            const isDefault = track.default || isFirstEnglish;
+            
+            return (
+              <Track
+                key={track.src ? `${track.src}-${idx}` : `track-${idx}`}
+                src={track.src}
+                kind={track.kind}
+                label={track.label}
+                lang={track.language}
+                default={isDefault}
+                type={(track.type as "vtt" | "srt") || 'vtt'}
+              />
+            );
+          })}
         </MediaProvider>
 
         <DefaultVideoLayout

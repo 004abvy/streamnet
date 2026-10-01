@@ -197,10 +197,37 @@ export async function GET(
           }
         });
       } else {
-        const arrayBuffer = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') || (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/MP2T');
-        const totalBytes = arrayBuffer.byteLength;
+        let arrayBuffer = await response.arrayBuffer();
+        let contentType = response.headers.get('content-type') || (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/MP2T');
+        
+        // Unwrap FlixCloud HD-2 image segments
+        const flixImageSegmentXorKey = new Uint8Array([157, 42, 241, 71, 179, 142, 92, 112, 166, 25, 228, 59, 216, 98, 15, 197]);
+        const body = new Uint8Array(arrayBuffer);
+        const isWebp = body.length > 12 && body[0] === 0x52 && body[1] === 0x49 && body[2] === 0x46 && body[3] === 0x46 && body[8] === 0x57 && body[9] === 0x45 && body[10] === 0x42 && body[11] === 0x50;
+        const isPng = body.length > 8 && body[0] === 0x89 && body[1] === 0x50 && body[2] === 0x4e && body[3] === 0x47 && body[4] === 0x0d && body[5] === 0x0a && body[6] === 0x1a && body[7] === 0x0a;
+        
+        let offset = 0;
+        let needsXor = false;
+        if (isWebp) {
+          offset = 12;
+          needsXor = body[offset] !== 0x47;
+        } else if (isPng) {
+          offset = 8;
+          needsXor = body[offset] !== 0x47;
+        }
+        
+        if (offset > 0) {
+          const out = new Uint8Array(body.buffer, body.byteOffset + offset);
+          if (needsXor) {
+            for (let i = 0; i < out.length; i++) {
+              out[i] ^= flixImageSegmentXorKey[i % flixImageSegmentXorKey.length];
+            }
+          }
+          arrayBuffer = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);
+          contentType = 'video/mp2t';
+        }
 
+        const totalBytes = arrayBuffer.byteLength;
         let status = response.status;
         const respHeaders: Record<string, string> = {
           'Content-Type': contentType,

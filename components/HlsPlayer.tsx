@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import ArtPlayerComponent from "./ArtPlayer/ArtPlayerComponent";
-import { DirectSourceItem } from "./VidstackPlayer";
+import VidstackPlayer, { DirectSourceItem } from "./VidstackPlayer";
 
 interface SubtitleTrack {
   url: string;
@@ -629,84 +628,24 @@ export default function HlsPlayer({
     return labelA.localeCompare(labelB);
   });
 
-  const artPlayerSubs = sortedSubtitles.map((sub, idx) => ({
-    url: sub.url,
-    label: sub.label || "English",
-    default: idx === 0,
-  }));
-
   return (
     <div
-      className={`relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ${className}`}
+      className={`relative w-full rounded-xl overflow-hidden shadow-2xl bg-black ${className || 'aspect-video'}`}
     >
-      <ArtPlayerComponent
+      <VidstackPlayer
         title={title}
-        url={streamData.url}
-        subtitles={artPlayerSubs}
+        src={streamData.url}
+        tracks={vidstackTracks}
         className="w-full h-full text-white font-sans"
         autoPlay={true}
-        onError={(err) => {
+        onInvalidDuration={(duration) => {
           console.warn(
-            "[HlsPlayer] Stream error encountered:",
-            err,
-            "Advancing to next available stream source...",
+            "[HlsPlayer] Stream error encountered. Advancing to next available stream source..."
           );
-          handleInvalidDuration(0);
+          handleInvalidDuration(duration);
         }}
-        getInstance={(art) => {
-          // Dead stream detection
-          const loadTimeout = setTimeout(() => {
-            if (art.video && art.video.readyState === 0) {
-              console.warn(
-                "[HlsPlayer] Stream load timeout (8s). Stream is likely dead. Auto-advancing...",
-              );
-              handleInvalidDuration(0);
-            }
-          }, 8000);
-
-          art.on("destroy", () => {
-            clearTimeout(loadTimeout);
-          });
-
-          art.on("ready", () => {
-            const savedProgress = localStorage.getItem(
-              `streamnet_progress_${tmdbId}`,
-            );
-            if (savedProgress) {
-              const time = parseFloat(savedProgress);
-              if (time > 1) {
-                art.currentTime = time;
-              }
-            }
-          });
-
-          art.on("video:timeupdate", () => {
-            const currentTime = art.currentTime;
-            if (tmdbId && typeof currentTime === "number" && currentTime > 0) {
-              const lastSaved = parseFloat(
-                localStorage.getItem(
-                  `streamnet_progress_${tmdbId}_last_save`,
-                ) || "0",
-              );
-              if (Math.abs(currentTime - lastSaved) >= 1) {
-                localStorage.setItem(
-                  `streamnet_progress_${tmdbId}`,
-                  currentTime.toString(),
-                );
-                localStorage.setItem(
-                  `streamnet_progress_${tmdbId}_last_save`,
-                  currentTime.toString(),
-                );
-              }
-            }
-          });
-
-          art.on("video:ended", () => {
-            if (tmdbId) {
-              localStorage.removeItem(`streamnet_progress_${tmdbId}`);
-            }
-          });
-        }}
+        tmdbId={tmdbId}
+        preferredLanguage={preferredLanguage}
       />
     </div>
   );

@@ -349,7 +349,7 @@ export default function VideoPlayer({
           className="w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10"
         >
           {isDirectMode ? (
-            <div className="w-full aspect-[4/3] sm:aspect-video">
+            <div className="w-full aspect-video">
               <HlsPlayer
                 key={activeServer}
                 serverId={activeServer}
@@ -366,15 +366,17 @@ export default function VideoPlayer({
               />
             </div>
           ) : (
-            <iframe
-              src={embedUrl}
-              allowFullScreen
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-              {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-              className={`w-full aspect-[4/3] sm:aspect-video border-0 ${vpStyles.embedIframe}`}
-              title="Video Player"
-            />
+            <div className="w-full aspect-video relative overflow-hidden bg-black">
+              <iframe
+                src={embedUrl}
+                allowFullScreen
+                sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+                {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+                className={`w-full h-full border-0 block ${vpStyles.embedIframe}`}
+                title="Video Player"
+              />
+            </div>
           )}
         </div>
       </div>

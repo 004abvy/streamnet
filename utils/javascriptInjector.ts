@@ -136,16 +136,30 @@ export function GET_INJECTABLE_UBLOCK_BUNDLE(): string {
     if ('navigation' in window) {
       try {
         window.navigation.addEventListener('navigate', function(ev) {
-          if (ev.userInitiated) return;
           var targetUrl = ev.destination ? ev.destination.url : '';
-          if (targetUrl && targetUrl.indexOf(window.location.host) === -1 && targetUrl.indexOf('about:blank') !== 0 && targetUrl.indexOf('javascript:') !== 0) {
+          var isCrossDomain = targetUrl && targetUrl.indexOf(window.location.host) === -1 && targetUrl.indexOf('about:blank') !== 0 && targetUrl.indexOf('javascript:') !== 0;
+          
+          if (isCrossDomain) {
+            // Block cross-domain top-level redirects entirely, even if "userInitiated"
+            // (Since Next.js client router handles legit local navigations, and external links should be target="_blank")
             ev.preventDefault();
             window.__STREAMNET_BLOCKED_COUNT__++;
-            console.warn(logPrefix + 'Prevented top-level page redirect:', targetUrl);
+            console.warn(logPrefix + 'Prevented top-level page redirect to ad network:', targetUrl);
           }
         });
       } catch(e) {}
     }
+
+    // Fallback: Catch beforeunload for non-Chromium browsers to warn user before ad steals the tab
+    window.addEventListener('beforeunload', function(e) {
+      // Next.js client-side navigations don't trigger beforeunload. 
+      // If beforeunload triggers, it's a hard page refresh or a redirect.
+      if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+         // If an iframe is active, an ad script is likely trying to redirect the parent
+         e.preventDefault();
+         e.returnValue = 'An ad script is trying to redirect you. Do you want to leave?';
+      }
+    });
 
     // 7. Event Listener Interceptor (prevent-addEventListener.js / aeld.js)
     if (typeof EventTarget !== 'undefined' && EventTarget.prototype.addEventListener) {

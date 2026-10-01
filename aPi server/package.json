@@ -1,0 +1,20 @@
+{
+    "name":  "api-server-collection",
+    "version":  "1.0.0",
+    "description":  "A collection of API servers for testing",
+    "main":  "index.js",
+    "scripts":  {
+                    "start":  "concurrently \"npm run start-tmdb\" \"npm run start-anivexa\" \"npm run start-aniwatch\" \"npm run start-hianime\" \"npm run start-miruro\" \"npm run start-reanime\" \"npx serve . -p 8080\"",
+                    "start-tmdb":  "cd TMDB-Embed-API-main/TMDB-Embed-API-main && npx cross-env PORT=3005 API_PORT=3005 node apiServer.js",
+                    "start-anivexa":  "cd Anivexa-API && npx cross-env PORT=4000 node server.js",
+                    "start-aniwatch":  "cd Aniwatch-Api-main && npx cross-env PORT=4001 node src/inde.js",
+                    "start-hianime":  "cd hianime-api-v2 && npx cross-env PORT=4002 npx --yes tsx index.ts",
+                    "start-miruro": "cd MiruroAPI && npx cross-env PORT=4003 FLARESOLVERR_URL=http://localhost:8191 node server.js",
+                    "start-reanime": "cd ReAnime.to-API && python -m uvicorn reanime:app --host 0.0.0.0 --port 4004",
+                    "start-streamtv":  "cd streamtv-backend && npx cross-env PORT=5000 npm run dev"
+                },
+    "devDependencies":  {
+                            "concurrently":  "^8.2.2",
+                            "cross-env":  "^10.1.0"
+                        }
+}

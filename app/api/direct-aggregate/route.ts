@@ -348,6 +348,12 @@ export async function GET(request: NextRequest) {
             label,
             badge,
             url: proxiedUrl,
+            rawUrl: rawUrl, // Expose raw URL for native apps (Flutter) to bypass CORS proxy
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Referer': 'https://rivestream.ru/',
+              'Origin': 'https://rivestream.ru'
+            },
             quality: badge,
             isDefault: langKey === 'hi' && badge.includes('1080'),
           });
@@ -414,7 +420,16 @@ export async function GET(request: NextRequest) {
 
         const rawQuality = (stream.quality || stream.provider || '').toLowerCase();
         let badge = '1080p HD';
-        let label = 'English';
+        let langKey = stream.audioLanguage || 'en';
+        let label = stream.audioLabel || (langKey === 'es' ? 'Spanish [Ultra HD]' : 'English');
+
+        if (langKey === 'es') {
+          label = stream.audioLabel || 'Spanish [Ultra HD]';
+        } else if (langKey === 'fr') {
+          label = stream.audioLabel || 'French [HD]';
+        } else if (langKey === 'hi') {
+          label = stream.audioLabel || 'Hindi [HD]';
+        }
 
         if (rawQuality.includes('2160') || rawQuality.includes('4k')) {
           badge = '4K 2160p';
@@ -432,10 +447,15 @@ export async function GET(request: NextRequest) {
 
         audioTracks.unshift({
           id: `direct-${stream.id || idx}`,
-          language: 'en',
+          language: langKey,
           label,
           badge,
           url: proxiedUrl,
+          rawUrl: stream.url, // Expose raw URL for native apps
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            ...cleanHeaders
+          },
           quality: badge,
           isDefault: false,
         });
@@ -459,28 +479,44 @@ export async function GET(request: NextRequest) {
       });
     }
 
-
-    // Live Health Verification: Filter out non-loading or errored streams
-    const verificationResults = await Promise.allSettled(
-      audioTracks.map(async (track) => {
-        try {
-          const res = await fetch(track.url, {
-            method: 'GET',
-            headers: { Range: 'bytes=0-128' },
-            signal: AbortSignal.timeout(20000),
-          });
-          return res.ok ? track : null;
-        } catch {
-          return null;
+    // Fast live health probing to filter out dead servers (max 3.5s latency)
+    const validTracks: UnifiedAudioTrack[] = [];
+    console.log(`[direct-aggregate] Pre-checking ${audioTracks.length} servers for health (3.5s max timeout)...`);
+    
+    const healthChecks = audioTracks.map(async (track) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        
+        // Use the original URL for health check to avoid routing through our own proxy
+        const targetUrl = new URL(track.url).searchParams.get('url') || track.url;
+        
+        const startTime = Date.now();
+        const res = await fetch(targetUrl, {
+          method: 'HEAD',
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          }
+        });
+        clearTimeout(timeoutId);
+        
+        if (res.ok || res.status === 403 || res.status === 401) {
+          console.log(`  [✅ Alive] ${track.id} (${Date.now() - startTime}ms)`);
+          validTracks.push(track);
+        } else {
+          console.log(`  [❌ Dead ] ${track.id} - Status ${res.status}`);
         }
-      })
-    );
+      } catch (e: any) {
+        console.log(`  [⚠️ Error] ${track.id} - ${e.name === 'AbortError' ? 'Timeout' : e.message}`);
+      }
+    });
 
-    const verifiedAudioTracks = verificationResults
-      .map(r => (r.status === 'fulfilled' ? r.value : null))
-      .filter((t): t is UnifiedAudioTrack => t !== null);
+    await Promise.allSettled(healthChecks);
+    console.log(`[direct-aggregate] Health check complete. ${validTracks.length}/${audioTracks.length} servers are alive.`);
 
-    const validTracks = verifiedAudioTracks.length > 0 ? verifiedAudioTracks : audioTracks;
+    // Ensure we don't return an empty array if all checks fail (fallback to all tracks just in case)
+    const finalTracks = validTracks.length > 0 ? validTracks : audioTracks;
 
     // Netflix-style grouping: one entry per language, best quality wins
     const qualityRank = (badge: string): number => {
@@ -527,7 +563,7 @@ export async function GET(request: NextRequest) {
     };
 
     const langGroupMap = new Map<string, { best: UnifiedAudioTrack; fallbacks: string[] }>();
-    for (const track of validTracks) {
+    for (const track of finalTracks) {
       const base = getBaseLang(track);
       const rank = qualityRank(track.badge);
       const existing = langGroupMap.get(base);

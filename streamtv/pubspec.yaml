@@ -1,0 +1,42 @@
+name: streamtv
+description: "Cross-platform Mobile and Android TV streaming app powered by StreamNet backend & TMDB"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Networking & HTTP
+  dio: ^5.4.3+1
+  
+  # High-performance Native Video Engine (libmpv with m3u8, SSA/ASS subtitles, HLS, custom headers)
+  media_kit: ^1.1.10
+  media_kit_video: ^1.2.4
+  media_kit_libs_windows_video: any
+  media_kit_libs_android_video: any
+  
+  # UI & Media
+  cached_network_image: ^3.3.1
+  google_fonts: ^6.2.1
+  flutter_spinkit: ^5.2.1
+  intl: ^0.19.0
+  # Local Storage & Persistence
+  shared_preferences: ^2.2.3
+  lucide_icons_flutter: ^3.1.20
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

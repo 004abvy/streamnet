@@ -1,0 +1,1105 @@
+.container {
+  width: 100%;
+  max-width: 1050px;
+  margin: 1.5rem auto 2.5rem;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #080808;
+  border: 1px solid #1f1f1f;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    margin: 0.5rem 0 1.5rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+.playerWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.playerWrapper:fullscreen,
+.container:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+}
+
+.playerWrapper:-webkit-full-screen,
+.container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .container {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+  .playerWrapper {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    aspect-ratio: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .playerWrapper {
+    aspect-ratio: auto;
+    height: 82vh;
+    min-height: 320px;
+  }
+}
+
+.posterOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.posterGradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+.playBtn {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  background: rgba(245, 158, 11, 0.9);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  cursor: pointer;
+}
+
+.playBtn:hover {
+  background: #ffffff;
+  color: #f59e0b;
+  transform: scale(1.08);
+}
+
+.iframeContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  object-fit: contain;
+  transform: none;
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .playerWrapper {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+}
+@media (max-width: 768px) {
+  .iframe {
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
+
+.iframeFit {
+  object-fit: contain;
+  transform: none;
+}
+
+.iframeZoom {
+  transform: none;
+}
+
+.iframeStretch {
+  transform: none;
+}
+
+.iframeZoom {
+  transform: scale(calc(var(--player-scale, 1) * 1.14));
+}
+
+.iframeStretch {
+  transform: scaleX(1.14) scale(var(--player-scale, 1));
+}
+
+.playerOptions {
+  position: absolute;
+  right: 1rem;
+  bottom: 3.5rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(10, 10, 16, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+.playerOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #d1d5db;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.playerOption select {
+  min-width: 5rem;
+  padding: 0.25rem 0.35rem;
+  color: #f9fafb;
+  background: #161622;
+  border: 1px solid #3f3f50;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 560px) {
+  .playerOptions {
+    right: 0.5rem;
+    bottom: 3rem;
+    max-width: calc(100% - 1rem);
+    flex-wrap: wrap;
+  }
+}
+
+/* Toolbar Below Player */
+.toolbar {
+  background-color: #0e0e14;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid #1a1a24;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.playerControlGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.controlGroupLabel {
+  color: #6b7280;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.toolbarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modePillGroup {
+  display: inline-flex;
+  align-items: center;
+  background: #141420;
+  border: 1px solid #28283a;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.modePill {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modePill:hover {
+  color: #ffffff;
+}
+
+.modePill:focus-visible,
+.zoomButton:focus-visible,
+.zoomValue:focus-visible,
+.zoomSlider:focus-visible,
+.toolbarBtn:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.zoomControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.35rem;
+  background: #141420;
+  border: 1px solid #28283a;
+  border-radius: 8px;
+}
+
+.zoomButton,
+.zoomValue {
+  border: 0;
+  color: #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.zoomButton {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.zoomButton:hover:not(:disabled),
+.zoomValue:hover {
+  color: #f59e0b;
+  background: #25253a;
+}
+
+.zoomButton:disabled {
+  color: #4b5563;
+  cursor: not-allowed;
+}
+
+.zoomValue {
+  min-width: 3.2rem;
+  padding: 0.25rem 0.2rem;
+  border-radius: 5px;
+  font-size: 0.7rem;
+}
+
+.zoomSlider {
+  width: 5.75rem;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.activeModePill {
+  background: #25253a;
+  color: #f59e0b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.toolbarBtn {
+  background: #161622;
+  border: 1px solid #28283a;
+  color: #e5e7eb;
+  font-size: clamp(0.8rem, 0.85vw, 0.95rem);
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbarBtn:hover {
+  background: #222234;
+  color: #ffffff;
+  border-color: #f59e0b;
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    align-items: stretch;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .toolbarLeft {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .toolbarLeft > .toolbarBtn {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .playerControlGroup {
+    flex: 1 1 auto;
+    justify-content: space-between;
+  }
+
+  .controlGroupLabel {
+    display: none;
+  }
+
+  .modePillGroup,
+  .zoomControls {
+    flex: 1;
+  }
+
+  .modePill {
+    flex: 1;
+    padding-inline: 0.45rem;
+  }
+
+  .zoomControls {
+    justify-content: space-between;
+  }
+
+  .zoomSlider {
+    flex: 1;
+    min-width: 4rem;
+  }
+
+  .toolbarRight {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.activeServerBadge {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+.serverSelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #d1d5db;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.serverSelector select {
+  max-width: 14rem;
+  padding: 0.35rem 0.45rem;
+  color: #f9fafb;
+  background: #161622;
+  border: 1px solid #3f3f50;
+  border-radius: 5px;
+  font-size: 0.75rem;
+}
+
+/* Ambient Stream Loading Overlay */
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #14141f 0%, #08080c 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.spinnerRing {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid rgba(245, 158, 11, 0.15);
+  border-top-color: #f59e0b;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingServerTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  letter-spacing: 0.5px;
+}
+
+.loadingSubText {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: -0.5rem;
+}
+
+/* Compact Server Popup Modal Overlay — fixed to the viewport (not the player
+   box) so it's never clipped by .playerWrapper's overflow:hidden, especially
+   on short mobile players. */
+.serverModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.serverModalContent {
+  background: #101018;
+  border: 1px solid #28283c;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.1rem;
+  background: #151522;
+  border-bottom: 1px solid #252538;
+}
+
+.modalHeaderTitle {
+  font-size: clamp(0.95rem, 1vw, 1.15rem);
+  font-weight: 700;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.closeModalBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.closeModalBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.modalServerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: 0.85rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modalServerGrid::-webkit-scrollbar {
+  width: 5px;
+}
+.modalServerGrid::-webkit-scrollbar-track {
+  background: #101018;
+}
+.modalServerGrid::-webkit-scrollbar-thumb {
+  background: #252538;
+  border-radius: 3px;
+}
+
+.modalServerCard {
+  background: #141420;
+  border: 1px solid #232336;
+  border-radius: 10px;
+  padding: 0.4rem;
+  aspect-ratio: 1;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.modalServerCard:hover {
+  background: #1b1b2c;
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.cardTopRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.serverCardName {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.serverBadgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.qualityTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.featureBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.serverCardDesc {
+  display: none;
+}
+
+.activeModalServerCard {
+  background: linear-gradient(135deg, #271a0d 0%, #171318 100%);
+  border: 1.5px solid #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+.activeModalServerCard .serverCardName {
+  color: #f59e0b;
+}
+
+.activeCheckIcon {
+  color: #f59e0b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+/* Luxury AdShield VIP Status Card */
+.shieldStatusCard {
+  background: #0b0b12;
+  border-top: 1px solid #1e1e2e;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shieldStatusLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.shieldStatusPulse {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.shieldDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.shieldRing {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #10b981;
+  opacity: 0.75;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.shieldStatusTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shieldStatusDesc {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-top: 1px;
+}
+
+.shieldToggleBtn {
+  width: 40px;
+  height: 22px;
+  background: #252538;
+  border-radius: 9999px;
+  border: 1px solid #363650;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shieldToggleBtnActive {
+  background: #059669;
+  border-color: #10b981;
+}
+
+.shieldToggleThumb {
+  position: absolute;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.shieldToggleBtnActive .shieldToggleThumb {
+  transform: translateX(18px);
+}
+
+.shieldBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2px 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.activeBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.blockedBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 6px;
+  border-radius: 9999px;
+  margin-left: 4px;
+}
+
+/* Z-Axis Popup & Overlay Suppressor */
+:global(div[class*="popup"]:not([class*="VideoPlayer"]):not([class*="Navbar"]):not([class*="Selector"])),
+:global(div[id*="popup"]:not([id*="VideoPlayer"]):not([id*="Navbar"])),
+:global(div[class*="popunder"]),
+:global(div[id*="popunder"]),
+:global(div[class*="ad-overlay"]),
+:global(div[id*="ad-overlay"]) {
+  z-index: -99999 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+
+/* Failover Toast Notification */
+.failoverToast {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 15, 23, 0.94);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+  padding: 0.5rem 1.1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 35;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.serverScoreTag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.circuitTrippedTag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* 1DM-Style Popup Interceptor Banner */
+.oneDmBanner {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 40;
+  background: rgba(12, 12, 18, 0.95);
+  border: 1px solid #10b981;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 460px;
+  backdrop-filter: blur(10px);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.oneDmLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.oneDmShieldPulse {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.oneDmShieldDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #10b981;
+}
+
+.oneDmShieldRing {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #10b981;
+  opacity: 0.8;
+  animation: pulse 1.8s infinite;
+}
+
+.oneDmTextCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.oneDmHeader {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.oneDmBadge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.oneDmSubText {
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+.oneDmUrlHost {
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.oneDmActionGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.oneDmBlockBtn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oneDmBlockBtn:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.oneDmAllowBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #d1d5db;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oneDmAllowBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════
+   Embed Player (VideoPlayer.tsx / MoviePlayer.tsx)
+   — Increased mobile height & landscape fullscreen fix
+   ═══════════════════════════════════════════════════ */
+
+/* Mobile portrait: taller player */
+@media (max-width: 640px) {
+  .embedIframe {
+    aspect-ratio: auto !important;
+    height: 50vh !important;
+    min-height: 300px;
+  }
+}
+
+/* Slightly larger phones in portrait */
+@media (min-width: 641px) and (max-width: 768px) {
+  .embedIframe {
+    aspect-ratio: auto !important;
+    height: 55vh !important;
+    min-height: 340px;
+  }
+}
+
+/* Mobile landscape: fill the entire viewport, kill max-width */
+@media (orientation: landscape) and (max-height: 500px) {
+  .embedPlayerContainer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    z-index: 9999;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: #000 !important;
+  }
+
+  .embedIframe {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
+    min-height: 100vh !important;
+  }
+}
+
+/* Fullscreen API: ensure embed fills entire screen */
+.embedPlayerContainer:fullscreen,
+.embedPlayerContainer:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #000 !important;
+}
+
+.embedPlayerContainer:fullscreen .embedIframe,
+.embedPlayerContainer:-webkit-full-screen .embedIframe {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+}
+
+@keyframes ambientPulse {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(1.04);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.07);
+  }
+}
+
+.ambientEmbedGlow {
+  animation: ambientPulse 7s ease-in-out infinite;
+}
+

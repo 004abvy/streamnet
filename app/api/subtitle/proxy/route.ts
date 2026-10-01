@@ -16,6 +16,17 @@ export async function OPTIONS() {
   });
 }
 
+export async function HEAD() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS, HEAD',
+      'Access-Control-Allow-Headers': '*',
+    },
+  });
+}
+
 // Parse a VTT timestamp like "00:01:23.456" into total seconds
 function parseVttTimestamp(ts: string): number {
   const parts = ts.trim().split(':');
@@ -73,8 +84,8 @@ function parseTimestampMapOffset(segmentText: string): number {
   return mpegtsSeconds - local;
 }
 
-// Extract cue blocks from a VTT segment, applying timestamp offset
-function extractCues(segmentText: string, offset: number): string[] {
+// Extract cue blocks from a VTT segment, without any timestamp offset
+function extractCues(segmentText: string): string[] {
   const lines = segmentText.split('\n');
   const cues: string[] = [];
   let currentCue: string[] = [];
@@ -93,66 +104,54 @@ function extractCues(segmentText: string, offset: number): string[] {
 
     const tsMatch = trimmed.match(timestampRegex);
     if (tsMatch) {
-      // Start of a new cue
-      if (currentCue.length > 0) {
-        cues.push(currentCue.join('\n'));
-      }
-      const startTime = parseVttTimestamp(tsMatch[1].replace(',', '.'));
-      const endTime = parseVttTimestamp(tsMatch[2].replace(',', '.'));
+      if (currentCue.length > 0) cues.push(currentCue.join('\n'));
+      
+      const startTime = tsMatch[1].replace(',', '.');
+      const endTime = tsMatch[2].replace(',', '.');
       const rest = tsMatch[3] || '';
 
-      // Apply offset for HLS segments
-      const adjustedStart = formatVttTimestamp(startTime + offset);
-      const adjustedEnd = formatVttTimestamp(endTime + offset);
-
-      currentCue = [`${adjustedStart} --> ${adjustedEnd}${rest}`];
+      currentCue = [`${startTime} --> ${endTime}${rest}`];
       inCue = true;
     } else if (inCue) {
       if (trimmed === '') {
-        // End of cue
-        if (currentCue.length > 1) { // Has timestamp + at least one text line
-          cues.push(currentCue.join('\n'));
-        }
+        if (currentCue.length > 1) cues.push(currentCue.join('\n'));
         currentCue = [];
         inCue = false;
       } else {
-        // Skip numeric cue identifiers (pure number lines before timestamps)
-        if (currentCue.length === 0 && /^\d+$/.test(trimmed)) {
-          continue;
-        }
+        if (currentCue.length === 0 && /^\d+$/.test(trimmed)) continue;
         currentCue.push(trimmed);
       }
     }
   }
 
-  // Don't forget the last cue
-  if (currentCue.length > 1) {
-    cues.push(currentCue.join('\n'));
-  }
-
+  if (currentCue.length > 1) cues.push(currentCue.join('\n'));
   return cues;
 }
 
-// Merge multiple HLS VTT segments into a single VTT file with correct timing
+// Merge multiple HLS VTT segments into a single VTT file
 function mergeHlsVttSegments(segmentTexts: string[]): string {
   const allCues: string[] = [];
 
   for (const seg of segmentTexts) {
     if (!seg.trim()) continue;
-    const offset = parseTimestampMapOffset(seg);
-    const cues = extractCues(seg, offset);
+    const cues = extractCues(seg);
     allCues.push(...cues);
   }
 
-  // Deduplicate identical cues (same timestamp + text)
   const uniqueCues = Array.from(new Set(allCues));
 
-  // Sort by start timestamp
+  // Sort by start timestamp (convert to seconds for comparison)
   uniqueCues.sort((a, b) => {
-    const tsA = a.match(/^(\d{2}:\d{2}:\d{2}\.\d{3})/);
-    const tsB = b.match(/^(\d{2}:\d{2}:\d{2}\.\d{3})/);
+    const tsA = a.match(/^((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/);
+    const tsB = b.match(/^((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/);
     if (!tsA || !tsB) return 0;
-    return parseVttTimestamp(tsA[1]) - parseVttTimestamp(tsB[1]);
+    
+    const parse = (ts: string) => {
+      const p = ts.split(':');
+      if (p.length === 3) return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseFloat(p[2]);
+      return parseInt(p[0])*60 + parseFloat(p[1]);
+    };
+    return parse(tsA[1]) - parse(tsB[1]);
   });
 
   return `WEBVTT\n\n${uniqueCues.join('\n\n')}`;
@@ -166,13 +165,46 @@ function convertSrtToVtt(raw: string): string {
     vtt = vtt.slice(1);
   }
 
-  // If already WebVTT, clean up and apply offset if X-TIMESTAMP-MAP is present
-  if (vtt.startsWith('WEBVTT')) {
-    if (vtt.includes('X-TIMESTAMP-MAP')) {
-      const offset = parseTimestampMapOffset(vtt);
-      const cues = extractCues(vtt, offset);
-      return `WEBVTT\n\n${cues.join('\n\n')}`;
+  // Handle ASS (Advanced SubStation Alpha) format
+  if (vtt.includes('[Script Info]') && vtt.includes('[Events]')) {
+    const lines = vtt.split('\n');
+    const cues: string[] = [];
+    
+    for (const line of lines) {
+      if (line.startsWith('Dialogue:')) {
+        const parts = line.substring(9).split(',');
+        if (parts.length >= 10) {
+          let start = parts[1].trim();
+          let end = parts[2].trim();
+          
+          const formatTime = (t: string) => {
+            const p = t.split(':');
+            if (p.length === 3) {
+               const secParts = p[2].split('.');
+               let sec = secParts[0].padStart(2, '0');
+               let ms = (secParts[1] || '0').padEnd(3, '0').substring(0, 3);
+               return `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}:${sec}.${ms}`;
+            }
+            return t;
+          };
+          
+          start = formatTime(start);
+          end = formatTime(end);
+          
+          let text = parts.slice(9).join(',').trim();
+          text = text.replace(/\\{[^}]+\\}/g, ''); // Remove ASS tags
+          text = text.replace(/\{[^}]+\}/g, '');
+          text = text.replace(/\\N/gi, '\n');
+          
+          cues.push(`${start} --> ${end}\n${text}`);
+        }
+      }
     }
+    return `WEBVTT\n\n${cues.join('\n\n')}`;
+  }
+
+  // If already WebVTT, just return it as is. HTML5 players natively handle relative cue times.
+  if (vtt.startsWith('WEBVTT')) {
     return vtt;
   }
 
