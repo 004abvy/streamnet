@@ -1,0 +1,193 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const maxDuration = 30;
+
+const ANIVEXA_URL = process.env.NEXT_PUBLIC_ANIVEXA_URL || 'http://localhost:4000';
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ action: string[] }> }
+) {
+  try {
+    const { action } = await context.params;
+    const { searchParams } = new URL(request.url);
+    const endpoint = action?.join('/') || '';
+
+    // 1. /search?query=...
+    if (endpoint === 'search') {
+      const query = searchParams.get('query') || '';
+      if (!query) {
+        return NextResponse.json([]);
+      }
+
+      // Query AniList GraphQL for rich MAL IDs and episode info
+      const anilistQuery = `
+        query ($search: String) {
+          Page(page: 1, perPage: 10) {
+            media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+              id
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              episodes
+              coverImage {
+                large
+              }
+            }
+          }
+        }
+      `;
+
+      try {
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: anilistQuery, variables: { search: query } }),
+          signal: AbortSignal.timeout(6000),
+        });
+
+        if (aniRes.ok) {
+          const aniData = await aniRes.json();
+          const mediaList = aniData.data?.Page?.media || [];
+          const results = mediaList.map((m: any) => ({
+            id: m.idMal || m.id,
+            anilistId: m.id,
+            title: m.title.english || m.title.romaji || m.title.native,
+            episodes_sub: m.episodes || 12,
+            episodes_dub: m.episodes || 12,
+            image: m.coverImage?.large,
+          }));
+
+          return NextResponse.json(results, {
+            headers: { 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      } catch (e) {
+        console.warn('[anime-api] AniList search failed:', e);
+      }
+
+      return NextResponse.json([]);
+    }
+
+    // 2. /episodes/<show_id>?mode=sub|dub
+    if (endpoint.startsWith('episodes/')) {
+      const showId = endpoint.split('/')[1];
+      const mode = searchParams.get('mode') || 'sub';
+
+      try {
+        const anivexaRes = await fetch(
+          `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${showId}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+
+        if (anivexaRes.ok) {
+          const data = await anivexaRes.json();
+          const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
+          let epList: number[] = [];
+
+          for (const p of providers) {
+            if (data[p]?.episodes?.[mode]?.length > 0) {
+              epList = data[p].episodes[mode].map((ep: any) => ep.number || 1);
+              break;
+            }
+          }
+
+          if (epList.length > 0) {
+            return NextResponse.json({
+              mode,
+              episodes: epList,
+            }, {
+              headers: { 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[anime-api] Episodes fetch failed:', e);
+      }
+
+      return NextResponse.json({ mode, episodes: [] });
+    }
+
+    // 3. /episode_url?show_id=...&ep_no=...&mode=sub|dub&quality=best
+    if (endpoint === 'episode_url') {
+      const showId = searchParams.get('show_id') || '';
+      const epNo = searchParams.get('ep_no') || '1';
+      const mode = searchParams.get('mode') || 'sub';
+
+      try {
+        const anivexaRes = await fetch(
+          `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${showId}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+
+        if (anivexaRes.ok) {
+          const epData = await anivexaRes.json();
+          const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
+          let chosenEpId: string | null = null;
+
+          for (const p of providers) {
+            const eps = epData[p]?.episodes?.[mode];
+            if (eps && Array.isArray(eps)) {
+              const matched = eps.find((e: any) => String(e.number) === String(epNo));
+              if (matched) {
+                chosenEpId = matched.id;
+                break;
+              }
+            }
+          }
+
+          if (chosenEpId) {
+            const streamRes = await fetch(`${ANIVEXA_URL}/${chosenEpId}`, {
+              signal: AbortSignal.timeout(8000),
+            });
+            if (streamRes.ok) {
+              const streamData = await streamRes.json();
+              const directHls =
+                streamData.stream_url ||
+                streamData.streams?.find(
+                  (s: any) => s.type === 'hls' || s.url?.includes('.m3u8')
+                )?.url;
+
+              const referer =
+                streamData.headers?.Referer ||
+                streamData.streams?.find((s: any) => s.url === directHls)?.referer ||
+                '';
+
+              const subtitles = [
+                ...(streamData.subtitles || []),
+                ...(streamData.captions || []),
+              ];
+
+              return NextResponse.json({
+                episode_url: directHls || streamData.embeds?.[0]?.url || '',
+                mode,
+                referer,
+                subtitles: subtitles.map((sub: any) => ({
+                  url: sub.url,
+                  label: sub.label || sub.name || 'English',
+                  language: sub.srclang || sub.language || 'en',
+                  default: sub.default ?? true,
+                })),
+              }, {
+                headers: { 'Access-Control-Allow-Origin': '*' },
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[anime-api] Episode URL error:', e);
+      }
+
+      return NextResponse.json({ error: 'Failed to retrieve episode stream URL' }, { status: 500 });
+    }
+
+    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 404 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

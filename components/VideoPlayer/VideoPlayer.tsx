@@ -6,6 +6,7 @@ import { Zap, Film, Globe, Sparkles } from 'lucide-react';
 import vpStyles from './VideoPlayer.module.css';
 import { SERVERS } from '../../utils/servers';
 import HlsPlayer from '../HlsPlayer';
+import RivePlayer from '../RivePlayer';
 
 interface VideoPlayerProps {
   /** TMDB ID of the movie or TV show */
@@ -216,6 +217,11 @@ export default function VideoPlayer({
     setAutoFallbackNotice(null);
   };
 
+  const handleSelectRive = () => {
+    changeServer('rivestream');
+    setAutoFallbackNotice(null);
+  };
+
   // Auto-fallback if direct stream has invalid duration
   const handleInvalidDuration = (durationSec: number) => {
     console.warn(`Direct stream duration (${durationSec}s) is invalid for ${title}. Auto-switching to ScreenScape embed.`);
@@ -349,7 +355,7 @@ export default function VideoPlayer({
           className="w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10"
         >
           {isDirectMode ? (
-            <div className="w-full aspect-video">
+            <div className={`w-full aspect-video ${vpStyles.mobileTall}`}>
               <HlsPlayer
                 key={activeServer}
                 serverId={activeServer}
@@ -365,8 +371,15 @@ export default function VideoPlayer({
                 onInvalidDuration={handleInvalidDuration}
               />
             </div>
+          ) : activeServer === 'rivestream' ? (
+            <RivePlayer
+              tmdbId={tmdbId}
+              type={type}
+              season={season}
+              episode={episode}
+            />
           ) : (
-            <div className="w-full aspect-video relative overflow-hidden bg-black">
+            <div className={`w-full aspect-video relative overflow-hidden bg-black ${vpStyles.mobileTall}`}>
               <iframe
                 src={embedUrl}
                 allowFullScreen
@@ -424,7 +437,7 @@ export default function VideoPlayer({
 
           {/* RiveStream */}
           <button
-            onClick={() => handleSelectEmbedServer('rivestream')}
+            onClick={handleSelectRive}
             className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
               activeServer === 'rivestream'
                 ? 'bg-white text-neutral-950 shadow-[0_2px_12px_rgba(255,255,255,0.3)] scale-[1.02]'

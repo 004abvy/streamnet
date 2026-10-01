@@ -1024,23 +1024,26 @@
    — Increased mobile height & landscape fullscreen fix
    ═══════════════════════════════════════════════════ */
 
-/* Mobile portrait: taller player */
+/* Mobile portrait: force a tall player so controls and video are usable.
+   56vw at 360px width is only ~200px — still too cramped.
+   Use 70vw with a generous 260px floor and no max-height cap. */
 @media (max-width: 640px) {
-  .embedIframe {
-    aspect-ratio: auto !important;
-    height: 50vh !important;
-    min-height: 300px;
+  .mobileTall {
+    aspect-ratio: unset !important;
+    height: 70vw !important;
+    min-height: 260px !important;
   }
 }
 
-/* Slightly larger phones in portrait */
+/* Tablets in portrait */
 @media (min-width: 641px) and (max-width: 768px) {
-  .embedIframe {
-    aspect-ratio: auto !important;
-    height: 55vh !important;
-    min-height: 340px;
+  .mobileTall {
+    aspect-ratio: unset !important;
+    height: 62vw !important;
+    min-height: 340px !important;
   }
 }
+
 
 /* Mobile landscape: fill the entire viewport, kill max-width */
 @media (orientation: landscape) and (max-height: 500px) {

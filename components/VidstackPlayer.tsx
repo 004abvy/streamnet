@@ -99,13 +99,93 @@ export default function VidstackPlayer({
     return activeMediaSrc;
   }, [activeMediaSrc]);
 
-  // Force English/Preferred audio whenever tracks change, unless there is a saved preference
+  const uniqueTracks = useMemo<VidstackTrack[]>(() => {
+    const seenSrcs = new Set<string>();
+    const seenLabels = new Map<string, number>();
+    const result: VidstackTrack[] = [];
+
+    for (const track of tracks) {
+      if (!track || !track.src) continue;
+      if (seenSrcs.has(track.src)) continue;
+      seenSrcs.add(track.src);
+
+      let rawLabel = (track.label || 'Subtitle').trim().replace(/\s*\(\d+\)$/, '');
+      if (!rawLabel) rawLabel = 'Subtitle';
+
+      const lower = rawLabel.toLowerCase();
+      const count = seenLabels.get(lower) || 0;
+      seenLabels.set(lower, count + 1);
+
+      const label = count === 0 ? rawLabel : `${rawLabel} (${count + 1})`;
+
+      result.push({
+        ...track,
+        label,
+        language: track.language || (lower.includes('english') ? 'en' : 'en'),
+      });
+    }
+
+    return result;
+  }, [tracks]);
+
+  // Dynamic subtitle auto-activation when tracks change asynchronously
   useEffect(() => {
-    if (!player.current || !tmdbId) return;
+    if (!player.current || uniqueTracks.length === 0) return;
+
+    const activateSubtitle = () => {
+      if (!player.current) return;
+      const textTracks = player.current.textTracks;
+      if (!textTracks || textTracks.length === 0) return;
+
+      const trackList = Array.from(textTracks);
+      const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
+
+      if (savedSub === 'off') return;
+
+      let target: TextTrack | undefined;
+      if (savedSub) {
+        target = trackList.find((t) => t.label === savedSub);
+      }
+      if (!target) {
+        target =
+          trackList.find((t) => (t as any).default) ||
+          trackList.find(
+            (t) =>
+              t.label.toLowerCase().includes('english') ||
+              t.language?.startsWith('en'),
+          ) ||
+          trackList[0];
+      }
+
+      if (target) {
+        for (const t of trackList) {
+          if (t === target) {
+            t.mode = 'showing';
+          } else if (t.mode === 'showing') {
+            t.mode = 'disabled';
+          }
+        }
+      }
+    };
+
+    const timer1 = setTimeout(activateSubtitle, 150);
+    const timer2 = setTimeout(activateSubtitle, 600);
+    const timer3 = setTimeout(activateSubtitle, 1500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, [uniqueTracks, tmdbId]);
+
+  // Force English/Preferred audio & subtitles whenever tracks change, unless there is a saved preference
+  useEffect(() => {
+    if (!player.current) return;
 
     return player.current.subscribe(({ audioTracks, textTracks, canPlay }) => {
       // Restore saved progress once per source change when player is ready
-      if (hasResumedRef.current !== src && player.current && canPlay) {
+      if (tmdbId && hasResumedRef.current !== src && player.current && canPlay) {
         const savedProgress = localStorage.getItem(`streamnet_progress_${tmdbId}`);
         if (savedProgress) {
           const time = parseFloat(savedProgress);
@@ -120,7 +200,7 @@ export default function VidstackPlayer({
 
       // Restore saved audio preference or force English
       if (audioTracks.length > 0) {
-        const savedAudio = localStorage.getItem(`streamnet_audio_${tmdbId}`);
+        const savedAudio = tmdbId ? localStorage.getItem(`streamnet_audio_${tmdbId}`) : null;
         let targetTrack = null;
 
         if (savedAudio) {
@@ -144,9 +224,9 @@ export default function VidstackPlayer({
         }
       }
 
-      // Restore saved subtitle preference or force English
+      // Restore saved subtitle preference or force English/Default
       if (textTracks.length > 0) {
-        const savedSub = localStorage.getItem(`streamnet_sub_${tmdbId}`);
+        const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
 
         if (savedSub === 'off') {
           // User explicitly toggled subtitles off
@@ -156,11 +236,12 @@ export default function VidstackPlayer({
             targetSub.mode = 'showing';
           }
         } else {
-          const englishSub = textTracks.find(t =>
-            t.label.toLowerCase().includes('english') || t.language?.startsWith('en')
-          );
-          if (englishSub && englishSub.mode !== 'showing') {
-            englishSub.mode = 'showing';
+          const activeSub = textTracks.find(t => (t as any).default) ||
+            textTracks.find(t =>
+              t.label.toLowerCase().includes('english') || t.language?.startsWith('en')
+            ) || textTracks[0];
+          if (activeSub && activeSub.mode !== 'showing') {
+            activeSub.mode = 'showing';
           }
         }
       }
@@ -249,6 +330,7 @@ export default function VidstackPlayer({
             }
           }
         }}
+        crossOrigin="anonymous"
       >
         <MediaProvider>
           {poster && (
@@ -258,20 +340,31 @@ export default function VidstackPlayer({
               alt={title || 'Video poster'}
             />
           )}
-          {tracks.map((track, idx) => {
-            const isFirstEnglish = track.label?.toLowerCase().includes('english') && 
-                                   tracks.findIndex(t => t.label?.toLowerCase().includes('english')) === idx;
+          {uniqueTracks.map((track, idx) => {
+            const isFirstEnglish =
+              track.label?.toLowerCase().includes('english') &&
+              uniqueTracks.findIndex((t) =>
+                t.label?.toLowerCase().includes('english'),
+              ) === idx;
             const isDefault = track.default || isFirstEnglish;
-            
+            const safeLang =
+              idx === 0
+                ? track.language || 'en'
+                : `${track.language || 'en'}-${idx + 1}`;
+            const trackId = `track-${idx}-${(track.label || 'sub')
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '-')}`;
+
             return (
               <Track
-                key={track.src ? `${track.src}-${idx}` : `track-${idx}`}
+                key={`vds-track-${trackId}-${idx}`}
+                id={trackId}
                 src={track.src}
                 kind={track.kind}
                 label={track.label}
-                lang={track.language}
+                lang={safeLang}
                 default={isDefault}
-                type={(track.type as "vtt" | "srt") || 'vtt'}
+                type={(track.type as 'vtt' | 'srt') || 'vtt'}
               />
             );
           })}
@@ -280,7 +373,6 @@ export default function VidstackPlayer({
         <DefaultVideoLayout
           thumbnails={thumbnails}
           icons={defaultLayoutIcons}
-          noModal
         />
       </MediaPlayer>
     </div>

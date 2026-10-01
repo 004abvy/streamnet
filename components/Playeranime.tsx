@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { X, ArrowLeft, Loader, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import VidstackPlayer from "./VidstackPlayer";
+import VidstackPlayer, { VidstackTrack } from "./VidstackPlayer";
 import { installAdblockProtection } from "../utils/adblockFramework";
 import styles from "./SeasonEpisodeSelector/SeasonEpisodeSelector.module.css";
 
@@ -49,7 +49,7 @@ export default function Playeranime({
   const [vipError, setVipError] = useState<string | null>(null);
 
   // Source selector
-  type AnimeSource = "anivexa" | "megaplay";
+  type AnimeSource = "anivexa";
   const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
 
   // Helper to fetch with timeout
@@ -234,26 +234,7 @@ export default function Playeranime({
   useEffect(() => {
     if (!selectedEpisodeId || !anilistId || !selectedProvider) return;
 
-    if (activeSource === "megaplay") {
-      const epNum = episodes.find((e) => e.id === selectedEpisodeId)?.number || 1;
-      const megaUrl = `https://megaplay.buzz/stream/ani/${anilistId}/${epNum}/${audioType}`;
-      // Proxy the HTML to inject popup blockers since we don't use sandbox
-      setStreamUrl(`/api/proxy?url=${encodeURIComponent(megaUrl)}&referer=${encodeURIComponent('https://megaplay.buzz/')}`);
-      setIsIframe(true);
-      setLoading(false);
-      setError(null);
-      return;
-    }
 
-    if (activeSource === "vidplus") {
-      const epNum = episodes.find((e) => e.id === selectedEpisodeId)?.number || 1;
-      const dubStr = audioType === "dub" ? "true" : "false";
-      setStreamUrl(`https://player.vidplus.to/embed/anime/${anilistId}/${epNum}?dub=${dubStr}`);
-      setIsIframe(true);
-      setLoading(false);
-      setError(null);
-      return;
-    }
 
     if (activeSource !== "anivexa") return;
 
@@ -270,157 +251,175 @@ export default function Playeranime({
         const res = await fetch(`${anivexaUrl}/${selectedEpisodeId}`);
         const streamData = await res.json();
 
-        let allTracks = [];
-
-        if (streamData.subtitles && Array.isArray(streamData.subtitles)) {
-          const rawTracks = streamData.subtitles.map((sub: any) => ({
-            src: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}`,
-            label: sub.lang || sub.label || sub.language || "Subtitle",
-            kind: "subtitles",
-            language: (sub.lang || sub.srclang || "en").substring(0, 2).toLowerCase(),
-            default: sub.default || false,
-            type: "vtt",
-          }));
-
-          const labelCounts = new Map<string, number>();
-          rawTracks.forEach((track: any) => {
-            const baseLabel = track.label?.trim() || "Unknown";
-            const lowerBase = baseLabel.toLowerCase();
-            if (labelCounts.has(lowerBase)) {
-              const count = labelCounts.get(lowerBase)! + 1;
-              labelCounts.set(lowerBase, count);
-              track.label = `${baseLabel} (${count})`;
-            } else {
-              labelCounts.set(lowerBase, 1);
-              track.label = baseLabel;
+        // 0. Extract stream native subtitles from anime provider
+        const nativeSubs: any[] = [];
+        const rawNativeSubs = [
+          ...(streamData.subtitles || []),
+          ...(streamData.tracks || []),
+          ...(streamData.captions || []),
+        ];
+        if (streamData.streams && Array.isArray(streamData.streams)) {
+          for (const s of streamData.streams) {
+            if (s.subtitles && Array.isArray(s.subtitles)) {
+              rawNativeSubs.push(...s.subtitles);
             }
+          }
+        }
+        for (const sub of rawNativeSubs) {
+          const rawSrc = sub.url || sub.file || sub.src;
+          if (!rawSrc) continue;
+          const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
+            ? rawSrc
+            : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+          const label = (sub.label || sub.name || "English").trim();
+          const isEnglish =
+            label.toLowerCase().includes("english") ||
+            sub.srclang === "en" ||
+            sub.language === "en";
+          nativeSubs.push({
+            src: finalSrc,
+            label: label,
+            kind: "subtitles",
+            language: sub.srclang || sub.language || (isEnglish ? "en" : "en"),
+            default: sub.default ?? isEnglish,
+            type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
           });
-
-          allTracks = rawTracks;
         }
 
-        setSubtitles(allTracks);
+        if (nativeSubs.length > 0) {
+          setSubtitles(nativeSubs);
+        }
 
-        // Fetch VIP and Direct4K subtitles asynchronously in the background
-        if (tmdbId) {
-          const epNum =
-            episodes.find((e) => e.id === selectedEpisodeId)?.number || 1;
-          const routeType = type || "tv";
-
-          Promise.allSettled([
-            fetch(
-              `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=1&episode=${epNum}`,
-            ).then((res) => res.json()),
-            fetch(`/api/direct/${routeType}/${tmdbId}/1/${epNum}`).then((res) =>
-              res.json(),
-            ),
-          ])
-            .then((results) => {
-              let combinedSubs: any[] = [];
-
-              if (
-                results[0].status === "fulfilled" &&
-                results[0].value?.subtitles
-              ) {
-                combinedSubs = combinedSubs.concat(
-                  results[0].value.subtitles.map((sub: any) => ({
-                    src: sub.url,
-                    label: sub.label,
-                    kind: "subtitles",
-                    language: sub.language || "en",
-                    default: false,
-                    type: "vtt",
-                  })),
-                );
-              }
-
-              if (
-                results[1].status === "fulfilled" &&
-                results[1].value?.subtitles
-              ) {
-                combinedSubs = combinedSubs.concat(
-                  results[1].value.subtitles.map((sub: any) => ({
-                    src: sub.url,
-                    label: sub.label,
-                    kind: "subtitles",
-                    language: sub.language || "en",
-                    default: false,
-                    type: "vtt",
-                  })),
-                );
-              }
-
-              if (combinedSubs.length > 0) {
-                Promise.allSettled(
-                  combinedSubs.map(async (track: any) => {
-                    try {
-                      const controller = new AbortController();
-                      const id = setTimeout(
-                        () => controller.abort(new Error("Timeout checking subtitle")),
-                        3000,
-                      );
-                      const res = await fetch(track.src, {
-                        method: "HEAD",
-                        signal: controller.signal,
-                      });
-                      clearTimeout(id);
-                      if (res.ok) return track;
-                      return null;
-                    } catch {
-                      return null;
-                    }
-                  }),
-                ).then((checkResults) => {
-                  const workingCombinedSubs = checkResults
-                    .filter((r) => r.status === "fulfilled" && r.value !== null)
-                    .map((r: any) => r.value);
-
-                  if (workingCombinedSubs.length > 0) {
-                    setSubtitles((prev) => {
-                      let combined = [...prev, ...workingCombinedSubs];
-
-                      const labelCounts = new Map<string, number>();
-                      combined.forEach((track) => {
-                        const baseLabel = track.label?.trim() || "Unknown";
-                        const lowerBase = baseLabel.toLowerCase();
-                        if (labelCounts.has(lowerBase)) {
-                          const count = labelCounts.get(lowerBase)! + 1;
-                          labelCounts.set(lowerBase, count);
-                          track.label = `${baseLabel} (${count})`;
-                        } else {
-                          labelCounts.set(lowerBase, 1);
-                          track.label = baseLabel;
-                        }
-                      });
-
-                      combined.sort((a, b) => {
-                        const aIsCC = a.label?.toLowerCase().includes("cc");
-                        const bIsCC = b.label?.toLowerCase().includes("cc");
-                        if (aIsCC && !bIsCC) return -1;
-                        if (!aIsCC && bIsCC) return 1;
-                        return 0;
-                      });
-
-                      let hasSetDefault = false;
-                      return combined.map((track) => {
-                        const isEnglish =
-                          track.label?.toLowerCase().includes("english") ||
-                          track.language === "en";
-                        if (isEnglish && !hasSetDefault) {
-                          hasSetDefault = true;
-                          return { ...track, default: true };
-                        }
-                        return { ...track, default: false };
-                      });
-                    });
-                  }
-                });
-              }
-            })
-            .catch((e) =>
-              console.error("Failed to fetch background subtitles", e),
+        // Fetch OpenSubtitles and VIP Player subtitles
+        const currentEp = episodes.find((e) => e.id === selectedEpisodeId);
+        let epNum = 1;
+        if (currentEp) {
+          if (typeof currentEp.number === "number") {
+            epNum = currentEp.number;
+          } else {
+            const parsed = parseInt(
+              String(currentEp.number || currentEp.title || currentEp.id).replace(/\D+/g, ""),
+              10,
             );
+            if (!isNaN(parsed) && parsed > 0) epNum = parsed;
+          }
         }
+        const routeType = type || "tv";
+        const tmdbParam = tmdbId
+          ? `tmdbId=${tmdbId}&`
+          : `query=${encodeURIComponent(animeTitle)}&`;
+
+        Promise.allSettled([
+          fetch(
+            `/api/subtitle/opensubtitles?${tmdbParam}type=${routeType}&season=1&episode=${epNum}`,
+          ).then((res) => res.json()),
+          ...(tmdbId
+            ? [
+                fetch(
+                  `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=1&episode=${epNum}&vip=true`,
+                ).then((res) => res.json()),
+                fetch(`/api/direct/${routeType}/${tmdbId}/1/${epNum}`).then((res) =>
+                  res.json(),
+                ),
+              ]
+            : []),
+        ])
+          .then((results) => {
+            let combinedSubs: any[] = [...nativeSubs];
+
+            // 1. OpenSubtitles results (Primary for anime)
+            if (
+              results[0]?.status === "fulfilled" &&
+              results[0].value?.subtitles &&
+              Array.isArray(results[0].value.subtitles)
+            ) {
+              combinedSubs = combinedSubs.concat(
+                results[0].value.subtitles.map((sub: any) => {
+                  const rawSrc = sub.url || sub.file || sub.src;
+                  const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
+                    ? rawSrc
+                    : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+                  const label = (sub.label || "English").trim();
+                  const isEnglish =
+                    label.toLowerCase().includes("english") ||
+                    sub.language === "en";
+                  return {
+                    src: finalSrc,
+                    label: label,
+                    kind: "subtitles",
+                    language: sub.language || (isEnglish ? "en" : "en"),
+                    default: sub.isDefault ?? sub.default ?? isEnglish,
+                    type:
+                      sub.format ||
+                      (rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt"),
+                  };
+                }),
+              );
+            }
+
+            // 2. Direct Aggregate VIP
+            if (
+              results[1]?.status === "fulfilled" &&
+              results[1].value?.subtitles &&
+              Array.isArray(results[1].value.subtitles)
+            ) {
+              combinedSubs = combinedSubs.concat(
+                results[1].value.subtitles.map((sub: any) => {
+                  const rawSrc = sub.url || sub.file || sub.src;
+                  const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
+                    ? rawSrc
+                    : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+                  const label = (sub.label || "English").trim();
+                  const isEnglish =
+                    label.toLowerCase().includes("english") ||
+                    sub.language === "en";
+                  return {
+                    src: finalSrc,
+                    label: label,
+                    kind: "subtitles",
+                    language: sub.language || (isEnglish ? "en" : "en"),
+                    default: sub.isDefault ?? sub.default ?? isEnglish,
+                    type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
+                  };
+                }),
+              );
+            }
+
+            // 3. Direct Route
+            if (
+              results[2]?.status === "fulfilled" &&
+              results[2].value?.subtitles &&
+              Array.isArray(results[2].value.subtitles)
+            ) {
+              combinedSubs = combinedSubs.concat(
+                results[2].value.subtitles.map((sub: any) => {
+                  const rawSrc = sub.url || sub.file || sub.src;
+                  const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
+                    ? rawSrc
+                    : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+                  const label = (sub.label || "English").trim();
+                  const isEnglish =
+                    label.toLowerCase().includes("english") ||
+                    sub.language === "en";
+                  return {
+                    src: finalSrc,
+                    label: label,
+                    kind: "subtitles",
+                    language: sub.language || (isEnglish ? "en" : "en"),
+                    default: sub.isDefault ?? sub.default ?? isEnglish,
+                    type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
+                  };
+                }),
+              );
+            }
+
+            if (combinedSubs.length > 0) {
+              setSubtitles(combinedSubs);
+            }
+          })
+          .catch((e) =>
+            console.error("Failed to fetch VIP/OpenSubtitles", e),
+          );
 
         const directHls =
           streamData.stream_url ||
@@ -465,34 +464,75 @@ export default function Playeranime({
     fetchServer();
   }, [selectedEpisodeId, anilistId, selectedProvider, activeSource, audioType, episodes]);
 
-  const sortedSubtitles = useMemo(() => {
-    // Vidstack internally uses 'kind-label' as a key and will crash if labels duplicate.
-    // We will append (1), (2), etc. to duplicate labels to keep them all.
-    const usedLabels = new Set<string>();
-    const uniqueTracks = subtitles.map(track => {
-      let baseLabel = track.label || "English";
-      let finalLabel = baseLabel;
-      let counter = 2;
-      
-      while (usedLabels.has(finalLabel.toLowerCase())) {
-        finalLabel = `${baseLabel} (${counter})`;
-        counter++;
+  const vidstackTracks = useMemo<VidstackTrack[]>(() => {
+    const seenSrcs = new Set<string>();
+    const seenLabels = new Map<string, number>();
+    const tracksList: VidstackTrack[] = [];
+
+    for (const track of subtitles) {
+      if (!track?.src) continue;
+      if (seenSrcs.has(track.src)) continue;
+      seenSrcs.add(track.src);
+
+      let rawLabel = (track.label || "English").trim().replace(/\s*\(\d+\)$/, '');
+      if (!rawLabel) rawLabel = "English";
+
+      const lower = rawLabel.toLowerCase();
+      const count = seenLabels.get(lower) || 0;
+      seenLabels.set(lower, count + 1);
+
+      const label = count === 0 ? rawLabel : `${rawLabel} (${count + 1})`;
+      const isEng = lower.includes("english") || lower.includes("eng") || track.language === "en";
+
+      tracksList.push({
+        src: track.src,
+        label,
+        language: track.language || (isEng ? "en" : "en"),
+        kind: "subtitles",
+        default: track.default ?? false,
+        type: (track.type as any) || "vtt",
+      });
+    }
+
+    tracksList.sort((a, b) => {
+      const labelA = (a.label || "").toLowerCase();
+      const labelB = (b.label || "").toLowerCase();
+
+      // Deprioritize signs/songs or episode name only
+      const aIsEpOnly = labelA.includes("episode name") || labelA.includes("signs") || labelA.includes("songs");
+      const bIsEpOnly = labelB.includes("episode name") || labelB.includes("signs") || labelB.includes("songs");
+      if (!aIsEpOnly && bIsEpOnly) return -1;
+      if (aIsEpOnly && !bIsEpOnly) return 1;
+
+      // Prioritize full / original subtitles
+      const aIsFull = labelA.includes("full") || labelA.includes("original") || labelA.includes("orignal");
+      const bIsFull = labelB.includes("full") || labelB.includes("original") || labelB.includes("orignal");
+      if (aIsFull && !bIsFull) return -1;
+      if (!aIsFull && bIsFull) return 1;
+
+      const aIsEng = labelA.includes("english") || a.language === "en";
+      const bIsEng = labelB.includes("english") || b.language === "en";
+      if (aIsEng && !bIsEng) return -1;
+      if (!aIsEng && bIsEng) return 1;
+
+      return (a.label || "").localeCompare(b.label || "");
+    });
+
+    let assignedDefault = false;
+    for (const t of tracksList) {
+      if (!assignedDefault && (t.default || (t.label || "").toLowerCase().includes("english"))) {
+        t.default = true;
+        assignedDefault = true;
+      } else if (assignedDefault) {
+        t.default = false;
       }
-      
-      usedLabels.add(finalLabel.toLowerCase());
-      return { ...track, label: finalLabel };
-    });
+    }
 
-    return uniqueTracks.sort((a, b) => {
-      const labelA = (a.label || "English").toLowerCase();
-      const labelB = (b.label || "English").toLowerCase();
-      const isEngA = labelA.includes("english") || labelA.includes("eng");
-      const isEngB = labelB.includes("english") || labelB.includes("eng");
+    if (!assignedDefault && tracksList.length > 0) {
+      tracksList[0].default = true;
+    }
 
-      if (isEngA && !isEngB) return -1;
-      if (!isEngA && isEngB) return 1;
-      return labelA.localeCompare(labelB);
-    });
+    return tracksList;
   }, [subtitles]);
 
   const tmdbEpisodesMap = useMemo(() => {
@@ -569,27 +609,7 @@ export default function Playeranime({
 
             {/* Top Right Controls: Sub/Dub, Source, Provider, VIP Code Input, Close */}
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-              {/* Source Selector */}
-              <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10 gap-0.5 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
-                {(["anivexa", "megaplay"] as const).map((src) => (
-                  <button
-                    key={src}
-                    type="button"
-                    onClick={() => {
-                      setActiveSource(src);
-                      setStreamUrl(null);
-                      setError(null);
-                    }}
-                    className={`px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold transition-all uppercase shrink-0 ${
-                      activeSource === src
-                        ? "bg-violet-600 text-white shadow-sm"
-                        : "text-neutral-400 hover:text-white"
-                    }`}
-                  >
-                    {src === "anivexa" ? "AniVexa" : "MegaPlay"}
-                  </button>
-                ))}
-              </div>
+
 
               {/* Audio Type Selector */}
               <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10">
@@ -684,10 +704,11 @@ export default function Playeranime({
                 <div key={`vidstack-container-${streamUrl}`} className="relative w-full h-full">
                   <VidstackPlayer
                     src={streamUrl}
-                    tracks={sortedSubtitles}
+                    tracks={vidstackTracks}
                     autoPlay={true}
                     title={`${animeTitle} - ${selectedEpisode?.title || `Episode ${selectedEpisode?.number || 1}`}`}
-                    className="w-full h-full"
+                    tmdbId={tmdbId ? String(tmdbId) : (anilistId ? `anime_${anilistId}` : undefined)}
+                    className="w-full h-full text-white font-sans"
                   />
                 </div>
               )

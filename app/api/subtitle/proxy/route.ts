@@ -157,7 +157,25 @@ function mergeHlsVttSegments(segmentTexts: string[]): string {
   return `WEBVTT\n\n${uniqueCues.join('\n\n')}`;
 }
 
-function convertSrtToVtt(raw: string): string {
+function shiftVttTime(ts: string, offsetSec: number): string {
+  if (offsetSec === 0) return ts;
+  const parts = ts.trim().split(':');
+  let total = 0;
+  if (parts.length === 3) {
+    total = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+  } else if (parts.length === 2) {
+    total = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+  } else {
+    total = parseFloat(ts) || 0;
+  }
+  total = Math.max(0, total + offsetSec);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`;
+}
+
+function convertSrtToVtt(raw: string, offsetSec: number = 0): string {
   let vtt = raw.replace(/\r\n|\r/g, '\n').trim();
 
   // Strip UTF-8 BOM if present
@@ -188,8 +206,8 @@ function convertSrtToVtt(raw: string): string {
             return t;
           };
           
-          start = formatTime(start);
-          end = formatTime(end);
+          start = shiftVttTime(formatTime(start), offsetSec);
+          end = shiftVttTime(formatTime(end), offsetSec);
           
           let text = parts.slice(9).join(',').trim();
           text = text.replace(/\\{[^}]+\\}/g, ''); // Remove ASS tags
@@ -203,13 +221,24 @@ function convertSrtToVtt(raw: string): string {
     return `WEBVTT\n\n${cues.join('\n\n')}`;
   }
 
-  // If already WebVTT, just return it as is. HTML5 players natively handle relative cue times.
+  // If already WebVTT
   if (vtt.startsWith('WEBVTT')) {
+    if (offsetSec !== 0) {
+      return vtt.replace(/((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/g, (_m, s, e) => {
+        return `${shiftVttTime(s, offsetSec)} --> ${shiftVttTime(e, offsetSec)}`;
+      });
+    }
     return vtt;
   }
 
   // Convert comma in SRT timestamps to dot for WebVTT (00:00:01,234 -> 00:00:01.234)
   vtt = vtt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, (_match, time, ms) => `${time}.${ms}`);
+
+  if (offsetSec !== 0) {
+    vtt = vtt.replace(/((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/g, (_m, s, e) => {
+      return `${shiftVttTime(s, offsetSec)} --> ${shiftVttTime(e, offsetSec)}`;
+    });
+  }
 
   return `WEBVTT\n\n${vtt}`;
 }
@@ -218,6 +247,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const rawUrl = searchParams.get('url');
+    const offset = parseFloat(searchParams.get('offset') || '0') || 0;
 
     if (!rawUrl) {
       return new NextResponse('Missing url parameter', {
@@ -353,7 +383,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert SRT or plain format to valid WebVTT
-    const validVtt = convertSrtToVtt(subtitleText);
+    const validVtt = convertSrtToVtt(subtitleText, offset);
 
     return new NextResponse(validVtt, {
       status: 200,
