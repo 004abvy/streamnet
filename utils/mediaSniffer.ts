@@ -257,7 +257,7 @@ export async function resolve1DmMediaInfo(
       id: `m3u8-yapgrid-${tmdbId}`,
       type: 'video',
       label: '📹 YapGrid 4K Ad-Free Master Stream',
-      url: `/api/proxy?url=${encodeURIComponent(`https://yapgrid.com/embed/movie/${tmdbId}?autoplay=1&server=x`)}`,
+      url: `https://yapgrid.com/embed/movie/${tmdbId}?autoplay=1&server=x`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
     });
@@ -265,7 +265,7 @@ export async function resolve1DmMediaInfo(
       id: `m3u8-cinesrc-${tmdbId}`,
       type: 'video',
       label: '📹 CineSrc 4K Master Playlist (.m3u8)',
-      url: `/api/proxy?url=${encodeURIComponent(`https://cinesrc.st/embed/movie/${tmdbId}?color=%23f59e0b&autoskip=true`)}`,
+      url: `https://cinesrc.st/embed/movie/${tmdbId}?color=%23f59e0b&autoskip=true`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
     });
@@ -274,7 +274,7 @@ export async function resolve1DmMediaInfo(
       id: `m3u8-yapgrid-tv-${tmdbId}`,
       type: 'video',
       label: `📹 YapGrid 4K Episode Master (S${season || 1} E${episode || 1})`,
-      url: `/api/proxy?url=${encodeURIComponent(`https://yapgrid.com/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&server=x`)}`,
+      url: `https://yapgrid.com/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&server=x`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
     });
@@ -282,7 +282,7 @@ export async function resolve1DmMediaInfo(
       id: `m3u8-cinesrc-tv-${tmdbId}`,
       type: 'video',
       label: `📹 CineSrc 4K Episode Master (S${season || 1} E${episode || 1})`,
-      url: `/api/proxy?url=${encodeURIComponent(`https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b`)}`,
+      url: `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
     });

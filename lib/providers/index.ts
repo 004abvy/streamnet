@@ -41,6 +41,7 @@ async function runOmssProvider(
   try {
     const media: ProviderMediaObject = {
       tmdbId,
+      imdbId: '',
       type: mediaType,
       s: Number(season) || 1,
       e: Number(episode) || 1,
@@ -65,7 +66,7 @@ async function runOmssProvider(
       quality: src.quality,
       subtitles: result.subtitles?.map(sub => ({
         url: sub.url,
-        label: sub.label || sub.language || 'Unknown'
+        label: sub.label || (sub as any).language || 'Unknown'
       }))
     }));
   } catch (err) {

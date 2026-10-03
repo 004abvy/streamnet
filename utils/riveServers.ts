@@ -81,5 +81,5 @@ export function buildRiveServerUrl(params: {
   if (serverCode) {
     url += `&server=${serverCode}`;
   }
-  return `/api/proxy?url=${encodeURIComponent(url)}`;
+  return url;
 }

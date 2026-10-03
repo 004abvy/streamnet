@@ -547,20 +547,18 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
         }
 
-        const rawScreenscapeUrl = type === 'tv'
+        const screenscapeUrl = type === 'tv'
           ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
           : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
-        const proxiedScreenscapeUrl = `/api/proxy?url=${encodeURIComponent(rawScreenscapeUrl)}`;
-        setEmbedFallbackUrl(proxiedScreenscapeUrl);
+        setEmbedFallbackUrl(screenscapeUrl);
         setFetchingStream(false);
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);
       } catch (err: any) {
-        const rawScreenscapeUrl = type === 'tv'
+        const screenscapeUrl = type === 'tv'
           ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
           : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
-        const proxiedScreenscapeUrl = `/api/proxy?url=${encodeURIComponent(rawScreenscapeUrl)}`;
-        setEmbedFallbackUrl(proxiedScreenscapeUrl);
+        setEmbedFallbackUrl(screenscapeUrl);
         setFetchingStream(false);
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);
@@ -696,7 +694,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   }, [unifiedSubtitles]);
 
   const customPlayerSettings = useMemo(() => {
-    const settings = [];
+    const settings: any[] = [];
     if (unifiedAudioTracks.length > 0) {
       settings.push({
         name: "audio-language-menu",

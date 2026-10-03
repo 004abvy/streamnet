@@ -45,12 +45,7 @@ export const SERVERS: StreamingServer[] = ALL_PROVIDERS.map((provider) => ({
   flag: provider.flag,
   badge: provider.badge,
   description: provider.description,
-  getUrl: (tmdbId, type, season, episode, imdbId) => {
-    const rawUrl = provider.buildUrl(type, tmdbId, season, episode, imdbId);
-    return rawUrl && rawUrl.startsWith('http')
-      ? `/api/proxy?url=${encodeURIComponent(rawUrl)}`
-      : rawUrl;
-  },
+  getUrl: (tmdbId, type, season, episode, imdbId) => provider.buildUrl(type, tmdbId, season, episode, imdbId),
   provider,
 }));
 

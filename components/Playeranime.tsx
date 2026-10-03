@@ -191,6 +191,9 @@ export default function Playeranime({
       setEpisodes(foundEpisodes);
       setSelectedProvider(chosenProvider);
       setSelectedEpisodeId(foundEpisodes[0].id);
+      setSelectedGroupId("");
+      setSelectedSubBatch("all");
+      prevEpisodeIdRef.current = foundEpisodes[0].id;
       setError(null);
     } else {
       setEpisodes([]);
@@ -437,6 +440,8 @@ export default function Playeranime({
     return found || groups[0];
   }, [groups, selectedGroupId]);
 
+  const prevEpisodeIdRef = useRef<string | null>(null);
+
   // Initial group selection and syncing with active episode
   useEffect(() => {
     if (groups.length === 0) return;
@@ -447,6 +452,7 @@ export default function Playeranime({
         );
         if (match) {
           setSelectedGroupId(match.id);
+          prevEpisodeIdRef.current = selectedEpisodeId;
           return;
         }
       }
@@ -454,14 +460,17 @@ export default function Playeranime({
     }
   }, [groups, selectedGroupId, selectedEpisodeId]);
 
-  // When selected episode changes, sync active group if not in current group
+  // When selected episode genuinely changes, sync active group to match the episode's season
   useEffect(() => {
     if (selectedEpisodeId && groups.length > 0) {
-      const match = groups.find((g) =>
-        g.episodes.some((e) => e.id === selectedEpisodeId),
-      );
-      if (match && match.id !== selectedGroupId) {
-        setSelectedGroupId(match.id);
+      if (prevEpisodeIdRef.current !== selectedEpisodeId) {
+        prevEpisodeIdRef.current = selectedEpisodeId;
+        const match = groups.find((g) =>
+          g.episodes.some((e) => e.id === selectedEpisodeId),
+        );
+        if (match && match.id !== selectedGroupId) {
+          setSelectedGroupId(match.id);
+        }
       }
     }
   }, [selectedEpisodeId, groups, selectedGroupId]);
@@ -710,11 +719,7 @@ export default function Playeranime({
           setStreamUrl(proxiedUrl);
           setIsIframe(false);
         } else if (streamData.embeds && streamData.embeds.length > 0) {
-          const rawEmbed = streamData.embeds[0].url;
-          const proxiedEmbed = rawEmbed.startsWith('http')
-            ? `/api/proxy?url=${encodeURIComponent(rawEmbed)}`
-            : rawEmbed;
-          setStreamUrl(proxiedEmbed);
+          setStreamUrl(streamData.embeds[0].url);
           setIsIframe(true);
         } else if (
           streamData.streams &&
@@ -723,11 +728,7 @@ export default function Playeranime({
           const embedStream = streamData.streams.find(
             (s: any) => s.type === "embed" || s.embedUrl,
           );
-          const rawEmbed = embedStream.embedUrl || embedStream.url;
-          const proxiedEmbed = rawEmbed && rawEmbed.startsWith('http')
-            ? `/api/proxy?url=${encodeURIComponent(rawEmbed)}`
-            : rawEmbed;
-          setStreamUrl(proxiedEmbed);
+          setStreamUrl(embedStream.embedUrl || embedStream.url);
           setIsIframe(true);
         } else {
           setError("No streaming source found.");
@@ -1186,6 +1187,10 @@ export default function Playeranime({
                                   setSelectedGroupId(g.id);
                                   setSelectedSubBatch("all");
                                   setIsSeasonDropdownOpen(false);
+                                  if (g.episodes && g.episodes.length > 0) {
+                                    prevEpisodeIdRef.current = g.episodes[0].id;
+                                    setSelectedEpisodeId(g.episodes[0].id);
+                                  }
                                 }}
                               >
                                 <span className="font-semibold truncate max-w-[190px]">{g.name}</span>

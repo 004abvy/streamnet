@@ -9,6 +9,8 @@ export interface UnifiedAudioTrack {
   label: string;
   badge: string;
   url: string;
+  rawUrl?: string;
+  headers?: Record<string, string>;
   quality: string;
   isDefault?: boolean;
 }
@@ -398,7 +400,7 @@ export async function GET(request: NextRequest) {
       directResolvedStreams.forEach((stream, idx) => {
         if (!stream.url || seenUrls.has(stream.url)) return;
         // Exclude VidLink because its servers aggressively 429 rate limit
-        if (stream.provider?.toLowerCase().includes('vidlink') || stream.name?.toLowerCase().includes('vidlink')) {
+        if (stream.provider?.toLowerCase().includes('vidlink') || (stream as any).name?.toLowerCase().includes('vidlink')) {
           return;
         }
         seenUrls.add(stream.url);
