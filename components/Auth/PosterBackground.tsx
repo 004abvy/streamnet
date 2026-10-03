@@ -139,11 +139,17 @@ function buildColumns(posters: string[], colCount: number = 10): string[][] {
 export default function PosterBackground() {
   const columns = buildColumns(VERIFIED_CINEMA_POSTERS, 10);
 
+  const getColClass = (colIdx: number) => {
+    if (colIdx >= 7) return styles.hideOnTablet;
+    if (colIdx >= 5) return styles.hideOnMobile;
+    return '';
+  };
+
   return (
     <div className={styles.backgroundWrapper}>
       <div className={styles.perspectiveContainer}>
         {columns.map((column, colIdx) => (
-          <div key={colIdx} className={styles.columnWrapper}>
+          <div key={colIdx} className={`${styles.columnWrapper} ${getColClass(colIdx)}`}>
             <div
               className={`${styles.columnTrack} ${ANIMATION_CLASSES[colIdx % ANIMATION_CLASSES.length]}`}
             >

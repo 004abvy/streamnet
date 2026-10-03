@@ -2,24 +2,27 @@
   position: fixed;
   inset: 0;
   width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   z-index: 0;
   background-color: #060608;
+  pointer-events: none;
 }
 
 .perspectiveContainer {
   position: absolute;
-  top: -50vh;
-  left: -20vw;
-  width: 140vw;
-  height: 260vh;
+  top: -35vh;
+  left: -12vw;
+  width: 124vw;
+  height: 220vh;
   display: flex;
   gap: 0.85rem;
-  transform: rotateZ(-4deg) rotateX(6deg) scale(1.08);
+  transform: rotateZ(-4deg) rotateX(6deg) scale(1.06);
   transform-origin: center center;
-  opacity: 0.96;
-  filter: saturate(1.12) brightness(0.98);
+  opacity: 0.94;
+  filter: saturate(1.1) brightness(0.96);
   pointer-events: auto;
 }
 
@@ -112,16 +115,78 @@
   }
 }
 
-/* Gentle, light gradient overlay */
+/* Multi-layered cinematic gradient overlay */
 .lightGradientOverlay {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     circle at center,
-    rgba(6, 6, 8, 0.2) 0%,
-    rgba(6, 6, 8, 0.45) 60%,
-    rgba(6, 6, 8, 0.75) 100%
+    rgba(6, 6, 9, 0.45) 0%,
+    rgba(6, 6, 9, 0.72) 65%,
+    #060609 100%
   );
   pointer-events: none;
   z-index: 1;
+}
+
+/* Tablet Optimizations */
+@media (max-width: 1024px) {
+  .perspectiveContainer {
+    top: -25vh;
+    left: -8vw;
+    width: 116vw;
+    height: 190vh;
+    gap: 0.7rem;
+    transform: rotateZ(-3deg) rotateX(4deg) scale(1.03);
+  }
+
+  .columnBlock {
+    gap: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+
+  .hideOnTablet {
+    display: none !important;
+  }
+}
+
+/* Mobile Devices Optimizations */
+@media (max-width: 768px) {
+  .perspectiveContainer {
+    top: -12vh;
+    left: -6vw;
+    width: 112vw;
+    height: 150vh;
+    gap: 0.45rem;
+    transform: rotateZ(-2deg) scale(1.02);
+    opacity: 0.82;
+    filter: saturate(1.05) brightness(0.78);
+  }
+
+  .columnBlock {
+    gap: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .posterCard {
+    border-radius: 0.35rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .hideOnMobile {
+    display: none !important;
+  }
+
+  .hideOnTablet {
+    display: none !important;
+  }
+
+  .lightGradientOverlay {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(6, 6, 9, 0.68) 0%,
+      rgba(6, 6, 9, 0.88) 60%,
+      #060609 100%
+    );
+  }
 }
