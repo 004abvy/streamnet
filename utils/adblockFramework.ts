@@ -476,7 +476,12 @@ export function installAdblockProtection(
   // 4. `gorhill/uBlock` SCRIPTLET: `prevent-navigation.js`
   // Forbids non-user-initiated top-level redirects via Chromium Navigation API
   // =========================================================================
-  if (typeof window !== 'undefined' && 'navigation' in window) {
+  if (
+    typeof window !== 'undefined' &&
+    'navigation' in window &&
+    (window as any).navigation != null &&
+    typeof (window as any).navigation.addEventListener === 'function'
+  ) {
     const navHandler = (e: any) => {
       if (e.userInitiated) return;
       const targetUrl = e.destination?.url || '';
@@ -495,7 +500,7 @@ export function installAdblockProtection(
       (window as any).navigation.addEventListener('navigate', navHandler);
       cleanups.push(() => {
         try {
-          (window as any).navigation.removeEventListener('navigate', navHandler);
+          (window as any).navigation?.removeEventListener?.('navigate', navHandler);
         } catch (err) {}
       });
     } catch (err) {}

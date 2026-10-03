@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import VidstackPlayer, { DirectSourceItem } from "./VidstackPlayer";
+import VidstackPlayer, { DirectSourceItem, VidstackTrack } from "./VidstackPlayer";
 import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
 
 interface SubtitleTrack {
@@ -575,37 +575,35 @@ export default function HlsPlayer({
   const labelCounts: Record<string, number> = {};
   let defaultSubtitleSelected = false;
 
-  const vidstackTracks = subtitles.map((sub) => {
+  const vidstackTracks: VidstackTrack[] = [];
+  for (const sub of subtitles) {
+    if (!sub || !sub.url) continue;
     const rawLabel = sub.label || "English";
+    const rawLower = rawLabel.toLowerCase();
+    const isEnglish = rawLower.includes("english") || rawLower.includes("eng");
+    if (!isEnglish) continue; // Keep only English subtitles
+
     labelCounts[rawLabel] = (labelCounts[rawLabel] || 0) + 1;
     const uniqueLabel =
       labelCounts[rawLabel] > 1
         ? `${rawLabel} (${labelCounts[rawLabel]})`
         : rawLabel;
 
-    const isEnglish =
-      rawLabel.toLowerCase().includes("english") ||
-      rawLabel.toLowerCase().includes("eng");
     let isDefault = false;
-
     if (isEnglish && !defaultSubtitleSelected) {
       isDefault = true;
       defaultSubtitleSelected = true;
     }
 
-    return {
+    vidstackTracks.push({
       src: sub.url,
       label: uniqueLabel,
-      language: isEnglish
-        ? "en"
-        : rawLabel.toLowerCase().includes("hindi")
-          ? "hi"
-          : sub.label?.substring(0, 2).toLowerCase() || "en",
-      kind: "subtitles",
+      language: "en",
+      kind: "subtitles" as const,
       default: isDefault,
       type: "vtt",
-    };
-  });
+    });
+  }
 
   if (loading) {
     return (

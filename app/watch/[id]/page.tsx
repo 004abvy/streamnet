@@ -4,6 +4,7 @@ import { use, useState, useEffect } from 'react';
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
 import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
 import { saveContinueWatching } from '../../../utils/userStorage';
+import { getRelevantRecommendations } from '../../../utils/recommendations';
 
 export default function WatchPage({
   params,
@@ -56,7 +57,7 @@ export default function WatchPage({
   }, [id]);
 
   const imdbId = movie?.external_ids?.imdb_id || movie?.imdb_id;
-  const similarMovies = movie?.similar?.results || movie?.recommendations?.results || [];
+  const similarMovies = getRelevantRecommendations(movie, 14);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden">

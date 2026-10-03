@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import styles from './DetailsTabs.module.css';
 import PosterGrid from '../PosterGrid/PosterGrid';
+import { getRelevantRecommendations } from '../../utils/recommendations';
 
 interface DetailsTabsProps {
   movie: any;
@@ -12,6 +13,8 @@ const TABS = ['Overview', 'Credits', 'Watch', 'Reviews', 'Images', 'Videos', 'Re
 
 export default function DetailsTabs({ movie }: DetailsTabsProps) {
   const [activeTab, setActiveTab] = useState('Overview');
+
+  const relevantRecommendations = getRelevantRecommendations(movie, 12);
 
   const formatCurrency = (value: number) => {
     if (!value) return '-';
@@ -78,9 +81,9 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
               </tbody>
             </table>
 
-            {movie.similar?.results && movie.similar.results.length > 0 && (
+            {relevantRecommendations.length > 0 && (
               <div style={{ marginTop: '3rem' }}>
-                <PosterGrid title="You may also like" movies={movie.similar.results.slice(0, 8)} gridColumns={4} />
+                <PosterGrid title="You may also like" movies={relevantRecommendations.slice(0, 8)} gridColumns={4} />
               </div>
             )}
           </div>
@@ -132,8 +135,8 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
       case 'Recommendations':
         return (
           <div className={styles.content}>
-            {movie.recommendations?.results && movie.recommendations.results.length > 0 ? (
-              <PosterGrid title="" movies={movie.recommendations.results.slice(0, 8)} gridColumns={4} />
+            {relevantRecommendations.length > 0 ? (
+              <PosterGrid title="" movies={relevantRecommendations.slice(0, 12)} gridColumns={4} />
             ) : (
               <div className={styles.placeholder}>No recommendations available.</div>
             )}
@@ -142,8 +145,8 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
       case 'Similar':
         return (
           <div className={styles.content}>
-            {movie.similar?.results && movie.similar.results.length > 0 ? (
-              <PosterGrid title="" movies={movie.similar.results.slice(0, 8)} gridColumns={4} />
+            {relevantRecommendations.length > 0 ? (
+              <PosterGrid title="" movies={relevantRecommendations.slice(0, 12)} gridColumns={4} />
             ) : (
               <div className={styles.placeholder}>No similar movies available.</div>
             )}

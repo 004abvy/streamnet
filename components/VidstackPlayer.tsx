@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
+import { MediaPlayer, MediaProvider, Poster, MediaPlayerInstance, isHLSProvider, TextTrack, type AudioTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 import { clearMediaSession, suppressMediaSession } from '../utils/mediaSessionManager';
 
@@ -40,6 +40,7 @@ export interface VidstackPlayerProps {
   className?: string;
   autoPlay?: boolean;
   onEnded?: () => void;
+  onDurationChange?: (durationSeconds: number) => void;
   onInvalidDuration?: (durationSeconds: number) => void;
   onSelectDirectSource?: (source: DirectSourceItem) => void;
   availableDirectSources?: DirectSourceItem[];
@@ -57,6 +58,7 @@ export default function VidstackPlayer({
   className = '',
   autoPlay = false,
   onEnded,
+  onDurationChange,
   onInvalidDuration,
   onSelectDirectSource,
   availableDirectSources = [],
@@ -119,18 +121,56 @@ export default function VidstackPlayer({
     return activeMediaSrc;
   }, [activeMediaSrc]);
 
+  const [failedTrackSrcs, setFailedTrackSrcs] = useState<Set<string>>(new Set());
+
+  // Reset failed tracks on media source change
+  useEffect(() => {
+    setFailedTrackSrcs(new Set());
+  }, [src]);
+
   const uniqueTracks = useMemo<VidstackTrack[]>(() => {
     const seenSrcs = new Set<string>();
     const seenLabels = new Map<string, number>();
     const result: VidstackTrack[] = [];
 
-    for (const track of tracks) {
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i];
       if (!track || !track.src) continue;
+      if (failedTrackSrcs.has(track.src)) continue;
+
+      // Filter: Keep ONLY English subtitles in popup menu
+      const rawLower = (track.label || '').toLowerCase();
+      const langLower = (track.language || '').toLowerCase();
+      const isEnglish =
+        rawLower.includes('english') ||
+        rawLower.includes('eng') ||
+        langLower === 'en' ||
+        langLower.startsWith('en-') ||
+        langLower === 'eng';
+
+      if (!isEnglish) {
+        continue;
+      }
+
       if (seenSrcs.has(track.src)) continue;
       seenSrcs.add(track.src);
 
-      let rawLabel = (track.label || 'Subtitle').trim().replace(/\s*\(\d+\)$/, '');
-      if (!rawLabel) rawLabel = 'Subtitle';
+      // Clean raw label
+      let rawLabel = (track.label || 'English').trim();
+      // Remove any trailing counter suffixes if already attached
+      rawLabel = rawLabel
+        .replace(/\s+\d+$/, '')
+        .replace(/\s*\(\d+\)$/, '')
+        .replace(/\s*\(\s*-\s*[^)]+\)$/, (match) => {
+          const inner = match.replace(/^[(-.\s]+|[)-.\s]+$/g, '');
+          if (/netflix|crunchyroll|horriblesubs|funimation|hidive|full|original/i.test(inner)) {
+            return ` (${inner})`;
+          }
+          return '';
+        })
+        .trim();
+
+      if (!rawLabel) rawLabel = 'English';
 
       const lower = rawLabel.toLowerCase();
       const count = seenLabels.get(lower) || 0;
@@ -142,11 +182,105 @@ export default function VidstackPlayer({
         ...track,
         label,
         language: track.language || (lower.includes('english') ? 'en' : 'en'),
+        type: 'vtt',
       });
     }
 
+    function getTrackPriority(label: string): number {
+      const l = (label || '').toLowerCase();
+      if (l.includes('signs') || l.includes('songs') || l.includes('episode name')) return -10;
+      if (l.includes('netflix')) return 100;
+      if (l.includes('crunchyroll')) return 95;
+      if (l.includes('funimation') || l.includes('hidive')) return 90;
+      if (l.includes('full') || l.includes('original') || l.includes('orignal')) return 85;
+      if (l.includes('english') && !l.includes('(')) return 80;
+      if (l.includes('english') || l.includes('eng')) return 70;
+      return 10;
+    }
+
+    result.sort((a, b) => {
+      const scoreA = getTrackPriority(a.label || '');
+      const scoreB = getTrackPriority(b.label || '');
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+      return (a.label || '').localeCompare(b.label || '');
+    });
+
+    // Ensure the top prioritized compatible track is marked as default
+    let assigned = false;
+    for (let i = 0; i < result.length; i++) {
+      if (!assigned && getTrackPriority(result[i].label || '') > 0) {
+        result[i].default = true;
+        assigned = true;
+      } else {
+        result[i].default = false;
+      }
+    }
+    if (!assigned && result.length > 0) {
+      result[0].default = true;
+    }
+
     return result;
-  }, [tracks]);
+  }, [tracks, failedTrackSrcs]);
+
+  const useIsomorphicLayoutEffect =
+    typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+  const tracksSignature = useMemo(() => {
+    return uniqueTracks.map((t) => `${t.src}#${t.label}`).join(';;');
+  }, [uniqueTracks]);
+
+  // Imperatively synchronize text tracks with Vidstack's TextTrackList
+  useIsomorphicLayoutEffect(() => {
+    if (!player.current) return;
+    const textTracks = player.current.textTracks;
+    if (!textTracks) return;
+
+    // 1. Remove all existing non-native/custom text tracks
+    for (const t of Array.from(textTracks)) {
+      if (t) {
+        try {
+          textTracks.remove(t);
+        } catch {}
+      }
+    }
+
+    if (uniqueTracks.length === 0) return;
+
+    // 2. Add deduplicated unique tracks in priority order
+    const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
+
+    uniqueTracks.forEach((track, idx) => {
+      const isDefault = track.default ?? (idx === 0);
+      const safeLang =
+        idx === 0
+          ? track.language || 'en'
+          : `${track.language || 'en'}-${idx + 1}`;
+
+      const textTrack = new TextTrack({
+        id: `vds-trk-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        src: track.src,
+        kind: track.kind || 'subtitles',
+        label: track.label,
+        language: safeLang,
+        type: 'vtt',
+        default: isDefault,
+      });
+
+      if (savedSub === 'off') {
+        textTrack.mode = 'disabled';
+      } else if (savedSub && savedSub === track.label) {
+        textTrack.mode = 'showing';
+      } else if (!savedSub && isDefault) {
+        textTrack.mode = 'showing';
+      } else {
+        textTrack.mode = 'disabled';
+      }
+
+      textTracks.add(textTrack);
+    });
+  }, [uniqueTracks, tracksSignature, src, tmdbId]);
 
   // Dynamic subtitle auto-activation when tracks change asynchronously
   useEffect(() => {
@@ -157,28 +291,33 @@ export default function VidstackPlayer({
       const textTracks = player.current.textTracks;
       if (!textTracks || textTracks.length === 0) return;
 
-      const trackList = Array.from(textTracks);
+      const trackList = Array.from(textTracks).filter(Boolean) as TextTrack[];
       const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
 
       if (savedSub === 'off') return;
 
       let target: TextTrack | undefined;
       if (savedSub) {
-        target = trackList.find((t) => t.label === savedSub);
+        target = trackList.find((t) => t && t.label === savedSub);
       }
       if (!target) {
         target =
-          trackList.find((t) => (t as any).default) ||
+          trackList.find((t) => t && (t as any).default) ||
+          trackList.find((t) => t.label?.toLowerCase().includes('netflix')) ||
+          trackList.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
+          trackList.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
           trackList.find(
             (t) =>
-              t.label.toLowerCase().includes('english') ||
-              t.language?.startsWith('en'),
+              t &&
+              (t.label.toLowerCase().includes('english') ||
+                t.language?.startsWith('en')),
           ) ||
           trackList[0];
       }
 
       if (target) {
         for (const t of trackList) {
+          if (!t) continue;
           if (t === target) {
             t.mode = 'showing';
           } else if (t.mode === 'showing') {
@@ -281,6 +420,17 @@ export default function VidstackPlayer({
           console.warn('[VidstackPlayer] Stream error encountered:', err?.detail || err, 'Advancing to next available stream source...');
           onInvalidDuration?.(0);
         }}
+        onDurationChange={(detail: any) => {
+          const duration = typeof detail === 'number' ? detail : detail?.duration;
+          if (typeof duration === 'number' && !isNaN(duration) && duration > 0) {
+            onDurationChange?.(duration);
+          }
+        }}
+        onLoadedMetadata={() => {
+          if (player.current && typeof player.current.duration === 'number' && player.current.duration > 0) {
+            onDurationChange?.(player.current.duration);
+          }
+        }}
         onEnded={() => {
           clearMediaSession();
           if (tmdbId) {
@@ -290,6 +440,10 @@ export default function VidstackPlayer({
         }}
         onCanPlay={() => {
           if (!player.current) return;
+
+          if (typeof player.current.duration === 'number' && player.current.duration > 0) {
+            onDurationChange?.(player.current.duration);
+          }
 
           // Direct seek on ready for HLS stability
           if (tmdbId && hasResumedRef.current !== src) {
@@ -313,7 +467,6 @@ export default function VidstackPlayer({
               manifestLoadingMaxRetry: 6,
               manifestLoadingMaxRetryTimeout: 15000,
               levelLoadingMaxRetry: 6,
-              renderTextTracksNatively: false,
             };
           }
         }}
@@ -360,34 +513,6 @@ export default function VidstackPlayer({
               alt={title || 'Video poster'}
             />
           )}
-          {uniqueTracks.map((track, idx) => {
-            const isFirstEnglish =
-              track.label?.toLowerCase().includes('english') &&
-              uniqueTracks.findIndex((t) =>
-                t.label?.toLowerCase().includes('english'),
-              ) === idx;
-            const isDefault = track.default || isFirstEnglish;
-            const safeLang =
-              idx === 0
-                ? track.language || 'en'
-                : `${track.language || 'en'}-${idx + 1}`;
-            const trackId = `track-${idx}-${(track.label || 'sub')
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, '-')}`;
-
-            return (
-              <Track
-                key={`vds-track-${trackId}-${idx}`}
-                id={trackId}
-                src={track.src}
-                kind={track.kind}
-                label={track.label}
-                lang={safeLang}
-                default={isDefault}
-                type={(track.type as 'vtt' | 'srt') || 'vtt'}
-              />
-            );
-          })}
         </MediaProvider>
 
         <DefaultVideoLayout

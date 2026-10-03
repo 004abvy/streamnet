@@ -133,7 +133,7 @@ export function GET_INJECTABLE_UBLOCK_BUNDLE(): string {
     };
 
     // 6. Navigation API Redirect Interceptor (prevent-navigation.js)
-    if ('navigation' in window) {
+    if ('navigation' in window && window.navigation != null && typeof window.navigation.addEventListener === 'function') {
       try {
         window.navigation.addEventListener('navigate', function(ev) {
           var targetUrl = ev.destination ? ev.destination.url : '';
@@ -210,6 +210,9 @@ export function GET_INJECTABLE_UBLOCK_BUNDLE(): string {
 
     document.createElement = function(tagName, options) {
       var elem = origCreateElement.call(document, tagName, options);
+      if (!elem || typeof elem.setAttribute !== 'function') {
+        return elem;
+      }
       var tag = String(tagName).toLowerCase();
 
       // Intercept dynamic rogue scripts
@@ -222,11 +225,11 @@ export function GET_INJECTABLE_UBLOCK_BUNDLE(): string {
               if (valLower.indexOf(KNOWN_AD_HOSTS[i]) !== -1) {
                 console.warn(logPrefix + 'Blocked dynamic ad script injection:', val);
                 window.__STREAMNET_BLOCKED_COUNT__++;
-                return origSetAttribute.call(elem, 'src', 'data:text/javascript,;');
+                return origSetAttribute ? origSetAttribute.call(elem, 'src', 'data:text/javascript,;') : undefined;
               }
             }
           }
-          return origSetAttribute.call(elem, name, val);
+          return origSetAttribute ? origSetAttribute.call(elem, name, val) : undefined;
         };
       }
 
@@ -237,7 +240,7 @@ export function GET_INJECTABLE_UBLOCK_BUNDLE(): string {
           if (String(name).toLowerCase() === 'target' && val === '_blank') {
             return; // Discard _blank attribute on dynamically generated anchors
           }
-          return origAnchorSet.call(elem, name, val);
+          return origAnchorSet ? origAnchorSet.call(elem, name, val) : undefined;
         };
       }
 

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { X, ArrowLeft, Loader, Search, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { X, ArrowLeft, Loader, Search, Sparkles, ChevronDown, Layers, Film } from "lucide-react";
 import { useRouter } from "next/navigation";
 import VidstackPlayer, { VidstackTrack } from "./VidstackPlayer";
 import { installAdblockProtection } from "../utils/adblockFramework";
 import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
+import { getKnownAnimeArcs } from "../utils/animeArcs";
 import styles from "./SeasonEpisodeSelector/SeasonEpisodeSelector.module.css";
 
 interface PlayeranimeProps {
@@ -13,6 +14,18 @@ interface PlayeranimeProps {
   tmdbId?: string | number;
   type?: "tv" | "movie";
   onClose: () => void;
+}
+
+interface AnimeGroup {
+  id: string;
+  name: string;
+  shortName: string;
+  seasonNumber?: number;
+  startEp: number;
+  endEp: number;
+  count: number;
+  episodes: any[];
+  tmdbSeason?: any;
 }
 
 export default function Playeranime({
@@ -29,11 +42,17 @@ export default function Playeranime({
   const [animeBanner, setAnimeBanner] = useState<string | null>(null);
   const [animeCover, setAnimeCover] = useState<string | null>(null);
   const [tmdbBackdrop, setTmdbBackdrop] = useState<string | null>(null);
-  const [tmdbEpisodes, setTmdbEpisodes] = useState<any[]>([]);
+  const [tmdbSeasons, setTmdbSeasons] = useState<any[]>([]);
+  const [tmdbEpisodesBySeason, setTmdbEpisodesBySeason] = useState<Record<number, any[]>>({});
 
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(null);
+
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [selectedSubBatch, setSelectedSubBatch] = useState<string>("all");
+  const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [subtitles, setSubtitles] = useState<any[]>([]);
@@ -48,6 +67,11 @@ export default function Playeranime({
   const [showVipModal, setShowVipModal] = useState<boolean>(false);
   const [vipInputCode, setVipInputCode] = useState<string>("");
   const [vipError, setVipError] = useState<string | null>(null);
+
+  // Movie runtime & duration mismatch detection
+  const [expectedRuntime, setExpectedRuntime] = useState<number | null>(null);
+  const [streamDuration, setStreamDuration] = useState<number | null>(null);
+  const [isMismatchDismissed, setIsMismatchDismissed] = useState<boolean>(false);
 
   // Source selector
   type AnimeSource = "anivexa";
@@ -85,6 +109,20 @@ export default function Playeranime({
     };
   }, []);
 
+  // Click outside to close season dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSeasonDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Initialize Adblock framework to protect against un-sandboxed iframe ads
   useEffect(() => {
     if (isIframe) {
@@ -95,7 +133,7 @@ export default function Playeranime({
     }
   }, [isIframe]);
 
-  // Fetch TMDB backdrop and episode stills if tmdbId is present
+  // Fetch TMDB backdrop, seasons list, and runtime if tmdbId is present
   useEffect(() => {
     if (!tmdbId) return;
     const endpoint = type === "movie" ? `/api/movies/${tmdbId}` : `/api/tv/${tmdbId}`;
@@ -105,19 +143,15 @@ export default function Playeranime({
         if (data && data.backdrop_path) {
           setTmdbBackdrop(`https://image.tmdb.org/t/p/original${data.backdrop_path}`);
         }
+        if (data && typeof data.runtime === "number" && data.runtime > 0) {
+          setExpectedRuntime(data.runtime);
+        }
+        if (data && data.seasons && Array.isArray(data.seasons)) {
+          const valid = data.seasons.filter((s: any) => s.season_number > 0 && s.episode_count > 0);
+          setTmdbSeasons(valid.length > 0 ? valid : data.seasons);
+        }
       })
       .catch(() => {});
-
-    if (type === "tv") {
-      fetch(`/api/tv/${tmdbId}/season/1`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data && data.episodes) {
-            setTmdbEpisodes(data.episodes);
-          }
-        })
-        .catch(() => {});
-    }
   }, [tmdbId, type]);
 
   // Helper to extract episodes based on preferences
@@ -134,7 +168,7 @@ export default function Playeranime({
       "mkissa",
       "animegg",
     ];
-    let foundEpisodes = [];
+    let foundEpisodes: any[] = [];
     let chosenProvider = null;
 
     if (
@@ -221,8 +255,6 @@ export default function Playeranime({
     init();
   }, [animeTitle]);
 
-  // Removed extra sources effects
-
   // Handle Audio Type toggle
   const handleAudioToggle = (type: "sub" | "dub") => {
     setAudioType(type);
@@ -239,18 +271,267 @@ export default function Playeranime({
     }
   };
 
+  // Build Season & Arc Groups
+  const groups = useMemo<AnimeGroup[]>(() => {
+    if (type === "movie" || !episodes || episodes.length === 0) return [];
+
+    const sorted = [...episodes].sort((a, b) => (a.number || 0) - (b.number || 0));
+
+    // 1. Check if known anime arcs exist for this title (e.g. One Piece, Naruto, Bleach, Hunter x Hunter, Demon Slayer, etc.)
+    const knownArcs = getKnownAnimeArcs(animeTitle);
+    if (knownArcs && knownArcs.length > 0) {
+      const arcGroups: AnimeGroup[] = [];
+      for (let i = 0; i < knownArcs.length; i++) {
+        const arc = knownArcs[i];
+        const matched = sorted.filter((ep) => {
+          const num =
+            typeof ep.number === "number"
+              ? ep.number
+              : parseInt(String(ep.number || "").replace(/\D+/g, ""), 10);
+          return !isNaN(num) && num >= arc.startEp && num <= arc.endEp;
+        });
+
+        if (matched.length > 0) {
+          const displayName = arc.seasonNumber
+            ? `Season ${arc.seasonNumber}: ${arc.name}`
+            : arc.name;
+
+          arcGroups.push({
+            id: `arc-${i + 1}`,
+            name: displayName,
+            shortName: arc.shortName || arc.name,
+            seasonNumber: arc.seasonNumber || i + 1,
+            startEp: arc.startEp,
+            endEp: arc.endEp,
+            count: matched.length,
+            episodes: matched,
+          });
+        }
+      }
+
+      if (arcGroups.length > 0) {
+        return arcGroups;
+      }
+    }
+
+    // 2. If TMDB provides seasons data
+    const validTmdbSeasons = tmdbSeasons.filter(
+      (s) => s.season_number > 0 && s.episode_count > 0,
+    );
+
+    if (validTmdbSeasons.length > 0) {
+      let currentStart = 1;
+      const seasonList: AnimeGroup[] = [];
+
+      for (const s of validTmdbSeasons) {
+        const count = s.episode_count || 0;
+        const start = currentStart;
+        const end = currentStart + count - 1;
+        currentStart = end + 1;
+
+        // Match episodes that fall within this cumulative range
+        const matched = sorted.filter((ep) => {
+          const num =
+            typeof ep.number === "number"
+              ? ep.number
+              : parseInt(String(ep.number || "").replace(/\D+/g, ""), 10);
+          return !isNaN(num) && num >= start && num <= end;
+        });
+
+        const sliceEps =
+          matched.length > 0 ? matched : sorted.slice(start - 1, end);
+
+        if (sliceEps.length > 0) {
+          const hasArcName =
+            s.name &&
+            !s.name.toLowerCase().startsWith(`season ${s.season_number}`) &&
+            s.name.toLowerCase() !== `season ${s.season_number}`;
+
+          const displayName = hasArcName
+            ? `Season ${s.season_number}: ${s.name}`
+            : (s.name || `Season ${s.season_number}`);
+
+          const shortLabel = hasArcName
+            ? (s.name.length <= 16 ? s.name : `S${s.season_number}: ${s.name}`)
+            : `Season ${s.season_number}`;
+
+          seasonList.push({
+            id: `season-${s.season_number}`,
+            name: displayName,
+            shortName: shortLabel,
+            seasonNumber: s.season_number,
+            startEp: start,
+            endEp: end,
+            count: sliceEps.length,
+            episodes: sliceEps,
+            tmdbSeason: s,
+          });
+        }
+      }
+
+      // Check for remaining episodes beyond known TMDB seasons
+      const maxSeasonEnd = validTmdbSeasons.reduce(
+        (acc, s) => acc + (s.episode_count || 0),
+        0,
+      );
+      const extraEps = sorted.filter((ep) => {
+        const num =
+          typeof ep.number === "number"
+            ? ep.number
+            : parseInt(String(ep.number || "").replace(/\D+/g, ""), 10);
+        return !isNaN(num) && num > maxSeasonEnd;
+      });
+
+      if (extraEps.length > 0) {
+        const nextSeasonNum = validTmdbSeasons.length + 1;
+        const extraStart = maxSeasonEnd + 1;
+        const extraEnd = extraEps[extraEps.length - 1]?.number || (extraStart + extraEps.length - 1);
+        seasonList.push({
+          id: `season-${nextSeasonNum}`,
+          name: `Season ${nextSeasonNum} (Episodes ${extraStart} - ${extraEnd})`,
+          shortName: `Season ${nextSeasonNum}`,
+          seasonNumber: nextSeasonNum,
+          startEp: extraStart,
+          endEp: extraEnd,
+          count: extraEps.length,
+          episodes: extraEps,
+        });
+      }
+
+      if (seasonList.length > 0) {
+        return seasonList;
+      }
+    }
+
+    // 3. Fallback if no TMDB seasons & <= 25 episodes:
+    if (sorted.length <= 25) {
+      return [
+        {
+          id: "season-1",
+          name: `Season 1 (Episodes 1 - ${sorted.length})`,
+          shortName: "Season 1",
+          seasonNumber: 1,
+          startEp: 1,
+          endEp: sorted.length,
+          count: sorted.length,
+          episodes: sorted,
+        },
+      ];
+    }
+
+    // 4. Fallback partition into Arc / Batch chunks (25 or 50 episodes per arc)
+    const batchSize = sorted.length > 200 ? 50 : 25;
+    const batchGroups: AnimeGroup[] = [];
+    let chunkIndex = 1;
+
+    for (let i = 0; i < sorted.length; i += batchSize) {
+      const chunk = sorted.slice(i, i + batchSize);
+      const firstEp = chunk[0]?.number || (i + 1);
+      const lastEp = chunk[chunk.length - 1]?.number || (i + chunk.length);
+
+      batchGroups.push({
+        id: `arc-${chunkIndex}`,
+        name: `Arc ${chunkIndex} (Episodes ${firstEp} - ${lastEp})`,
+        shortName: `Arc ${chunkIndex} (${firstEp}-${lastEp})`,
+        seasonNumber: chunkIndex,
+        startEp: firstEp,
+        endEp: lastEp,
+        count: chunk.length,
+        episodes: chunk,
+      });
+      chunkIndex++;
+    }
+
+    return batchGroups;
+  }, [episodes, tmdbSeasons, animeTitle]);
+
+  // Active Group Resolution
+  const activeGroup = useMemo(() => {
+    if (!groups || groups.length === 0) return null;
+    const found = groups.find((g) => g.id === selectedGroupId);
+    return found || groups[0];
+  }, [groups, selectedGroupId]);
+
+  // Initial group selection and syncing with active episode
+  useEffect(() => {
+    if (groups.length === 0) return;
+    if (!selectedGroupId) {
+      if (selectedEpisodeId) {
+        const match = groups.find((g) =>
+          g.episodes.some((e) => e.id === selectedEpisodeId),
+        );
+        if (match) {
+          setSelectedGroupId(match.id);
+          return;
+        }
+      }
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [groups, selectedGroupId, selectedEpisodeId]);
+
+  // When selected episode changes, sync active group if not in current group
+  useEffect(() => {
+    if (selectedEpisodeId && groups.length > 0) {
+      const match = groups.find((g) =>
+        g.episodes.some((e) => e.id === selectedEpisodeId),
+      );
+      if (match && match.id !== selectedGroupId) {
+        setSelectedGroupId(match.id);
+      }
+    }
+  }, [selectedEpisodeId, groups, selectedGroupId]);
+
+  // Sub-batch ranges for large seasons (e.g. > 30 episodes)
+  const subBatches = useMemo(() => {
+    if (!activeGroup || activeGroup.episodes.length <= 30) return [];
+    const batchSize = 25;
+    const list: { id: string; label: string; start: number; end: number; episodes: any[] }[] = [];
+    const eps = activeGroup.episodes;
+    for (let i = 0; i < eps.length; i += batchSize) {
+      const chunk = eps.slice(i, i + batchSize);
+      const firstEp = chunk[0]?.number || (i + 1);
+      const lastEp = chunk[chunk.length - 1]?.number || (i + chunk.length);
+      list.push({
+        id: `${firstEp}-${lastEp}`,
+        label: `${firstEp} - ${lastEp}`,
+        start: firstEp,
+        end: lastEp,
+        episodes: chunk,
+      });
+    }
+    return list;
+  }, [activeGroup]);
+
+  // Fetch TMDB season episodes metadata when active season changes
+  useEffect(() => {
+    if (!tmdbId || type !== "tv" || !activeGroup?.seasonNumber) return;
+    const sNum = activeGroup.seasonNumber;
+    if (tmdbEpisodesBySeason[sNum]) return;
+
+    fetch(`/api/tv/${tmdbId}/season/${sNum}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.episodes && Array.isArray(data.episodes)) {
+          setTmdbEpisodesBySeason((prev) => ({
+            ...prev,
+            [sNum]: data.episodes,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, [tmdbId, type, activeGroup?.seasonNumber, tmdbEpisodesBySeason]);
+
   // 2. Fetch stream URL when an episode is selected
   useEffect(() => {
     if (!selectedEpisodeId || !anilistId || !selectedProvider) return;
-
-
-
     if (activeSource !== "anivexa") return;
 
     async function fetchServer() {
       try {
         setStreamUrl(null);
         setSubtitles([]);
+        setStreamDuration(null);
+        setIsMismatchDismissed(false);
         setLoading(true);
         setError(null);
         setHasAbsorbedClick(false);
@@ -295,11 +576,7 @@ export default function Playeranime({
           });
         }
 
-        if (nativeSubs.length > 0) {
-          setSubtitles(nativeSubs);
-        }
-
-        // Fetch OpenSubtitles and VIP Player subtitles
+        // Fetch OpenSubtitles, SubDL, and VIP Player subtitles in parallel with native stream subtitles
         const currentEp = episodes.find((e) => e.id === selectedEpisodeId);
         let epNum = 1;
         if (currentEp) {
@@ -313,6 +590,14 @@ export default function Playeranime({
             if (!isNaN(parsed) && parsed > 0) epNum = parsed;
           }
         }
+
+        const currentSeasonNum = activeGroup?.seasonNumber || 1;
+        const relativeEpNum =
+          activeGroup && currentEp?.number && typeof currentEp.number === "number"
+            ? currentEp.number - activeGroup.startEp + 1
+            : epNum;
+        const targetEpForQuery = relativeEpNum > 0 ? relativeEpNum : epNum;
+
         const routeType = type || "tv";
         const tmdbParam = tmdbId
           ? `tmdbId=${tmdbId}&`
@@ -320,31 +605,35 @@ export default function Playeranime({
 
         Promise.allSettled([
           fetch(
-            `/api/subtitle/opensubtitles?${tmdbParam}type=${routeType}&season=1&episode=${epNum}`,
+            `/api/subtitle/anime?${tmdbParam}season=${currentSeasonNum}&episode=${targetEpForQuery}`,
+          ).then((res) => res.json()),
+          fetch(
+            `/api/subtitle/opensubtitles?${tmdbParam}type=${routeType}&season=${currentSeasonNum}&episode=${targetEpForQuery}`,
           ).then((res) => res.json()),
           ...(tmdbId
             ? [
                 fetch(
-                  `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=1&episode=${epNum}&vip=true`,
+                  `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=${currentSeasonNum}&episode=${targetEpForQuery}&vip=true`,
                 ).then((res) => res.json()),
-                fetch(`/api/direct/${routeType}/${tmdbId}/1/${epNum}`).then((res) =>
-                  res.json(),
-                ),
+                fetch(
+                  `/api/direct/${routeType}/${tmdbId}/${currentSeasonNum}/${targetEpForQuery}`,
+                ).then((res) => res.json()),
               ]
             : []),
         ])
-          .then((results) => {
-            let combinedSubs: any[] = [...nativeSubs];
+          .then(async (results) => {
+            const allSubsList: any[] = [...nativeSubs];
 
-            // 1. OpenSubtitles results (Primary for anime)
-            if (
-              results[0]?.status === "fulfilled" &&
-              results[0].value?.subtitles &&
-              Array.isArray(results[0].value.subtitles)
-            ) {
-              combinedSubs = combinedSubs.concat(
-                results[0].value.subtitles.map((sub: any) => {
+            for (let r = 0; r < results.length; r++) {
+              const resObj = results[r];
+              if (
+                resObj?.status === "fulfilled" &&
+                resObj.value?.subtitles &&
+                Array.isArray(resObj.value.subtitles)
+              ) {
+                for (const sub of resObj.value.subtitles) {
                   const rawSrc = sub.url || sub.file || sub.src;
+                  if (!rawSrc) continue;
                   const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
                     ? rawSrc
                     : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
@@ -352,83 +641,69 @@ export default function Playeranime({
                   const isEnglish =
                     label.toLowerCase().includes("english") ||
                     sub.language === "en";
-                  return {
+                  allSubsList.push({
                     src: finalSrc,
                     label: label,
                     kind: "subtitles",
                     language: sub.language || (isEnglish ? "en" : "en"),
                     default: sub.isDefault ?? sub.default ?? isEnglish,
-                    type:
-                      sub.format ||
-                      (rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt"),
-                  };
-                }),
-              );
+                    type: "vtt",
+                  });
+                }
+              }
             }
 
-            // 2. Direct Aggregate VIP
-            if (
-              results[1]?.status === "fulfilled" &&
-              results[1].value?.subtitles &&
-              Array.isArray(results[1].value.subtitles)
-            ) {
-              combinedSubs = combinedSubs.concat(
-                results[1].value.subtitles.map((sub: any) => {
-                  const rawSrc = sub.url || sub.file || sub.src;
-                  const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
-                    ? rawSrc
-                    : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
-                  const label = (sub.label || "English").trim();
-                  const isEnglish =
-                    label.toLowerCase().includes("english") ||
-                    sub.language === "en";
-                  return {
-                    src: finalSrc,
-                    label: label,
-                    kind: "subtitles",
-                    language: sub.language || (isEnglish ? "en" : "en"),
-                    default: sub.isDefault ?? sub.default ?? isEnglish,
-                    type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
-                  };
-                }),
-              );
+            // Strictly deduplicate by source URL
+            const seenSources = new Set<string>();
+            const dedupedSubs: any[] = [];
+            for (const s of allSubsList) {
+              if (!s.src || seenSources.has(s.src)) continue;
+              seenSources.add(s.src);
+              dedupedSubs.push(s);
             }
 
-            // 3. Direct Route
-            if (
-              results[2]?.status === "fulfilled" &&
-              results[2].value?.subtitles &&
-              Array.isArray(results[2].value.subtitles)
-            ) {
-              combinedSubs = combinedSubs.concat(
-                results[2].value.subtitles.map((sub: any) => {
-                  const rawSrc = sub.url || sub.file || sub.src;
-                  const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
-                    ? rawSrc
-                    : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
-                  const label = (sub.label || "English").trim();
-                  const isEnglish =
-                    label.toLowerCase().includes("english") ||
-                    sub.language === "en";
-                  return {
-                    src: finalSrc,
-                    label: label,
-                    kind: "subtitles",
-                    language: sub.language || (isEnglish ? "en" : "en"),
-                    default: sub.isDefault ?? sub.default ?? isEnglish,
-                    type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
-                  };
-                }),
+            if (dedupedSubs.length > 0) {
+              // Pre-validate subtitle files so 404/corrupted ones never appear in the caption menu
+              const validResults = await Promise.allSettled(
+                dedupedSubs.slice(0, 15).map(async (sub) => {
+                  try {
+                    const check = await fetch(sub.src, {
+                      method: "GET",
+                      signal: AbortSignal.timeout(4000),
+                    });
+                    if (check.ok) {
+                      const text = await check.text();
+                      if (text && text.includes("-->")) {
+                        return sub;
+                      }
+                    }
+                  } catch {}
+                  return null;
+                })
               );
-            }
 
-            if (combinedSubs.length > 0) {
-              setSubtitles(combinedSubs);
+              const verified = validResults
+                .filter(
+                  (r): r is PromiseFulfilledResult<any> =>
+                    r.status === "fulfilled" && r.value !== null,
+                )
+                .map((r) => r.value);
+
+              if (verified.length > 0) {
+                setSubtitles(verified);
+              } else if (nativeSubs.length > 0) {
+                setSubtitles(nativeSubs);
+              }
+            } else if (nativeSubs.length > 0) {
+              setSubtitles(nativeSubs);
             }
           })
-          .catch((e) =>
-            console.error("Failed to fetch VIP/OpenSubtitles", e),
-          );
+          .catch((e) => {
+            console.error("Failed to fetch VIP/OpenSubtitles", e);
+            if (nativeSubs.length > 0) {
+              setSubtitles(nativeSubs);
+            }
+          });
 
         const directHls =
           streamData.stream_url ||
@@ -471,7 +746,7 @@ export default function Playeranime({
       }
     }
     fetchServer();
-  }, [selectedEpisodeId, anilistId, selectedProvider, activeSource, audioType, episodes]);
+  }, [selectedEpisodeId, anilistId, selectedProvider, activeSource, audioType, episodes, activeGroup, tmdbId, type, animeTitle]);
 
   const vidstackTracks = useMemo<VidstackTrack[]>(() => {
     const seenSrcs = new Set<string>();
@@ -480,18 +755,40 @@ export default function Playeranime({
 
     for (const track of subtitles) {
       if (!track?.src) continue;
+
+      let rawLabel = (track.label || "English").trim();
+      const lower = rawLabel.toLowerCase();
+      const langLower = (track.language || "").toLowerCase();
+      const isEng =
+        lower.includes("english") ||
+        lower.includes("eng") ||
+        langLower === "en" ||
+        langLower.startsWith("en-") ||
+        langLower === "eng";
+
+      if (!isEng) continue; // Keep only English subtitles
+
       if (seenSrcs.has(track.src)) continue;
       seenSrcs.add(track.src);
 
-      let rawLabel = (track.label || "English").trim().replace(/\s*\(\d+\)$/, '');
+      // Clean ugly file extension and dash patterns like (- Black Clover - 101.en)
+      rawLabel = rawLabel
+        .replace(/\s*\(\s*-\s*[^)]+\)$/, (match: string) => {
+          const inner = match.replace(/^[(-.\s]+|[)-.\s]+$/g, "");
+          if (/netflix|crunchyroll|horriblesubs|funimation|hidive|full|original/i.test(inner)) {
+            return ` (${inner})`;
+          }
+          return "";
+        })
+        .replace(/\.srt|\.vtt|\.ass/gi, "")
+        .trim();
+
       if (!rawLabel) rawLabel = "English";
 
-      const lower = rawLabel.toLowerCase();
       const count = seenLabels.get(lower) || 0;
       seenLabels.set(lower, count + 1);
 
       const label = count === 0 ? rawLabel : `${rawLabel} (${count + 1})`;
-      const isEng = lower.includes("english") || lower.includes("eng") || track.language === "en";
 
       tracksList.push({
         src: track.src,
@@ -499,40 +796,39 @@ export default function Playeranime({
         language: track.language || (isEng ? "en" : "en"),
         kind: "subtitles",
         default: track.default ?? false,
-        type: (track.type as any) || "vtt",
+        type: "vtt",
       });
     }
 
+    function getSubtitlePriority(label: string): number {
+      const l = (label || "").toLowerCase();
+      if (l.includes("signs") || l.includes("songs") || l.includes("episode name")) return -10;
+      if (l.includes("netflix")) return 100;
+      if (l.includes("crunchyroll")) return 95;
+      if (l.includes("funimation") || l.includes("hidive")) return 90;
+      if (l.includes("full") || l.includes("original") || l.includes("orignal")) return 85;
+      if (l.includes("english") && !l.includes("(")) return 80;
+      if (l.includes("english") || l.includes("eng")) return 70;
+      return 10;
+    }
+
     tracksList.sort((a, b) => {
-      const labelA = (a.label || "").toLowerCase();
-      const labelB = (b.label || "").toLowerCase();
-
-      // Deprioritize signs/songs or episode name only
-      const aIsEpOnly = labelA.includes("episode name") || labelA.includes("signs") || labelA.includes("songs");
-      const bIsEpOnly = labelB.includes("episode name") || labelB.includes("signs") || labelB.includes("songs");
-      if (!aIsEpOnly && bIsEpOnly) return -1;
-      if (aIsEpOnly && !bIsEpOnly) return 1;
-
-      // Prioritize full / original subtitles
-      const aIsFull = labelA.includes("full") || labelA.includes("original") || labelA.includes("orignal");
-      const bIsFull = labelB.includes("full") || labelB.includes("original") || labelB.includes("orignal");
-      if (aIsFull && !bIsFull) return -1;
-      if (!aIsFull && bIsFull) return 1;
-
-      const aIsEng = labelA.includes("english") || a.language === "en";
-      const bIsEng = labelB.includes("english") || b.language === "en";
-      if (aIsEng && !bIsEng) return -1;
-      if (!aIsEng && bIsEng) return 1;
-
+      const scoreA = getSubtitlePriority(a.label || "");
+      const scoreB = getSubtitlePriority(b.label || "");
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // Highest priority first
+      }
       return (a.label || "").localeCompare(b.label || "");
     });
 
+    // Mark the highest scoring compatible track as default
     let assignedDefault = false;
-    for (const t of tracksList) {
-      if (!assignedDefault && (t.default || (t.label || "").toLowerCase().includes("english"))) {
+    for (let i = 0; i < tracksList.length; i++) {
+      const t = tracksList[i];
+      if (!assignedDefault && getSubtitlePriority(t.label || "") > 0) {
         t.default = true;
         assignedDefault = true;
-      } else if (assignedDefault) {
+      } else {
         t.default = false;
       }
     }
@@ -544,9 +840,16 @@ export default function Playeranime({
     return tracksList;
   }, [subtitles]);
 
-  const tmdbEpisodesMap = useMemo(() => {
-    return new Map(tmdbEpisodes.map((ep) => [ep.episode_number, ep]));
-  }, [tmdbEpisodes]);
+  // TMDB Episodes lookup for the active season
+  const activeTmdbEpisodesMap = useMemo(() => {
+    const sNum = activeGroup?.seasonNumber || 1;
+    const seasonEps = tmdbEpisodesBySeason[sNum] || [];
+    const map = new Map<number, any>();
+    for (const ep of seasonEps) {
+      map.set(ep.episode_number, ep);
+    }
+    return map;
+  }, [activeGroup, tmdbEpisodesBySeason]);
 
   const availableProviders = useMemo(() => {
     if (!animeData) return [];
@@ -558,11 +861,22 @@ export default function Playeranime({
   const selectedEpisode = episodes.find((e) => e.id === selectedEpisodeId);
   const activeBackdrop = tmdbBackdrop || animeBanner || animeCover;
 
+  // Filtered and sorted episodes for current active group & sub-batch
   const filteredAndSortedEpisodes = useMemo(() => {
-    let result = [...episodes];
+    if (!activeGroup) return [];
+    let baseEps = activeGroup.episodes;
+
+    if (selectedSubBatch !== "all" && subBatches.length > 0) {
+      const foundBatch = subBatches.find((b) => b.id === selectedSubBatch);
+      if (foundBatch) {
+        baseEps = foundBatch.episodes;
+      }
+    }
+
+    let result = [...baseEps];
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
+      result = activeGroup.episodes.filter(
         (ep) =>
           (ep.title && ep.title.toLowerCase().includes(q)) ||
           ep.number?.toString().includes(q),
@@ -573,7 +887,36 @@ export default function Playeranime({
       return (b.number || 0) - (a.number || 0);
     });
     return result;
-  }, [episodes, searchQuery, sortOrder]);
+  }, [activeGroup, selectedSubBatch, subBatches, searchQuery, sortOrder]);
+
+  // Timeline/runtime mismatch detection for movies (e.g. 23 min TV episode returned for a movie)
+  const isRuntimeMismatch = useMemo(() => {
+    if (type !== "movie" || !streamDuration || streamDuration <= 0) return false;
+
+    // If expected runtime is available from TMDB (e.g. 117 mins)
+    if (expectedRuntime && expectedRuntime >= 40) {
+      const streamMinutes = streamDuration / 60;
+      // If stream duration is under 38 mins or < 55% of full movie runtime
+      return streamMinutes < 38 || streamMinutes < expectedRuntime * 0.55;
+    }
+
+    // Heuristic for anime movies: if stream duration is under 32 minutes (~1920s), it is almost certainly a TV episode
+    return streamDuration < 1920;
+  }, [type, streamDuration, expectedRuntime]);
+
+  const handleConvertToVip = () => {
+    if (sessionStorage.getItem("vip_auth") === "123") {
+      if (tmdbId) {
+        router.push(
+          type === "movie"
+            ? `/watch/servers/${tmdbId}?type=movie`
+            : `/watch/servers/${tmdbId}?type=tv&season=${activeGroup?.seasonNumber || 1}&episode=${selectedEpisode?.number || 1}`
+        );
+      }
+    } else {
+      setShowVipModal(true);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[999999] bg-neutral-950 text-white flex flex-col overflow-y-auto overflow-x-hidden selection:bg-amber-500 selection:text-black">
@@ -592,7 +935,7 @@ export default function Playeranime({
       {/* Main Container */}
       <div className="w-full flex flex-col items-center px-3 sm:px-6 md:px-8 pt-4 pb-16 min-h-screen">
         <div className="w-full max-w-6xl">
-          {/* Top Bar matching simple player */}
+          {/* Top Bar */}
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -607,7 +950,7 @@ export default function Playeranime({
               <div className="min-w-0">
                 <h1 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
                   {animeTitle}
-                  {selectedEpisode && (
+                  {type !== "movie" && selectedEpisode && (
                     <span className="text-amber-400 font-normal ml-2 text-sm">
                       · Episode {selectedEpisode.number}
                     </span>
@@ -616,9 +959,20 @@ export default function Playeranime({
               </div>
             </div>
 
-            {/* Top Right Controls: Sub/Dub, Source, Provider, VIP Code Input, Close */}
+            {/* Top Right Controls */}
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-
+              {/* Movie Episode/Duration Mismatch Warning Pill */}
+              {type === "movie" && isRuntimeMismatch && (
+                <button
+                  type="button"
+                  onClick={() => setIsMismatchDismissed(false)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-semibold transition-all cursor-pointer shadow-sm animate-pulse"
+                  title="TV Episode timeline detected. Click to switch to VIP Player"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span>23m Ep · Switch to VIP</span>
+                </button>
+              )}
 
               {/* Audio Type Selector */}
               <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10">
@@ -650,7 +1004,7 @@ export default function Playeranime({
               {tmdbId && (
                 <button
                   type="button"
-                  onClick={() => setShowVipModal(true)}
+                  onClick={handleConvertToVip}
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all duration-200 cursor-pointer shrink-0"
                   title="Unlock VIP Player"
                 >
@@ -690,73 +1044,221 @@ export default function Playeranime({
                 </p>
               </div>
             ) : streamUrl ? (
-              isIframe ? (
-                <div key={`iframe-container-${streamUrl}`} className="relative w-full h-full">
-                  {!hasAbsorbedClick && (
-                    <div
-                      className="absolute inset-0 z-50 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setHasAbsorbedClick(true);
-                      }}
-                      title="Click to play"
+              <>
+                {isIframe ? (
+                  <div key={`iframe-container-${streamUrl}`} className="relative w-full h-full">
+                    {!hasAbsorbedClick && (
+                      <div
+                        className="absolute inset-0 z-30 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHasAbsorbedClick(true);
+                        }}
+                        title="Click to play"
+                      />
+                    )}
+                    <iframe
+                      key={streamUrl}
+                      src={streamUrl}
+                      className="w-full h-full border-0 bg-black"
+                      allowFullScreen
                     />
-                  )}
-                  <iframe
-                    key={streamUrl}
-                    src={streamUrl}
-                    className="w-full h-full border-0 bg-black"
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                <div key={`vidstack-container-${streamUrl}`} className="relative w-full h-full">
-                  <VidstackPlayer
-                    src={streamUrl}
-                    tracks={vidstackTracks}
-                    autoPlay={true}
-                    title={`${animeTitle} - ${selectedEpisode?.title || `Episode ${selectedEpisode?.number || 1}`}`}
-                    tmdbId={tmdbId ? String(tmdbId) : (anilistId ? `anime_${anilistId}` : undefined)}
-                    className="w-full h-full text-white font-sans"
-                  />
-                </div>
-              )
+                  </div>
+                ) : (
+                  <div key={`vidstack-container-${streamUrl}`} className="relative w-full h-full">
+                    <VidstackPlayer
+                      src={streamUrl}
+                      tracks={vidstackTracks}
+                      autoPlay={true}
+                      onDurationChange={(dur) => {
+                        if (dur > 0) setStreamDuration(dur);
+                      }}
+                      title={
+                        type === "movie"
+                          ? animeTitle
+                          : `${animeTitle} - ${selectedEpisode?.title || `Episode ${selectedEpisode?.number || 1}`}`
+                      }
+                      tmdbId={tmdbId ? String(tmdbId) : (anilistId ? `anime_${anilistId}` : undefined)}
+                      className="w-full h-full text-white font-sans"
+                    />
+                  </div>
+                )}
+
+                {/* Automatic Timeline Mismatch / VIP Conversion Prompt for Movies */}
+                {type === "movie" && isRuntimeMismatch && !isMismatchDismissed && (
+                  <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                    <div
+                      className="w-full max-w-md bg-neutral-900/95 border border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] flex flex-col items-center text-center relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Close button to dismiss and continue/check existing stream */}
+                      <button
+                        type="button"
+                        onClick={() => setIsMismatchDismissed(true)}
+                        className="absolute top-3 right-3 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all cursor-pointer"
+                        title="Close and inspect stream"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+                        <Film className="w-6 h-6" />
+                      </div>
+
+                      <h3 className="text-base sm:text-lg font-bold text-white mb-1.5">
+                        Movie Timeline Mismatch
+                      </h3>
+
+                      <div className="flex items-center justify-center gap-2 text-xs font-semibold my-2 px-3 py-1.5 rounded-xl bg-black/50 border border-white/10 text-neutral-300">
+                        <span className="text-red-400 font-bold">
+                          Stream: {streamDuration ? `${Math.round(streamDuration / 60)} min (TV Ep)` : "23 min (TV Ep)"}
+                        </span>
+                        <span className="text-neutral-500">vs</span>
+                        <span className="text-emerald-400 font-bold">
+                          Full Movie: {expectedRuntime ? `${Math.round(expectedRuntime)} min` : "1h 30m+"}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-neutral-400 mt-1 mb-5 leading-relaxed">
+                        The anime source returned a <strong>23-minute TV episode</strong> instead of the full-length movie. Convert to the VIP Player to stream the complete movie.
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
+                        <button
+                          type="button"
+                          onClick={handleConvertToVip}
+                          className="w-full flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all cursor-pointer"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          <span>Convert to VIP Player</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMismatchDismissed(true)}
+                          className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          Keep Playing
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : null}
           </div>
 
-
-          {/* Shared Episode Selector - Anivexa, MegaPlay */}
-          {(activeSource === "anivexa" || activeSource === "megaplay") && episodes.length > 0 && (
+          {/* Season / Arc & Episode Selector Section (Only shown for TV/Series) */}
+          {type !== "movie" && (activeSource === "anivexa" || activeSource === "megaplay") && episodes.length > 0 && (
             <div className={styles.container}>
-              {/* Header */}
+              {/* Header: Title, Season Dropdown & Server Selector */}
               <div className={styles.header}>
                 <div className={styles.headerTitleGroup}>
                   <h3 className={styles.title}>Episodes</h3>
                 </div>
 
-                {/* Provider Selector if multiple (Only relevant for Anivexa, but harmless to show) */}
-                {availableProviders.length > 1 && activeSource === "anivexa" && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
-                    <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
-                      Server:
-                    </span>
-                    {availableProviders.map((p) => (
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {/* Season / Arc Dropdown */}
+                  {groups.length > 1 && (
+                    <div className={styles.seasonDropdownWrapper} ref={dropdownRef}>
                       <button
-                        key={p}
                         type="button"
-                        onClick={() => handleProviderChange(p)}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase transition-all shrink-0 ${
-                          selectedProvider === p
-                            ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                            : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                        }`}
+                        className={styles.seasonSelectBtn}
+                        onClick={() => setIsSeasonDropdownOpen(!isSeasonDropdownOpen)}
                       >
-                        {p}
+                        <span className="truncate max-w-[200px] text-left">
+                          {activeGroup?.name || `Season ${activeGroup?.seasonNumber || 1}`}
+                        </span>
+                        <span className={styles.episodeCountSpan}>
+                          ({activeGroup?.count || 0} eps)
+                        </span>
+                        <ChevronDown
+                          size={16}
+                          className={`${styles.chevron} ${
+                            isSeasonDropdownOpen ? styles.chevronOpen : ""
+                          }`}
+                        />
                       </button>
-                    ))}
-                  </div>
-                )}
+
+                      {isSeasonDropdownOpen && (
+                        <div className={styles.dropdownMenuList}>
+                          {groups.map((g) => {
+                            const isActive = g.id === activeGroup?.id;
+                            return (
+                              <div
+                                key={g.id}
+                                className={`${styles.dropdownMenuItem} ${
+                                  isActive ? styles.dropdownMenuItemActive : ""
+                                }`}
+                                onClick={() => {
+                                  setSelectedGroupId(g.id);
+                                  setSelectedSubBatch("all");
+                                  setIsSeasonDropdownOpen(false);
+                                }}
+                              >
+                                <span className="font-semibold truncate max-w-[190px]">{g.name}</span>
+                                <span className={styles.dropdownEpisodeCount}>
+                                  {g.count} eps
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Provider Selector */}
+                  {availableProviders.length > 1 && activeSource === "anivexa" && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
+                      <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
+                        Server:
+                      </span>
+                      {availableProviders.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => handleProviderChange(p)}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase transition-all shrink-0 ${
+                            selectedProvider === p
+                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Sub-Batch Pills (For large seasons/arcs e.g. > 30 episodes) */}
+              {subBatches.length > 0 && (
+                <div className={styles.subBatchBar}>
+                  <span className={styles.subBatchLabel}>Range:</span>
+                  <button
+                    type="button"
+                    className={`${styles.subBatchPill} ${
+                      selectedSubBatch === "all" ? styles.subBatchPillActive : ""
+                    }`}
+                    onClick={() => setSelectedSubBatch("all")}
+                  >
+                    All ({activeGroup?.count})
+                  </button>
+                  {subBatches.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      className={`${styles.subBatchPill} ${
+                        selectedSubBatch === b.id ? styles.subBatchPillActive : ""
+                      }`}
+                      onClick={() => setSelectedSubBatch(b.id)}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Filters Row: Search & Sort */}
               <div className={styles.filtersRow}>
@@ -764,7 +1266,7 @@ export default function Playeranime({
                   <Search size={16} className={styles.searchIcon} />
                   <input
                     type="text"
-                    placeholder="Search episodes..."
+                    placeholder={`Search ${activeGroup?.shortName || "season"} episodes...`}
                     className={styles.searchInput}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -804,7 +1306,16 @@ export default function Playeranime({
                 ) : (
                   filteredAndSortedEpisodes.map((ep: any) => {
                     const isCurrent = selectedEpisodeId === ep.id;
-                    const tmdbEp = tmdbEpisodesMap.get(ep.number);
+
+                    // Compute relative episode number in the current season for TMDB metadata lookup
+                    const relativeNum =
+                      typeof ep.number === "number" && activeGroup
+                        ? ep.number - activeGroup.startEp + 1
+                        : ep.number;
+                    const tmdbEp =
+                      activeTmdbEpisodesMap.get(relativeNum) ||
+                      activeTmdbEpisodesMap.get(ep.number);
+
                     const stillUrl =
                       ep.image ||
                       ep.thumbnail ||
@@ -899,7 +1410,7 @@ export default function Playeranime({
           onClick={() => {
             setShowVipModal(false);
             setVipError(null);
-            setVipInputCode('');
+            setVipInputCode("");
           }}
         >
           <div 
@@ -918,14 +1429,23 @@ export default function Playeranime({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (vipInputCode.trim() === '123') {
-                  sessionStorage.setItem('vip_auth', '123');
+                if (vipInputCode.trim() === "123") {
+                  sessionStorage.setItem("vip_auth", "123");
                   setShowVipModal(false);
-                  router.push(
-                    `/watch/servers/${tmdbId}?type=${type || 'tv'}&season=1&episode=${selectedEpisode?.number || 1}`
-                  );
+                  if (type === "movie") {
+                    router.push(`/watch/servers/${tmdbId}?type=movie`);
+                  } else {
+                    const activeSeasonNum = activeGroup?.seasonNumber || 1;
+                    const relativeEpNum =
+                      activeGroup && selectedEpisode?.number && typeof selectedEpisode.number === "number"
+                        ? selectedEpisode.number - activeGroup.startEp + 1
+                        : selectedEpisode?.number || 1;
+                    router.push(
+                      `/watch/servers/${tmdbId}?type=${type || "tv"}&season=${activeSeasonNum}&episode=${relativeEpNum > 0 ? relativeEpNum : 1}`
+                    );
+                  }
                 } else {
-                  setVipError('Invalid VIP Code. Please enter 123.');
+                  setVipError("Invalid VIP Code. Please enter 123.");
                 }
               }}
               className="w-full flex flex-col gap-3"
@@ -952,7 +1472,7 @@ export default function Playeranime({
                   onClick={() => {
                     setShowVipModal(false);
                     setVipError(null);
-                    setVipInputCode('');
+                    setVipInputCode("");
                   }}
                   className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold transition-all cursor-pointer"
                 >

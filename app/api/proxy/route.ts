@@ -134,16 +134,19 @@ export async function GET(req: NextRequest) {
           const origCreateElement = document.createElement;
           document.createElement = function(tagName, options) {
             const el = origCreateElement.call(document, tagName, options);
+            if (!el || typeof el.setAttribute !== 'function') {
+              return el;
+            }
             if (String(tagName).toLowerCase() === 'script') {
               const origSetAttribute = el.setAttribute;
               el.setAttribute = function(name, val) {
                 if (String(name).toLowerCase() === 'src') {
                   if (/popads|popcash|adsterra|propellerads|exoclick|monetag|hilltopads|clickadu|adcash|yllix|onclickads|tsyndicate/i.test(val)) {
                     console.warn('Blocked dynamic ad script:', val);
-                    return origSetAttribute.call(el, 'src', 'data:text/javascript,;');
+                    return origSetAttribute ? origSetAttribute.call(el, 'src', 'data:text/javascript,;') : undefined;
                   }
                 }
-                return origSetAttribute.call(el, name, val);
+                return origSetAttribute ? origSetAttribute.call(el, name, val) : undefined;
               };
               
               // Also trap direct src assignment
@@ -153,9 +156,11 @@ export async function GET(req: NextRequest) {
                     console.warn('Blocked dynamic ad script assignment:', val);
                     val = 'data:text/javascript,;';
                   }
-                  this.setAttribute('src', val);
+                  if (typeof this.setAttribute === 'function') {
+                    this.setAttribute('src', val);
+                  }
                 },
-                get: function() { return this.getAttribute('src'); }
+                get: function() { return typeof this.getAttribute === 'function' ? this.getAttribute('src') : ''; }
               });
             }
             return el;

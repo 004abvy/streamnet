@@ -385,6 +385,13 @@ export async function GET(request: NextRequest) {
     // Convert SRT or plain format to valid WebVTT
     const validVtt = convertSrtToVtt(subtitleText, offset);
 
+    if (!validVtt || !validVtt.includes('-->')) {
+      return new NextResponse('Subtitle has no valid cues or failed to parse', {
+        status: 404,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
     return new NextResponse(validVtt, {
       status: 200,
       headers: {

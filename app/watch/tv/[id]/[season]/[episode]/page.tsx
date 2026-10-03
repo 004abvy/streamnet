@@ -6,6 +6,7 @@ import VideoPlayer from '../../../../../../components/VideoPlayer/VideoPlayer';
 import SeasonEpisodeSelector from '../../../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
 import PosterCarousel from '../../../../../../components/PosterCarousel/PosterCarousel';
 import { saveContinueWatching } from '../../../../../../utils/userStorage';
+import { getRelevantRecommendations } from '../../../../../../utils/recommendations';
 
 export default function WatchTvPage() {
   const params = useParams();
@@ -66,7 +67,7 @@ export default function WatchTvPage() {
   }, [id, season, episode]);
 
   const imdbId = show?.external_ids?.imdb_id || show?.imdb_id;
-  const similarShows = show?.similar?.results || show?.recommendations?.results || [];
+  const similarShows = getRelevantRecommendations(show, 14);
 
   const handleEpisodeChange = (newSeason: number, newEpisode: number) => {
     router.push(`/watch/tv/${id}/${newSeason}/${newEpisode}`);

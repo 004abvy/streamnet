@@ -5,16 +5,32 @@ import './Masonary.css';
 
 const useMedia = (queries: string[], values: number[], defaultValue: number): number => {
   const get = () => {
-    if (typeof window === 'undefined') return defaultValue;
-    return values[queries.findIndex(q => matchMedia(q).matches)] ?? defaultValue;
+    if (typeof window === 'undefined' || !window.matchMedia) return defaultValue;
+    return values[queries.findIndex(q => window.matchMedia(q)?.matches)] ?? defaultValue;
   };
 
   const [value, setValue] = useState<number>(get);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
     const handler = () => setValue(get);
-    queries.forEach(q => matchMedia(q).addEventListener('change', handler));
-    return () => queries.forEach(q => matchMedia(q).removeEventListener('change', handler));
+    const mediaList = queries.map(q => window.matchMedia(q)).filter(Boolean);
+    mediaList.forEach(m => {
+      if (m && typeof m.addEventListener === 'function') {
+        m.addEventListener('change', handler);
+      } else if (m && typeof (m as any).addListener === 'function') {
+        (m as any).addListener(handler);
+      }
+    });
+    return () => {
+      mediaList.forEach(m => {
+        if (m && typeof m.removeEventListener === 'function') {
+          m.removeEventListener('change', handler);
+        } else if (m && typeof (m as any).removeListener === 'function') {
+          (m as any).removeListener(handler);
+        }
+      });
+    };
   }, [queries]);
 
   return value;
