@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
-import { MediaPlayer, MediaProvider, Poster, MediaPlayerInstance, isHLSProvider, TextTrack, type AudioTrack, type MediaSrc } from '@vidstack/react';
+import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, TextTrack, type AudioTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 import { clearMediaSession, suppressMediaSession } from '../utils/mediaSessionManager';
 
@@ -93,7 +93,7 @@ export default function VidstackPlayer({
     };
   }, [src]);
 
-  // Dead stream detection: if the video doesn't reach canPlay within 15 seconds, auto-switch
+  // Dead stream detection: if the video doesn't reach canPlay within 25 seconds, auto-switch
   useEffect(() => {
     if (!src || !tmdbId) return;
     
@@ -101,11 +101,11 @@ export default function VidstackPlayer({
       if (player.current) {
         const state = player.current.state;
         if ((!state.canPlay && state.currentTime === 0) || (state.waiting && state.currentTime === 0)) {
-          console.warn('[VidstackPlayer] Stream load timeout (8s). Stream is likely dead. Auto-advancing...');
+          console.warn('[VidstackPlayer] Stream load timeout (25s). Stream is likely dead. Auto-advancing...');
           onInvalidDuration?.(0);
         }
       }
-    }, 8000);
+    }, 25000);
 
     return () => clearTimeout(loadTimeout);
   }, [src, tmdbId]);
@@ -513,6 +513,29 @@ export default function VidstackPlayer({
               alt={title || 'Video poster'}
             />
           )}
+          {uniqueTracks.map((track, idx) => {
+            const isDefault = track.default ?? (idx === 0);
+            const safeLang =
+              idx === 0
+                ? track.language || 'en'
+                : `${track.language || 'en'}-${idx + 1}`;
+            const trackId = `track-${idx}-${(track.label || 'sub')
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '-')}`;
+
+            return (
+              <Track
+                key={`vds-track-${trackId}-${idx}`}
+                id={trackId}
+                src={track.src}
+                kind={track.kind}
+                label={track.label}
+                lang={safeLang}
+                default={isDefault}
+                type={(track.type as 'vtt' | 'srt') || 'vtt'}
+              />
+            );
+          })}
         </MediaProvider>
 
         <DefaultVideoLayout

@@ -34,8 +34,28 @@ export function proxy(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || '';
   const pathname = request.nextUrl.pathname;
 
-  // 1. Check if user-agent matches automated bot/agent patterns
-  if (userAgent) {
+  // Handle CORS preflight OPTIONS requests for all APIs
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, HEAD',
+        'Access-Control-Allow-Headers': '*',
+      },
+    });
+  }
+
+  // Exempt stream, direct, and subtitle proxy endpoints from strict agent blocking
+  const isMediaEndpoint =
+    pathname.startsWith('/api/stream') ||
+    pathname.startsWith('/api/direct') ||
+    pathname.startsWith('/api/subtitle') ||
+    pathname.startsWith('/api/rive-provider') ||
+    pathname.startsWith('/api/proxy');
+
+  // 1. Check if user-agent matches automated bot/agent patterns (skip for media playback endpoints)
+  if (userAgent && !isMediaEndpoint) {
     const isAutomatedAgent = BLOCKED_AGENT_PATTERNS.some((pattern) =>
       pattern.test(userAgent)
     );
@@ -52,8 +72,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // 2. Strict API protection: direct calls without browser headers
-  if (pathname.startsWith('/api/')) {
+  // 2. Strict API protection: direct calls without browser headers (skip for media endpoints)
+  if (pathname.startsWith('/api/') && !isMediaEndpoint) {
     if (!userAgent) {
       return new NextResponse('Access Denied', { status: 403 });
     }
@@ -63,8 +83,11 @@ export function proxy(request: NextRequest) {
 
   // 3. Security & Anti-Indexing Headers
   response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, notranslate, noimageindex');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
+  if (!isMediaEndpoint) {
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+  }
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Access-Control-Allow-Origin', '*');
 
   return response;
 }
