@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, type AudioTrack, type TextTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
+import { clearMediaSession, suppressMediaSession } from '../utils/mediaSessionManager';
 
 import '@vidstack/react/player/styles/default/theme.css';
 import '@vidstack/react/player/styles/default/layouts/video.css';
@@ -69,6 +70,25 @@ export default function VidstackPlayer({
 
   useEffect(() => {
     setActiveMediaSrc(src);
+  }, [src]);
+
+  // Suppress MediaSession API metadata to prevent iOS Dynamic Island & Lockscreen/Widget persistence
+  useEffect(() => {
+    suppressMediaSession();
+    clearMediaSession();
+
+    const handleClear = () => {
+      clearMediaSession();
+    };
+
+    window.addEventListener('pagehide', handleClear);
+    window.addEventListener('beforeunload', handleClear);
+
+    return () => {
+      clearMediaSession();
+      window.removeEventListener('pagehide', handleClear);
+      window.removeEventListener('beforeunload', handleClear);
+    };
   }, [src]);
 
   // Dead stream detection: if the video doesn't reach canPlay within 15 seconds, auto-switch
@@ -253,7 +273,6 @@ export default function VidstackPlayer({
 
       <MediaPlayer
         ref={player}
-        title={title}
         src={formattedMediaSrc}
         poster={poster}
         autoPlay={autoPlay}
@@ -263,6 +282,7 @@ export default function VidstackPlayer({
           onInvalidDuration?.(0);
         }}
         onEnded={() => {
+          clearMediaSession();
           if (tmdbId) {
             localStorage.removeItem(`streamnet_progress_${tmdbId}`);
           }

@@ -5,6 +5,7 @@ import { X, ArrowLeft, Loader, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import VidstackPlayer, { VidstackTrack } from "./VidstackPlayer";
 import { installAdblockProtection } from "../utils/adblockFramework";
+import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
 import styles from "./SeasonEpisodeSelector/SeasonEpisodeSelector.module.css";
 
 interface PlayeranimeProps {
@@ -75,6 +76,14 @@ export default function Playeranime({
       throw error;
     }
   };
+
+  useEffect(() => {
+    suppressMediaSession();
+    clearMediaSession();
+    return () => {
+      clearMediaSession();
+    };
+  }, []);
 
   // Initialize Adblock framework to protect against un-sandboxed iframe ads
   useEffect(() => {

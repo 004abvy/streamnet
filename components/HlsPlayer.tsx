@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import VidstackPlayer, { DirectSourceItem } from "./VidstackPlayer";
+import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
 
 interface SubtitleTrack {
   url: string;
@@ -31,6 +32,10 @@ interface CachedStreamData {
   timestamp: number;
 }
 const streamMemoryCache = new Map<string, CachedStreamData>();
+
+export function clearStreamMemoryCache(): void {
+  streamMemoryCache.clear();
+}
 
 export default function HlsPlayer({
   serverId,
@@ -67,6 +72,27 @@ export default function HlsPlayer({
   useEffect(() => {
     if (externalTitle) setTitle(externalTitle);
   }, [externalTitle]);
+
+  // Clean up media session and stream cache on unmount and page close
+  useEffect(() => {
+    suppressMediaSession();
+    clearMediaSession();
+
+    const handleUnload = () => {
+      clearMediaSession();
+      streamMemoryCache.clear();
+    };
+
+    window.addEventListener('pagehide', handleUnload);
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearMediaSession();
+      streamMemoryCache.clear();
+      window.removeEventListener('pagehide', handleUnload);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [tmdbId]);
 
   // Instant Stream Playback & Background Non-Blocking Parallel Probing
   useEffect(() => {

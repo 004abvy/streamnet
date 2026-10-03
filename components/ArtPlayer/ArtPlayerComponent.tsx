@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Artplayer from "artplayer";
 import Hls from "hls.js";
+import { clearMediaSession, suppressMediaSession } from "../../utils/mediaSessionManager";
 
 export interface ArtPlayerSubtitle {
   url: string;
@@ -532,6 +533,8 @@ export default function ArtPlayerComponent({
     };
 
     art.on("ready", () => {
+      suppressMediaSession();
+      clearMediaSession();
       updatePortalTarget();
       if (initialTime && initialTime > 0) {
         try {
@@ -543,10 +546,14 @@ export default function ArtPlayerComponent({
     });
 
     art.on("fullscreen", () => {
+      suppressMediaSession();
+      clearMediaSession();
       updatePortalTarget();
     });
 
     art.on("fullscreenWeb", () => {
+      suppressMediaSession();
+      clearMediaSession();
       updatePortalTarget();
     });
 
@@ -559,6 +566,7 @@ export default function ArtPlayerComponent({
     }
 
     art.on("video:ended", () => {
+      clearMediaSession();
       onEnded?.();
     });
 
@@ -575,6 +583,7 @@ export default function ArtPlayerComponent({
     });
 
     return () => {
+      clearMediaSession();
       if (artInstanceRef.current) {
         artInstanceRef.current.destroy(false);
         artInstanceRef.current = null;

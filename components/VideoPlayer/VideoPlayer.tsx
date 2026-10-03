@@ -7,6 +7,7 @@ import vpStyles from './VideoPlayer.module.css';
 import { SERVERS } from '../../utils/servers';
 import HlsPlayer from '../HlsPlayer';
 import RivePlayer from '../RivePlayer';
+import { clearMediaSession, suppressMediaSession } from '../../utils/mediaSessionManager';
 
 interface VideoPlayerProps {
   /** TMDB ID of the movie or TV show */
@@ -65,6 +66,14 @@ export default function VideoPlayer({
       }
     }
   }, [tmdbId, storageKey]);
+
+  useEffect(() => {
+    suppressMediaSession();
+    clearMediaSession();
+    return () => {
+      clearMediaSession();
+    };
+  }, [tmdbId]);
 
   const changeServer = (serverId: string) => {
     setActiveServer(serverId);

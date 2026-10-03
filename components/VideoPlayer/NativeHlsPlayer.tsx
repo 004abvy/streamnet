@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import styles from './VideoPlayer.module.css';
+import { clearMediaSession, suppressMediaSession } from '../../utils/mediaSessionManager';
 
 interface NativeHlsPlayerProps {
   streamUrl: string;
@@ -43,6 +44,14 @@ export default function NativeHlsPlayer({
     if (typeof window === 'undefined') return false;
     return window.innerWidth <= 768;
   });
+
+  useEffect(() => {
+    suppressMediaSession();
+    clearMediaSession();
+    return () => {
+      clearMediaSession();
+    };
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;

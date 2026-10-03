@@ -4,6 +4,7 @@ import Script from "next/script";
 import { AuthProvider } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar/Sidebar";
 import ScrollToTopOnRefresh from "../components/ScrollToTopOnRefresh";
+import MediaSessionCleanup from "../components/MediaSessionCleanup";
 import { GET_INJECTABLE_UBLOCK_BUNDLE } from "../utils/javascriptInjector";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-full w-full flex flex-col bg-[var(--background)] overflow-x-hidden">
         <ScrollToTopOnRefresh />
+        <MediaSessionCleanup />
         <AuthProvider>
           <Sidebar />
           <div className="main-content-wrapper">
