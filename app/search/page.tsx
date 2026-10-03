@@ -175,8 +175,8 @@ function SearchContent() {
 
   return (
     <div className={styles.content}>
-      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 10 }} ref={searchBoxRef}>
-        <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 1000, isolation: 'isolate' }} ref={searchBoxRef}>
+        <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 1001 }}>
           <input
             ref={inputRef}
             type="text"
@@ -266,14 +266,15 @@ function SearchContent() {
             top: 'calc(100% + 12px)',
             left: '1rem',
             right: '1rem',
-            background: 'rgba(18, 18, 24, 0.75)',
+            background: 'rgba(18, 18, 24, 0.96)',
             backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
             WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
             border: '1px solid rgba(255, 255, 255, 0.18)',
             borderRadius: '24px',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1)',
-            zIndex: 100,
-            overflow: 'hidden'
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1)',
+            zIndex: 1005,
+            overflow: 'hidden',
+            transform: 'translateZ(0)'
           }}>
             {suggestions.map((item) => {
               const year = (item.release_date || item.first_air_date || '').split('-')[0];

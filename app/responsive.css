@@ -336,13 +336,104 @@ a, button {
 
 /* Card Titles & Subtitles */
 [class*="PosterGrid_movieTitle"],
-[class*="PosterCarousel_movieTitle"] {
+[class*="PosterCarousel_movieTitle"],
+[class*="TrendingSection_posterTitle"] {
   font-size: var(--font-small) !important;
 }
 
 [class*="PosterGrid_rating"],
-[class*="PosterCarousel_rating"] {
+[class*="PosterCarousel_rating"],
+[class*="TrendingSection_ratingBadge"] {
   font-size: var(--font-micro) !important;
+}
+
+[class*="PosterGrid_year"],
+[class*="PosterCarousel_year"],
+[class*="TrendingSection_posterYear"] {
+  font-size: var(--font-micro) !important;
+}
+
+/* Mobile & Small Device Poster Card Text Optimization */
+@media screen and (max-width: 768px) {
+  [class*="PosterGrid_movieTitle"],
+  [class*="PosterCarousel_movieTitle"],
+  [class*="TrendingSection_posterTitle"] {
+    font-size: 0.82rem !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+  }
+
+  [class*="PosterGrid_rating"],
+  [class*="PosterCarousel_rating"],
+  [class*="TrendingSection_ratingBadge"] {
+    font-size: 0.66rem !important;
+    padding: 0.1rem 0.35rem !important;
+  }
+
+  [class*="PosterGrid_year"],
+  [class*="PosterCarousel_year"],
+  [class*="TrendingSection_posterYear"] {
+    font-size: 0.68rem !important;
+  }
+
+  [class*="PosterGrid_info"],
+  [class*="PosterCarousel_info"],
+  [class*="TrendingSection_posterInfo"] {
+    padding: 0.5rem 0.45rem !important;
+    gap: 0.12rem !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  [class*="PosterGrid_movieTitle"],
+  [class*="PosterCarousel_movieTitle"],
+  [class*="TrendingSection_posterTitle"] {
+    font-size: 0.74rem !important;
+    line-height: 1.18 !important;
+    font-weight: 600 !important;
+  }
+
+  [class*="PosterGrid_rating"],
+  [class*="PosterCarousel_rating"],
+  [class*="TrendingSection_ratingBadge"] {
+    font-size: 0.6rem !important;
+    padding: 0.06rem 0.3rem !important;
+    border-radius: 5px !important;
+  }
+
+  [class*="PosterGrid_year"],
+  [class*="PosterCarousel_year"],
+  [class*="TrendingSection_posterYear"] {
+    font-size: 0.62rem !important;
+  }
+
+  [class*="PosterGrid_info"],
+  [class*="PosterCarousel_info"],
+  [class*="TrendingSection_posterInfo"] {
+    padding: 0.4rem 0.38rem !important;
+    gap: 0.08rem !important;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  [class*="PosterGrid_movieTitle"],
+  [class*="PosterCarousel_movieTitle"],
+  [class*="TrendingSection_posterTitle"] {
+    font-size: 0.68rem !important;
+  }
+
+  [class*="PosterGrid_rating"],
+  [class*="PosterCarousel_rating"],
+  [class*="TrendingSection_ratingBadge"] {
+    font-size: 0.54rem !important;
+    padding: 0.04rem 0.24rem !important;
+  }
+
+  [class*="PosterGrid_year"],
+  [class*="PosterCarousel_year"],
+  [class*="TrendingSection_posterYear"] {
+    font-size: 0.58rem !important;
+  }
 }
 
 /* -------------------------------------------------------------------

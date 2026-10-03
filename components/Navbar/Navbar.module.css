@@ -539,6 +539,8 @@
 
 .searchWrapper {
   position: relative;
+  z-index: 1000;
+  isolation: isolate;
 }
 
 .searchBox {
@@ -601,7 +603,7 @@
   border: 1px solid #28283a;
   border-radius: 12px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
-  z-index: 500;
+  z-index: 2000;
   overflow: hidden;
   animation: fadeIn 0.18s ease-out;
 }
