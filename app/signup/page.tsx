@@ -128,27 +128,6 @@ export default function SignupPage() {
       <main className={styles.page}>
         <PosterBackground />
 
-        <header className={styles.topBar}>
-          <Link href="/" className={styles.logo}>
-            <div className={styles.logoIconWrapper}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M3 3h18v4H3V3z" />
-                <path d="M4 7l2 14h12l2-14" />
-                <path d="M9 3v18" />
-                <path d="M15 3v18" />
-              </svg>
-            </div>
-            <span className={styles.logoText}>StreamFlix</span>
-          </Link>
-
-          <Link href="/" className={styles.backHomeBtn}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back to Browse
-          </Link>
-        </header>
-
         <div className={styles.authContainer}>
           <div className={styles.authCard}>
             <div className={`${styles.mailIconWrapper} ${isVerified ? styles.verifiedIconWrapper : ''}`}>
@@ -231,27 +210,6 @@ export default function SignupPage() {
     <main className={styles.page}>
       <PosterBackground />
 
-      <header className={styles.topBar}>
-        <Link href="/" className={styles.logo}>
-          <div className={styles.logoIconWrapper}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M3 3h18v4H3V3z" />
-              <path d="M4 7l2 14h12l2-14" />
-              <path d="M9 3v18" />
-              <path d="M15 3v18" />
-            </svg>
-          </div>
-          <span className={styles.logoText}>StreamFlix</span>
-        </Link>
-
-        <Link href="/" className={styles.backHomeBtn}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to Browse
-        </Link>
-      </header>
-      
       <div className={styles.authContainer}>
         <div className={styles.authCard}>
           <div className={styles.segmentedTabs}>
