@@ -13,7 +13,7 @@
 
 .perspectiveContainer {
   position: absolute;
-  top: -35vh;
+  top: -30vh;
   left: -12vw;
   width: 124vw;
   height: 220vh;
@@ -21,8 +21,8 @@
   gap: 0.85rem;
   transform: rotateZ(-4deg) rotateX(6deg) scale(1.06);
   transform-origin: center center;
-  opacity: 0.94;
-  filter: saturate(1.1) brightness(0.96);
+  opacity: 0.96;
+  filter: saturate(1.12) brightness(0.98);
   pointer-events: auto;
 }
 
@@ -115,15 +115,15 @@
   }
 }
 
-/* Multi-layered cinematic gradient overlay */
+/* Lightened, vibrant cinematic gradient overlay */
 .lightGradientOverlay {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     circle at center,
-    rgba(6, 6, 9, 0.45) 0%,
-    rgba(6, 6, 9, 0.72) 65%,
-    #060609 100%
+    rgba(6, 6, 9, 0.2) 0%,
+    rgba(6, 6, 9, 0.42) 65%,
+    rgba(6, 6, 9, 0.66) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -132,7 +132,7 @@
 /* Tablet Optimizations */
 @media (max-width: 1024px) {
   .perspectiveContainer {
-    top: -25vh;
+    top: -20vh;
     left: -8vw;
     width: 116vw;
     height: 190vh;
@@ -153,14 +153,14 @@
 /* Mobile Devices Optimizations */
 @media (max-width: 768px) {
   .perspectiveContainer {
-    top: -12vh;
+    top: -10vh;
     left: -6vw;
     width: 112vw;
-    height: 150vh;
+    height: 180vh;
     gap: 0.45rem;
     transform: rotateZ(-2deg) scale(1.02);
-    opacity: 0.82;
-    filter: saturate(1.05) brightness(0.78);
+    opacity: 0.96;
+    filter: saturate(1.12) brightness(0.96);
   }
 
   .columnBlock {
@@ -170,7 +170,7 @@
 
   .posterCard {
     border-radius: 0.35rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 
   .hideOnMobile {
@@ -184,9 +184,9 @@
   .lightGradientOverlay {
     background: radial-gradient(
       ellipse at center,
-      rgba(6, 6, 9, 0.68) 0%,
-      rgba(6, 6, 9, 0.88) 60%,
-      #060609 100%
+      rgba(6, 6, 9, 0.18) 0%,
+      rgba(6, 6, 9, 0.38) 60%,
+      rgba(6, 6, 9, 0.62) 100%
     );
   }
 }

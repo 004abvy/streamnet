@@ -485,10 +485,10 @@
   .authCard {
     padding: 1.65rem 1.25rem 1.5rem;
     border-radius: 1.25rem;
-    background: rgba(12, 13, 18, 0.92);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.95);
+    background: rgba(13, 14, 20, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
   }
 
   .header {

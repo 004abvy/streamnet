@@ -127,10 +127,12 @@ function SafePosterCard({ src, index }: { src: string; index: number }) {
   );
 }
 
-// Distribute posters evenly across 10 compact columns
+// Distribute posters evenly across columns with sufficient repeats so posters extend far past the bottom of any screen
 function buildColumns(posters: string[], colCount: number = 10): string[][] {
   const cols: string[][] = Array.from({ length: colCount }, () => []);
-  posters.forEach((poster, idx) => {
+  // Repeat pool 4x so each column has 20+ posters in each block (total 40+ posters = 3000px+ height)
+  const pool = [...posters, ...posters, ...posters, ...posters];
+  pool.forEach((poster, idx) => {
     cols[idx % colCount].push(poster);
   });
   return cols;
