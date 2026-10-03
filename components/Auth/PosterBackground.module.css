@@ -46,29 +46,29 @@
   padding-bottom: 0.85rem; /* Matches the gap for seamless subpixel continuity */
 }
 
-/* Slower, graceful ambient scrolling */
+/* Graceful, slow ambient cinematic scrolling */
 .colUpSlow {
-  animation: scrollUp 140s linear infinite;
+  animation: scrollUp 380s linear infinite;
 }
 
 .colDownSlow {
-  animation: scrollDown 150s linear infinite;
+  animation: scrollDown 400s linear infinite;
 }
 
 .colUpMedium {
-  animation: scrollUp 120s linear infinite;
+  animation: scrollUp 340s linear infinite;
 }
 
 .colDownMedium {
-  animation: scrollDown 130s linear infinite;
+  animation: scrollDown 360s linear infinite;
 }
 
 .colUpFast {
-  animation: scrollUp 100s linear infinite;
+  animation: scrollUp 300s linear infinite;
 }
 
 .colDownFast {
-  animation: scrollDown 110s linear infinite;
+  animation: scrollDown 320s linear infinite;
 }
 
 .posterCard {
