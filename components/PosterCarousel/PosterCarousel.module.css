@@ -368,25 +368,25 @@
     display: none;
   }
   .info {
-    padding: 0.6rem 0.5rem;
-    gap: 0.15rem;
+    padding: 0.85rem 0.75rem;
+    gap: 0.25rem;
   }
   .movieTitle {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 700;
   }
   .rating {
-    font-size: 0.68rem;
-    padding: 0.1rem 0.38rem;
-    border-radius: 6px;
-    margin-bottom: 0.15rem;
+    font-size: 0.82rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 7px;
+    margin-bottom: 0.25rem;
   }
   .year {
-    font-size: 0.7rem;
+    font-size: 0.85rem;
   }
   .bookmark, .removeBtn {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     top: 0.5rem;
     right: 0.5rem;
   }
@@ -428,64 +428,65 @@
   }
 
   .info {
-    padding: 0.5rem 0.45rem;
-    gap: 0.12rem;
+    padding: 0.75rem 0.65rem;
+    gap: 0.2rem;
   }
 
   .movieTitle {
-    font-size: 0.78rem;
+    font-size: 0.98rem;
   }
 
   .rating {
-    font-size: 0.64rem;
-    padding: 0.08rem 0.35rem;
+    font-size: 0.78rem;
+    padding: 0.12rem 0.45rem;
   }
 
   .year {
-    font-size: 0.66rem;
+    font-size: 0.82rem;
   }
 }
 
 @media (max-width: 480px) {
   .info {
-    padding: 0.4rem 0.4rem;
-    gap: 0.1rem;
+    padding: 0.7rem 0.6rem;
+    gap: 0.18rem;
   }
   .movieTitle {
-    font-size: 0.75rem;
-    line-height: 1.2;
+    font-size: 0.94rem;
+    line-height: 1.25;
+    font-weight: 700;
   }
   .rating {
-    font-size: 0.6rem;
-    padding: 0.06rem 0.3rem;
-    border-radius: 5px;
-    margin-bottom: 0.1rem;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.42rem;
+    border-radius: 6px;
+    margin-bottom: 0.18rem;
   }
   .year {
-    font-size: 0.62rem;
+    font-size: 0.78rem;
   }
   .bookmark, .removeBtn {
-    width: 24px;
-    height: 24px;
-    top: 0.4rem;
-    right: 0.4rem;
+    width: 26px;
+    height: 26px;
+    top: 0.45rem;
+    right: 0.45rem;
   }
   .removeBtn {
-    left: 0.4rem;
+    left: 0.45rem;
     right: auto;
   }
 }
 
 @media (max-width: 360px) {
   .movieTitle {
-    font-size: 0.68rem;
+    font-size: 0.88rem;
   }
   .rating {
-    font-size: 0.55rem;
-    padding: 0.05rem 0.25rem;
+    font-size: 0.72rem;
+    padding: 0.08rem 0.36rem;
   }
   .year {
-    font-size: 0.58rem;
+    font-size: 0.75rem;
   }
 }
 

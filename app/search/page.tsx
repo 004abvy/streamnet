@@ -161,6 +161,10 @@ function SearchContent() {
 
   const handleSelectSuggestion = (item: any) => {
     setShowSuggestions(false);
+    setSuggestions([]);
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
     if (item.media_type === 'tv') {
       router.push(`/tv/${item.id}`);
     } else {
@@ -175,8 +179,8 @@ function SearchContent() {
 
   return (
     <div className={styles.content}>
-      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 1000, isolation: 'isolate' }} ref={searchBoxRef}>
-        <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 1001 }}>
+      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 50, isolation: 'isolate' }} ref={searchBoxRef}>
+        <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 51 }}>
           <input
             ref={inputRef}
             type="text"
@@ -272,7 +276,7 @@ function SearchContent() {
             border: '1px solid rgba(255, 255, 255, 0.18)',
             borderRadius: '24px',
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1)',
-            zIndex: 1005,
+            zIndex: 60,
             overflow: 'hidden',
             transform: 'translateZ(0)'
           }}>

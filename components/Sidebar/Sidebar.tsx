@@ -89,6 +89,8 @@ export default function Sidebar() {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setShowSearch(false);
+    setQuery('');
   }, [pathname]);
 
   const sidebarLinks = [

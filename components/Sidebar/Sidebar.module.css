@@ -188,7 +188,7 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
-  z-index: 99;
+  z-index: 9998;
   display: flex;
   justify-content: center;
   padding-top: 100px;
@@ -244,7 +244,7 @@
   height: 64px;
   background-color: #000;
   border-top: 1px solid #1a1a24;
-  z-index: 100;
+  z-index: 10000;
   justify-content: space-around;
   align-items: center;
   padding-bottom: env(safe-area-inset-bottom);
@@ -271,8 +271,9 @@
   bottom: 64px;
   /* above bottom bar */
   background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 99;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 9999;
   overflow-y: auto;
   padding: 24px;
   display: flex;
