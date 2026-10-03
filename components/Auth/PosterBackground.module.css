@@ -21,8 +21,8 @@
   gap: 0.85rem;
   transform: rotateZ(-4deg) rotateX(6deg) scale(1.06);
   transform-origin: center center;
-  opacity: 0.94;
-  filter: saturate(1.1) brightness(0.96);
+  opacity: 0.95;
+  filter: saturate(1.12) brightness(0.98);
   pointer-events: auto;
 }
 
@@ -115,15 +115,15 @@
   }
 }
 
-/* Multi-layered cinematic gradient overlay */
+/* Light, clear, vivid gradient overlay */
 .lightGradientOverlay {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     circle at center,
-    rgba(6, 6, 9, 0.45) 0%,
-    rgba(6, 6, 9, 0.72) 65%,
-    #060609 100%
+    rgba(6, 6, 9, 0.22) 0%,
+    rgba(6, 6, 9, 0.45) 65%,
+    rgba(6, 6, 9, 0.68) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -159,8 +159,8 @@
     height: 150vh;
     gap: 0.45rem;
     transform: rotateZ(-2deg) scale(1.02);
-    opacity: 0.82;
-    filter: saturate(1.05) brightness(0.78);
+    opacity: 0.95;
+    filter: saturate(1.12) brightness(0.95);
   }
 
   .columnBlock {
@@ -170,7 +170,7 @@
 
   .posterCard {
     border-radius: 0.35rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
 
   .hideOnMobile {
@@ -184,9 +184,9 @@
   .lightGradientOverlay {
     background: radial-gradient(
       ellipse at center,
-      rgba(6, 6, 9, 0.68) 0%,
-      rgba(6, 6, 9, 0.88) 60%,
-      #060609 100%
+      rgba(6, 6, 9, 0.18) 0%,
+      rgba(6, 6, 9, 0.38) 60%,
+      rgba(6, 6, 9, 0.62) 100%
     );
   }
 }
