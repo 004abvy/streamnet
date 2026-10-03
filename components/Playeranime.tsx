@@ -198,29 +198,16 @@ export default function Playeranime({
     }
   };
 
-  // 1. Search anime by title via AniList GraphQL + Anivexa
+  // 1. Search anime by title via internal secure API route
   useEffect(() => {
     async function init() {
       try {
         setLoading(true);
         setError(null);
 
-        const query = `
-          query ($search: String) {
-            Media (search: $search, type: ANIME) {
-              id
-              title { romaji english native }
-              bannerImage
-              coverImage { extraLarge large medium color }
-            }
-          }
-        `;
-        const searchRes = await fetch("https://graphql.anilist.co", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables: { search: animeTitle } }),
-        });
-
+        const searchRes = await fetchWithTimeout(
+          `/api/anime-api/search-info?search=${encodeURIComponent(animeTitle)}`
+        );
         const searchData = await searchRes.json();
         const media = searchData.data?.Media;
         const mediaId = media?.id;
@@ -238,10 +225,8 @@ export default function Playeranime({
 
         setAnilistId(mediaId);
 
-        const anivexaUrl =
-          process.env.NEXT_PUBLIC_ANIVEXA_URL || "http://localhost:4000";
         const epRes = await fetchWithTimeout(
-          `${anivexaUrl}/episodes/anikoto/reanime/animegg/${mediaId}`,
+          `/api/anime-api/episodes-info/${mediaId}`
         );
         const epData = await epRes.json();
         setAnimeData(epData);
@@ -536,9 +521,9 @@ export default function Playeranime({
         setError(null);
         setHasAbsorbedClick(false);
 
-        const anivexaUrl =
-          process.env.NEXT_PUBLIC_ANIVEXA_URL || "http://localhost:4000";
-        const res = await fetch(`${anivexaUrl}/${selectedEpisodeId}`);
+        const res = await fetch(
+          `/api/anime-api/stream-info/${encodeURIComponent(selectedEpisodeId || "")}`
+        );
         const streamData = await res.json();
 
         // 0. Extract stream native subtitles from anime provider
@@ -725,7 +710,11 @@ export default function Playeranime({
           setStreamUrl(proxiedUrl);
           setIsIframe(false);
         } else if (streamData.embeds && streamData.embeds.length > 0) {
-          setStreamUrl(streamData.embeds[0].url);
+          const rawEmbed = streamData.embeds[0].url;
+          const proxiedEmbed = rawEmbed.startsWith('http')
+            ? `/api/proxy?url=${encodeURIComponent(rawEmbed)}`
+            : rawEmbed;
+          setStreamUrl(proxiedEmbed);
           setIsIframe(true);
         } else if (
           streamData.streams &&
@@ -734,7 +723,11 @@ export default function Playeranime({
           const embedStream = streamData.streams.find(
             (s: any) => s.type === "embed" || s.embedUrl,
           );
-          setStreamUrl(embedStream.embedUrl || embedStream.url);
+          const rawEmbed = embedStream.embedUrl || embedStream.url;
+          const proxiedEmbed = rawEmbed && rawEmbed.startsWith('http')
+            ? `/api/proxy?url=${encodeURIComponent(rawEmbed)}`
+            : rawEmbed;
+          setStreamUrl(proxiedEmbed);
           setIsIframe(true);
         } else {
           setError("No streaming source found.");

@@ -20,9 +20,10 @@ export default function RivePlayer({
 }: RivePlayerProps) {
   const [theaterMode, setTheaterMode] = useState(false);
 
-  const embedUrl = type === 'movie'
+  const rawUrl = type === 'movie'
     ? `https://rivestream.ru/embed?type=movie&id=${tmdbId}`
     : `https://rivestream.ru/embed?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`;
+  const embedUrl = `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
 
   // Auto-open theater mode on mobile when this player mounts
   useEffect(() => {

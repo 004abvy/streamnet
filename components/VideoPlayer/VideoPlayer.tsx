@@ -106,7 +106,10 @@ export default function VideoPlayer({
   let embedUrl = '';
 
   if (!isDirectMode && currentServerObj) {
-    embedUrl = currentServerObj.buildUrl({ tmdbId, type, season, episode, imdbId, language: selectedLanguage });
+    const rawUrl = currentServerObj.buildUrl({ tmdbId, type, season, episode, imdbId, language: selectedLanguage });
+    embedUrl = rawUrl && rawUrl.startsWith('http')
+      ? `/api/proxy?url=${encodeURIComponent(rawUrl)}`
+      : rawUrl;
   }
 
   // Auto-dismiss notification after 5s

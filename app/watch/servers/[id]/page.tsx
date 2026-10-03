@@ -547,18 +547,20 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
         }
 
-        const screenscapeUrl = type === 'tv'
+        const rawScreenscapeUrl = type === 'tv'
           ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
           : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
-        setEmbedFallbackUrl(screenscapeUrl);
+        const proxiedScreenscapeUrl = `/api/proxy?url=${encodeURIComponent(rawScreenscapeUrl)}`;
+        setEmbedFallbackUrl(proxiedScreenscapeUrl);
         setFetchingStream(false);
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);
       } catch (err: any) {
-        const screenscapeUrl = type === 'tv'
+        const rawScreenscapeUrl = type === 'tv'
           ? `https://screenscape.me/embed?tmdb=${id}&type=tv&s=${season}&e=${episode}`
           : `https://screenscape.me/embed?tmdb=${id}&type=movie`;
-        setEmbedFallbackUrl(screenscapeUrl);
+        const proxiedScreenscapeUrl = `/api/proxy?url=${encodeURIComponent(rawScreenscapeUrl)}`;
+        setEmbedFallbackUrl(proxiedScreenscapeUrl);
         setFetchingStream(false);
         setIsBackgroundScanning(false);
         setScanStatusNotice(null);

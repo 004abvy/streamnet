@@ -74,6 +74,84 @@ export async function GET(
       return NextResponse.json([]);
     }
 
+    // 1b. /search-info?search=...
+    if (endpoint === 'search-info') {
+      const search = searchParams.get('search') || '';
+      if (!search) {
+        return NextResponse.json({ data: { Media: null } });
+      }
+
+      const query = `
+        query ($search: String) {
+          Media (search: $search, type: ANIME) {
+            id
+            title { romaji english native }
+            bannerImage
+            coverImage { extraLarge large medium color }
+          }
+        }
+      `;
+
+      try {
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables: { search } }),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (aniRes.ok) {
+          const data = await aniRes.json();
+          return NextResponse.json(data, {
+            headers: { 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      } catch (e) {
+        console.warn('[anime-api] search-info failed:', e);
+      }
+
+      return NextResponse.json({ data: { Media: null } });
+    }
+
+    // 1c. /episodes-info/<mediaId>
+    if (endpoint.startsWith('episodes-info/')) {
+      const mediaId = endpoint.replace('episodes-info/', '');
+      try {
+        const anivexaRes = await fetch(
+          `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${mediaId}`,
+          { signal: AbortSignal.timeout(15000) }
+        );
+        if (anivexaRes.ok) {
+          const data = await anivexaRes.json();
+          return NextResponse.json(data, {
+            headers: { 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      } catch (e) {
+        console.warn('[anime-api] episodes-info failed:', e);
+      }
+      return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 });
+    }
+
+    // 1d. /stream-info/<episodeId>
+    if (endpoint.startsWith('stream-info/')) {
+      const epId = endpoint.replace('stream-info/', '');
+      try {
+        const anivexaRes = await fetch(`${ANIVEXA_URL}/${epId}`, {
+          signal: AbortSignal.timeout(15000),
+        });
+        if (anivexaRes.ok) {
+          const data = await anivexaRes.json();
+          return NextResponse.json(data, {
+            headers: { 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+      } catch (e) {
+        console.warn('[anime-api] stream-info failed:', e);
+      }
+      return NextResponse.json({ error: 'Failed to fetch stream' }, { status: 500 });
+    }
+
     // 2. /episodes/<show_id>?mode=sub|dub
     if (endpoint.startsWith('episodes/')) {
       const showId = endpoint.split('/')[1];
