@@ -422,11 +422,6 @@ export default function VideoPlayer({
           >
             <Zap className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isDirectMode ? 'text-amber-500 fill-amber-500' : 'text-neutral-400'}`} strokeWidth={2.5} />
             <span>Server 1</span>
-            <span className={`text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.2 rounded font-black tracking-wider uppercase ${
-              isDirectMode ? 'bg-neutral-950/10 text-neutral-900' : 'bg-white/10 text-neutral-400'
-            }`}>
-              4K
-            </span>
           </button>
 
           {/* Server 2 (ScreenScape) */}
