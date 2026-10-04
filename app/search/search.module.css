@@ -7,12 +7,188 @@
 }
 
 .content {
-  padding-top: 100px;
-  padding-bottom: 4rem;
+  padding-top: 90px;
+  padding-bottom: 5rem;
   max-width: 1550px;
   margin: 0 auto;
   position: relative;
   min-height: 100vh;
+}
+
+/* Search Box Container */
+.searchBoxWrapper {
+  max-width: 650px;
+  margin: 0 auto 2.5rem auto;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 50;
+  isolation: isolate;
+  width: 100%;
+}
+
+.searchForm {
+  display: flex;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 51;
+  width: 100%;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1.4rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(18, 18, 24, 0.65);
+  backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.98rem;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.searchInput:focus {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 12px 35px rgba(0, 0, 0, 0.6);
+}
+
+.yearInput {
+  width: 80px;
+  flex-shrink: 0;
+  padding: 0.75rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(18, 18, 24, 0.65);
+  backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.98rem;
+  outline: none;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.yearInput:focus {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 12px 35px rgba(0, 0, 0, 0.6);
+}
+
+.searchSubmitBtn {
+  padding: 0.75rem 1.6rem;
+  border-radius: 9999px;
+  border: none;
+  background: #f59e0b;
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchSubmitBtn:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+}
+
+.searchSubmitBtn:active {
+  transform: translateY(0);
+}
+
+/* Suggestions Dropdown */
+.suggestionsDropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 1rem;
+  right: 1rem;
+  background: rgba(18, 18, 24, 0.96);
+  backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%) contrast(112%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), inset 0 1.5px 1px rgba(255, 255, 255, 0.25);
+  z-index: 60;
+  overflow-y: auto;
+  max-height: 420px;
+  transform: translateZ(0);
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.75rem 1.1rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background 0.2s ease;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.suggestionPoster {
+  width: 40px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 6px;
+  background-color: #222;
+  flex-shrink: 0;
+}
+
+.suggestionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.suggestionTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestionMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  color: #aaa;
+  flex-wrap: wrap;
+}
+
+.suggestionBadge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.suggestionRating {
+  color: #f59e0b;
+  font-weight: 700;
 }
 
 .loading {
@@ -34,3 +210,139 @@
   text-align: center;
   gap: 1rem;
 }
+
+/* =========================================================
+   RESPONSIVE MEDIA QUERIES (TABLETS & PHONES)
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .content {
+    padding-top: 45px;
+    padding-bottom: 5.5rem;
+  }
+
+  .searchBoxWrapper {
+    margin: 0 auto 1.75rem auto;
+    padding: 0 0.85rem;
+  }
+
+  .searchInput {
+    padding: 0.65rem 1.1rem;
+    font-size: 0.9rem;
+  }
+
+  .yearInput {
+    width: 68px;
+    padding: 0.65rem 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .searchSubmitBtn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.88rem;
+  }
+
+  .suggestionsDropdown {
+    left: 0.85rem;
+    right: 0.85rem;
+    max-height: 360px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding-top: 30px;
+    padding-bottom: 5.5rem;
+  }
+
+  .searchBoxWrapper {
+    margin: 0 auto 1.25rem auto;
+    padding: 0 0.6rem;
+  }
+
+  .searchForm {
+    gap: 0.35rem;
+  }
+
+  .searchInput {
+    padding: 0.52rem 0.85rem;
+    font-size: 0.84rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .yearInput {
+    width: 54px;
+    padding: 0.52rem 0.35rem;
+    font-size: 0.82rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .searchSubmitBtn {
+    padding: 0.52rem 0.9rem;
+    font-size: 0.82rem;
+  }
+
+  .suggestionsDropdown {
+    left: 0.6rem;
+    right: 0.6rem;
+    max-height: 300px;
+    border-radius: 14px;
+  }
+
+  .suggestionItem {
+    gap: 0.65rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .suggestionPoster {
+    width: 32px;
+    height: 48px;
+  }
+
+  .suggestionTitle {
+    font-size: 0.82rem;
+  }
+
+  .suggestionMeta {
+    font-size: 0.72rem;
+    gap: 0.35rem;
+  }
+
+  .suggestionBadge {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 360px) {
+  .searchBoxWrapper {
+    padding: 0 0.4rem;
+  }
+
+  .searchForm {
+    gap: 0.25rem;
+  }
+
+  .searchInput {
+    padding: 0.48rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .yearInput {
+    width: 48px;
+    padding: 0.48rem 0.25rem;
+    font-size: 0.78rem;
+  }
+
+  .searchSubmitBtn {
+    padding: 0.48rem 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .suggestionsDropdown {
+    left: 0.4rem;
+    right: 0.4rem;
+  }
+}
+

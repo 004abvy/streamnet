@@ -179,8 +179,8 @@ function SearchContent() {
 
   return (
     <div className={styles.content}>
-      <div style={{ maxWidth: '650px', margin: '0 auto 2.5rem auto', padding: '0 1rem', position: 'relative', zIndex: 50, isolation: 'isolate' }} ref={searchBoxRef}>
-        <form onSubmit={handleSearchFormSubmit} style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 51 }}>
+      <div className={styles.searchBoxWrapper} ref={searchBoxRef}>
+        <form onSubmit={handleSearchFormSubmit} className={styles.searchForm}>
           <input
             ref={inputRef}
             type="text"
@@ -201,21 +201,8 @@ function SearchContent() {
             onBlur={() => {
               setTimeout(() => setIsInputFocused(false), 200);
             }}
-            placeholder="Search for movies, TV shows, anime..."
-            style={{
-              flex: 1,
-              padding: '0.8rem 1.5rem',
-              borderRadius: '9999px',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              background: 'rgba(18, 18, 24, 0.55)',
-              backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-              WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.05)',
-              color: '#fff',
-              fontSize: '1rem',
-              outline: 'none',
-              transition: 'all 0.3s ease'
-            }}
+            placeholder="Search movies, tv, anime..."
+            className={styles.searchInput}
           />
           <input
             type="text"
@@ -228,36 +215,11 @@ function SearchContent() {
               setTimeout(() => setIsInputFocused(false), 200);
             }}
             placeholder="Year"
-            style={{
-              width: '90px',
-              padding: '0.8rem 1rem',
-              borderRadius: '9999px',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              background: 'rgba(18, 18, 24, 0.55)',
-              backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-              WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.05)',
-              color: '#fff',
-              fontSize: '1rem',
-              outline: 'none',
-              transition: 'all 0.3s ease',
-              textAlign: 'center'
-            }}
+            className={styles.yearInput}
           />
           <button
             type="submit"
-            style={{
-              padding: '0.8rem 1.8rem',
-              borderRadius: '9999px',
-              border: 'none',
-              background: '#f59e0b',
-              color: '#000',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-              boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)',
-              transition: 'all 0.3s ease'
-            }}
+            className={styles.searchSubmitBtn}
           >
             Search
           </button>
@@ -265,21 +227,7 @@ function SearchContent() {
 
         {/* Live Search Suggestions Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: 'calc(100% + 12px)',
-            left: '1rem',
-            right: '1rem',
-            background: 'rgba(18, 18, 24, 0.96)',
-            backdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-            WebkitBackdropFilter: 'blur(28px) saturate(220%) contrast(112%)',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            borderRadius: '24px',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1.5px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1)',
-            zIndex: 60,
-            overflow: 'hidden',
-            transform: 'translateZ(0)'
-          }}>
+          <div className={styles.suggestionsDropdown}>
             {suggestions.map((item) => {
               const year = (item.release_date || item.first_air_date || '').split('-')[0];
               const poster = item.poster_path
@@ -293,46 +241,29 @@ function SearchContent() {
                     e.preventDefault();
                     handleSelectSuggestion(item);
                   }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    padding: '0.85rem 1.2rem',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    transition: 'background 0.2s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  className={styles.suggestionItem}
                 >
                   <img
                     src={poster}
                     alt={item.title || item.name}
-                    style={{
-                      width: '42px',
-                      height: '62px',
-                      objectFit: 'cover',
-                      borderRadius: '6px',
-                      backgroundColor: '#222',
-                      flexShrink: 0
-                    }}
+                    className={styles.suggestionPoster}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null;
                       target.src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=100&auto=format&fit=crop';
                     }}
                   />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflow: 'hidden' }}>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div className={styles.suggestionInfo}>
+                    <div className={styles.suggestionTitle}>
                       {item.title || item.name}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: '#aaa' }}>
-                      <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', fontSize: '0.72rem' }}>
+                    <div className={styles.suggestionMeta}>
+                      <span className={styles.suggestionBadge}>
                         {item.media_type === 'tv' ? 'TV Show' : 'Movie'}
                       </span>
                       {year && <span>• {year}</span>}
                       {item.vote_average > 0 && (
-                        <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>
+                        <span className={styles.suggestionRating}>
                           ★ {item.vote_average.toFixed(1)}
                         </span>
                       )}
