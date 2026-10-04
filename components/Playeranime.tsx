@@ -1034,7 +1034,7 @@ export default function Playeranime({
               <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
                 <p className="text-red-400 font-bold text-sm">{error}</p>
                 <p className="text-xs text-neutral-400 max-w-md">
-                  Try switching the audio type or provider below.
+                  Try switching the audio type or server below.
                 </p>
               </div>
             ) : streamUrl ? (
@@ -1141,6 +1141,29 @@ export default function Playeranime({
             ) : null}
           </div>
 
+          {/* Movie Mode Server Selector */}
+          {type === "movie" && availableProviders.length > 1 && activeSource === "anivexa" && (
+            <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
+              <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
+                Server:
+              </span>
+              {availableProviders.map((p, idx) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handleProviderChange(p)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                    selectedProvider === p
+                      ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                      : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                  }`}
+                >
+                  Server {idx + 1}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Season / Arc & Episode Selector Section (Only shown for TV/Series) */}
           {type !== "movie" && (activeSource === "anivexa" || activeSource === "megaplay") && episodes.length > 0 && (
             <div className={styles.container}>
@@ -1205,24 +1228,24 @@ export default function Playeranime({
                     </div>
                   )}
 
-                  {/* Provider Selector */}
+                  {/* Server Selector */}
                   {availableProviders.length > 1 && activeSource === "anivexa" && (
                     <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
                       <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
                         Server:
                       </span>
-                      {availableProviders.map((p) => (
+                      {availableProviders.map((p, idx) => (
                         <button
                           key={p}
                           type="button"
                           onClick={() => handleProviderChange(p)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase transition-all shrink-0 ${
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                             selectedProvider === p
                               ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
                               : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
                           }`}
                         >
-                          {p}
+                          Server {idx + 1}
                         </button>
                       ))}
                     </div>
