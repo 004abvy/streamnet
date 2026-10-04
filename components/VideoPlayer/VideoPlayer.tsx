@@ -88,7 +88,7 @@ export default function VideoPlayer({
     setSelectedLanguage('hi');
     if (activeServer !== 'screenscape') {
       changeServer('screenscape');
-      setAutoFallbackNotice('Switched to ScreenScape Hindi Dubbed player.');
+      setAutoFallbackNotice('Switched to Server 2 Hindi Dubbed player.');
     }
   };
 
@@ -232,9 +232,9 @@ export default function VideoPlayer({
 
   // Auto-fallback if direct stream has invalid duration
   const handleInvalidDuration = (durationSec: number) => {
-    console.warn(`Direct stream duration (${durationSec}s) is invalid for ${title}. Auto-switching to ScreenScape embed.`);
+    console.warn(`Direct stream duration (${durationSec}s) is invalid for ${title}. Auto-switching to Server 2 embed.`);
     changeServer('screenscape');
-    setAutoFallbackNotice(`Direct stream was unavailable. Auto-switched to ScreenScape Embed.`);
+    setAutoFallbackNotice(`Server 1 was unavailable. Auto-switched to Server 2.`);
   };
 
   const backdropUrl = backdropPath
@@ -410,7 +410,7 @@ export default function VideoPlayer({
           </span>
           <div className="hidden xs:block w-px h-3.5 bg-white/15 mx-0.5 shrink-0" />
 
-          {/* Direct Stream */}
+          {/* Server 1 (Direct Stream) */}
           <button
             onClick={handleSelectDirect}
             className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
@@ -418,10 +418,10 @@ export default function VideoPlayer({
                 ? 'bg-white text-neutral-950 shadow-[0_2px_12px_rgba(255,255,255,0.3)] scale-[1.02]'
                 : 'text-neutral-400 hover:text-white hover:bg-white/[0.08]'
             }`}
-            title="Direct Stream 4K"
+            title="Server 1"
           >
             <Zap className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isDirectMode ? 'text-amber-500 fill-amber-500' : 'text-neutral-400'}`} strokeWidth={2.5} />
-            <span>Direct</span>
+            <span>Server 1</span>
             <span className={`text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.2 rounded font-black tracking-wider uppercase ${
               isDirectMode ? 'bg-neutral-950/10 text-neutral-900' : 'bg-white/10 text-neutral-400'
             }`}>
@@ -429,7 +429,7 @@ export default function VideoPlayer({
             </span>
           </button>
 
-          {/* ScreenScape */}
+          {/* Server 2 (ScreenScape) */}
           <button
             onClick={() => handleSelectEmbedServer('screenscape')}
             className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
@@ -437,13 +437,13 @@ export default function VideoPlayer({
                 ? 'bg-white text-neutral-950 shadow-[0_2px_12px_rgba(255,255,255,0.3)] scale-[1.02]'
                 : 'text-neutral-400 hover:text-white hover:bg-white/[0.08]'
             }`}
-            title="ScreenScape Server"
+            title="Server 2"
           >
             <Film className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${activeServer === 'screenscape' ? 'text-neutral-950' : 'text-neutral-400'}`} strokeWidth={2.2} />
-            <span>ScreenScape</span>
+            <span>Server 2</span>
           </button>
 
-          {/* RiveStream */}
+          {/* Server 3 (RiveStream) */}
           <button
             onClick={handleSelectRive}
             className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
@@ -451,10 +451,10 @@ export default function VideoPlayer({
                 ? 'bg-white text-neutral-950 shadow-[0_2px_12px_rgba(255,255,255,0.3)] scale-[1.02]'
                 : 'text-neutral-400 hover:text-white hover:bg-white/[0.08]'
             }`}
-            title="Rive Server"
+            title="Server 3"
           >
             <Globe className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${activeServer === 'rivestream' ? 'text-neutral-950' : 'text-neutral-400'}`} strokeWidth={2.2} />
-            <span>Rive</span>
+            <span>Server 3</span>
           </button>
 
           {/* VIP Server Access Button */}
