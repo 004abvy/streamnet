@@ -286,11 +286,17 @@ export async function GET(
       const rapidHost = process.env.RAPIDAPI_CRUNCHYROLL_HOST || 'crunchyroll-top-anime-api-by-apirobots.p.rapidapi.com';
 
       let targetPath = '/v1/crunchyroll-top';
+      const page = searchParams.get('page');
+      const name = searchParams.get('name') || searchParams.get('query');
+
       if (subEndpoint === 'random') {
         targetPath = '/v1/crunchyroll-top/random';
-      } else if (subEndpoint === 'search') {
-        const queryName = searchParams.get('name') || searchParams.get('query') || '';
-        targetPath = `/v1/crunchyroll-top?name=${encodeURIComponent(queryName)}`;
+      } else {
+        const queryParams = new URLSearchParams();
+        if (page) queryParams.set('page', page);
+        if (name) queryParams.set('name', name);
+        const qs = queryParams.toString();
+        if (qs) targetPath += `?${qs}`;
       }
 
       try {
