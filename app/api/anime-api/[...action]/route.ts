@@ -279,6 +279,48 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to retrieve episode stream URL' }, { status: 500 });
     }
 
+    // 1f. /rapidapi/top, /rapidapi/search?name=..., /rapidapi/random
+    if (endpoint.startsWith('rapidapi/')) {
+      const subEndpoint = endpoint.replace('rapidapi/', '');
+      const rapidKey = process.env.RAPIDAPI_KEY || '0bb4717a40msh320fc1767ac3b57p15b2c2jsn8ebc3ba3f431';
+      const rapidHost = process.env.RAPIDAPI_CRUNCHYROLL_HOST || 'crunchyroll-top-anime-api-by-apirobots.p.rapidapi.com';
+
+      let targetPath = '/v1/crunchyroll-top';
+      if (subEndpoint === 'random') {
+        targetPath = '/v1/crunchyroll-top/random';
+      } else if (subEndpoint === 'search') {
+        const queryName = searchParams.get('name') || searchParams.get('query') || '';
+        targetPath = `/v1/crunchyroll-top?name=${encodeURIComponent(queryName)}`;
+      }
+
+      try {
+        const res = await fetch(`https://${rapidHost}${targetPath}`, {
+          method: 'GET',
+          headers: {
+            'x-rapidapi-key': rapidKey,
+            'x-rapidapi-host': rapidHost,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+          },
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          return NextResponse.json(data, {
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+            },
+          });
+        }
+        return NextResponse.json({ error: `RapidAPI returned status ${res.status}` }, { status: res.status });
+      } catch (e: any) {
+        console.warn('[anime-api] RapidAPI request failed:', e);
+        return NextResponse.json({ error: e.message || 'RapidAPI request failed' }, { status: 500 });
+      }
+    }
+
     return NextResponse.json({ error: 'Invalid endpoint' }, { status: 404 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
