@@ -261,13 +261,15 @@ export default function Playeranime({
 
   // Build Season & Arc Groups
   const groups = useMemo<AnimeGroup[]>(() => {
-    if (type === "movie" || !episodes || episodes.length === 0) return [];
+    if (type === "movie") return [];
 
-    const sorted = [...episodes].sort((a, b) => (a.number || 0) - (b.number || 0));
+    const sorted = episodes && Array.isArray(episodes)
+      ? [...episodes].sort((a, b) => (a.number || 0) - (b.number || 0))
+      : [];
 
     // 1. Check if known anime arcs exist for this title (e.g. One Piece, Naruto, Bleach, Hunter x Hunter, Demon Slayer, etc.)
     const knownArcs = getKnownAnimeArcs(animeTitle);
-    if (knownArcs && knownArcs.length > 0) {
+    if (knownArcs && knownArcs.length > 0 && sorted.length > 0) {
       const arcGroups: AnimeGroup[] = [];
       for (let i = 0; i < knownArcs.length; i++) {
         const arc = knownArcs[i];
@@ -302,9 +304,9 @@ export default function Playeranime({
       }
     }
 
-    // 2. If TMDB provides seasons data
+    // 2. If TMDB provides seasons data (Show ALL available seasons)
     const validTmdbSeasons = tmdbSeasons.filter(
-      (s) => s.season_number > 0 && s.episode_count > 0,
+      (s) => s.season_number > 0 && (s.episode_count > 0 || (tmdbEpisodesBySeason[s.season_number]?.length || 0) > 0),
     );
 
     if (validTmdbSeasons.length > 0) {
@@ -312,13 +314,13 @@ export default function Playeranime({
       const seasonList: AnimeGroup[] = [];
 
       for (const s of validTmdbSeasons) {
-        const count = s.episode_count || 0;
+        const count = tmdbEpisodesBySeason[s.season_number]?.length || s.episode_count || 12;
         const start = currentStart;
         const end = currentStart + count - 1;
         currentStart = end + 1;
 
         // Match episodes that fall within this cumulative range
-        const matched = sorted.filter((ep) => {
+        let matched = sorted.filter((ep) => {
           const num =
             typeof ep.number === "number"
               ? ep.number
@@ -326,8 +328,25 @@ export default function Playeranime({
           return !isNaN(num) && num >= start && num <= end;
         });
 
-        const sliceEps =
+        let sliceEps =
           matched.length > 0 ? matched : sorted.slice(start - 1, end);
+
+        // If no provider episodes mapped yet, build structured episodes from TMDB
+        if (sliceEps.length === 0 && count > 0) {
+          const seasonTmdbEps = tmdbEpisodesBySeason[s.season_number] || [];
+          sliceEps = Array.from({ length: count }, (_, idx) => {
+            const epNum = idx + 1;
+            const tmdbEp = seasonTmdbEps[idx];
+            return {
+              id: `season-${s.season_number}-ep-${epNum}`,
+              number: epNum,
+              globalNumber: start + idx,
+              title: tmdbEp?.name || `Episode ${epNum}`,
+              image: tmdbEp?.still_path ? `https://image.tmdb.org/t/p/w780${tmdbEp.still_path}` : undefined,
+              overview: tmdbEp?.overview || "",
+            };
+          });
+        }
 
         if (sliceEps.length > 0) {
           const hasArcName =
@@ -392,7 +411,7 @@ export default function Playeranime({
     }
 
     // 3. Fallback if no TMDB seasons & <= 25 episodes:
-    if (sorted.length <= 25) {
+    if (sorted.length <= 25 && sorted.length > 0) {
       return [
         {
           id: "season-1",
@@ -431,7 +450,7 @@ export default function Playeranime({
     }
 
     return batchGroups;
-  }, [episodes, tmdbSeasons, animeTitle]);
+  }, [episodes, tmdbSeasons, tmdbEpisodesBySeason, animeTitle, type]);
 
   // Active Group Resolution
   const activeGroup = useMemo(() => {
@@ -515,6 +534,48 @@ export default function Playeranime({
       .catch(() => {});
   }, [tmdbId, type, activeGroup?.seasonNumber, tmdbEpisodesBySeason]);
 
+  // Fetch anime provider episodes for active season if needed
+  useEffect(() => {
+    if (!activeGroup || !animeTitle || activeGroup.seasonNumber === 1) return;
+    const sNum = activeGroup.seasonNumber;
+    const hasRealProviderEps = activeGroup.episodes.some(
+      (e) => !e.id?.startsWith("season-") && !e.id?.startsWith("tmdb-"),
+    );
+    if (hasRealProviderEps) return;
+
+    const seasonSearch =
+      activeGroup.tmdbSeason?.name &&
+      !activeGroup.tmdbSeason.name.toLowerCase().startsWith("season")
+        ? `${animeTitle} ${activeGroup.tmdbSeason.name}`
+        : `${animeTitle} Season ${sNum}`;
+
+    fetch(`/api/anime-api/search-info?search=${encodeURIComponent(seasonSearch)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(async (data) => {
+        const seasonMediaId = data?.data?.Media?.id;
+        if (seasonMediaId && seasonMediaId !== anilistId) {
+          const epRes = await fetch(`/api/anime-api/episodes-info/${seasonMediaId}`);
+          if (epRes.ok) {
+            const epData = await epRes.json();
+            const providerKey = selectedProvider || "anikoto";
+            const seasonAudioEps = epData[providerKey]?.episodes?.[audioType] || [];
+            if (seasonAudioEps.length > 0) {
+              setEpisodes((prev) => {
+                const combined = [...prev, ...seasonAudioEps];
+                const seen = new Set<string>();
+                return combined.filter((e) => {
+                  if (seen.has(e.id)) return false;
+                  seen.add(e.id);
+                  return true;
+                });
+              });
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, [activeGroup?.seasonNumber, animeTitle, selectedProvider, audioType, anilistId]);
+
   // 2. Fetch stream URL when an episode is selected
   useEffect(() => {
     if (!selectedEpisodeId || !anilistId || !selectedProvider) return;
@@ -528,50 +589,61 @@ export default function Playeranime({
         setIsMismatchDismissed(false);
         setLoading(true);
         setError(null);
-        setHasAbsorbedClick(false);
-
-        const res = await fetch(
-          `/api/anime-api/stream-info/${encodeURIComponent(selectedEpisodeId || "")}`
-        );
-        const streamData = await res.json();
-
         // 0. Extract stream native subtitles from anime provider
+        let streamData: any = null;
+        if (!selectedEpisodeId.startsWith("season-") && !selectedEpisodeId.startsWith("tmdb-")) {
+          try {
+            const res = await fetch(
+              `/api/anime-api/stream-info/${encodeURIComponent(selectedEpisodeId || "")}`
+            );
+            if (res.ok) {
+              streamData = await res.json();
+            }
+          } catch {}
+        }
+
         const nativeSubs: any[] = [];
-        const rawNativeSubs = [
-          ...(streamData.subtitles || []),
-          ...(streamData.tracks || []),
-          ...(streamData.captions || []),
-        ];
-        if (streamData.streams && Array.isArray(streamData.streams)) {
-          for (const s of streamData.streams) {
-            if (s.subtitles && Array.isArray(s.subtitles)) {
-              rawNativeSubs.push(...s.subtitles);
+        if (streamData) {
+          const rawNativeSubs = [
+            ...(streamData.subtitles || []),
+            ...(streamData.tracks || []),
+            ...(streamData.captions || []),
+          ];
+          if (streamData.streams && Array.isArray(streamData.streams)) {
+            for (const s of streamData.streams) {
+              if (s.subtitles && Array.isArray(s.subtitles)) {
+                rawNativeSubs.push(...s.subtitles);
+              }
             }
           }
-        }
-        for (const sub of rawNativeSubs) {
-          const rawSrc = sub.url || sub.file || sub.src;
-          if (!rawSrc) continue;
-          const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
-            ? rawSrc
-            : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
-          const label = (sub.label || sub.name || "English").trim();
-          const isEnglish =
-            label.toLowerCase().includes("english") ||
-            sub.srclang === "en" ||
-            sub.language === "en";
-          nativeSubs.push({
-            src: finalSrc,
-            label: label,
-            kind: "subtitles",
-            language: sub.srclang || sub.language || (isEnglish ? "en" : "en"),
-            default: sub.default ?? isEnglish,
-            type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
-          });
+          for (const sub of rawNativeSubs) {
+            const rawSrc = sub.url || sub.file || sub.src;
+            if (!rawSrc) continue;
+            const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
+              ? rawSrc
+              : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+            const label = (sub.label || sub.name || "English").trim();
+            const isEnglish =
+              label.toLowerCase().includes("english") ||
+              label.toLowerCase().includes("eng") ||
+              sub.srclang === "en" ||
+              sub.language === "en";
+            if (!isEnglish) continue;
+            nativeSubs.push({
+              src: finalSrc,
+              label: label,
+              kind: "subtitles",
+              language: "en",
+              default: sub.default ?? isEnglish,
+              type: rawSrc.toLowerCase().includes(".srt") ? "srt" : "vtt",
+            });
+          }
         }
 
         // Fetch OpenSubtitles, SubDL, and VIP Player subtitles in parallel with native stream subtitles
-        const currentEp = episodes.find((e) => e.id === selectedEpisodeId);
+        const currentEp =
+          activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
+          episodes.find((e) => e.id === selectedEpisodeId);
         let epNum = 1;
         if (currentEp) {
           if (typeof currentEp.number === "number") {
@@ -587,10 +659,10 @@ export default function Playeranime({
 
         const currentSeasonNum = activeGroup?.seasonNumber || 1;
         const relativeEpNum =
-          activeGroup && currentEp?.number && typeof currentEp.number === "number"
+          activeGroup && currentEp?.number && typeof currentEp.number === "number" && activeGroup.startEp
             ? currentEp.number - activeGroup.startEp + 1
             : epNum;
-        const targetEpForQuery = relativeEpNum > 0 ? relativeEpNum : epNum;
+        const targetEpForQuery = (relativeEpNum > 0 && relativeEpNum <= (activeGroup?.count || 999)) ? relativeEpNum : epNum;
 
         const routeType = type || "tv";
         const tmdbParam = tmdbId
@@ -735,6 +807,33 @@ export default function Playeranime({
           );
           setStreamUrl(embedStream.embedUrl || embedStream.url);
           setIsIframe(true);
+        } else if (tmdbId) {
+          // Robust direct aggregate fallback for next seasons & missing streams
+          try {
+            const aggRes = await fetch(
+              `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=${currentSeasonNum}&episode=${targetEpForQuery}&vip=true`
+            );
+            if (aggRes.ok) {
+              const aggData = await aggRes.json();
+              if (aggData && aggData.defaultStreamUrl) {
+                setStreamUrl(aggData.defaultStreamUrl);
+                setIsIframe(false);
+                if (aggData.subtitles && Array.isArray(aggData.subtitles) && aggData.subtitles.length > 0) {
+                  const dSubs = aggData.subtitles.map((s: any) => ({
+                    src: s.url,
+                    label: s.label || 'English',
+                    kind: 'subtitles',
+                    language: s.language || 'en',
+                    default: s.isDefault ?? true,
+                    type: 'vtt',
+                  }));
+                  setSubtitles(dSubs);
+                }
+                return;
+              }
+            }
+          } catch {}
+          setError("No streaming source found.");
         } else {
           setError("No streaming source found.");
         }
@@ -857,7 +956,9 @@ export default function Playeranime({
     );
   }, [animeData, audioType]);
 
-  const selectedEpisode = episodes.find((e) => e.id === selectedEpisodeId);
+  const selectedEpisode =
+    activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
+    episodes.find((e) => e.id === selectedEpisodeId);
   const activeBackdrop = tmdbBackdrop || animeBanner || animeCover;
 
   // Filtered and sorted episodes for current active group & sub-batch

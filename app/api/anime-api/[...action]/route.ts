@@ -88,6 +88,21 @@ export async function GET(
             title { romaji english native }
             bannerImage
             coverImage { extraLarge large medium color }
+            episodes
+            relations {
+              edges {
+                relationType
+                node {
+                  id
+                  title { romaji english native }
+                  type
+                  format
+                  episodes
+                  seasonYear
+                  coverImage { extraLarge large medium }
+                }
+              }
+            }
           }
         }
       `;
