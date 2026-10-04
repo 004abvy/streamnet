@@ -117,8 +117,12 @@ export async function GET(request: NextRequest) {
     if (tmdbRes.ok) {
       const tmdbData = await tmdbRes.json();
       const origLang = (tmdbData?.original_language || '').toLowerCase();
-      const genres = (tmdbData?.genres || []).map((g: any) => g.name);
-      if (origLang === 'ja' || (genres.includes('Animation') && origLang === 'ja')) {
+      const genres = (tmdbData?.genres || []).map((g: any) => (typeof g === 'string' ? g : g.name));
+      const originCountry = tmdbData?.origin_country || [];
+      if (
+        origLang === 'ja' ||
+        (genres.includes('Animation') && (origLang === 'ja' || originCountry.includes('JP')))
+      ) {
         isAnime = true;
       }
     }
@@ -624,11 +628,27 @@ export async function GET(request: NextRequest) {
       return a.label.localeCompare(b.label);
     });
 
-    // Subtitle Sorting: English first, English CC second, Hindi third, then alphabetical
+    // Subtitle Sorting & Filtering
     let finalSubtitles = Array.from(subtitleMap.values());
     
+    const isEnglishSubtitle = (s: { language?: string; label?: string }) => {
+      const label = (s.label || '').toLowerCase();
+      const lang = (s.language || '').toLowerCase();
+      return (
+        lang === 'en' ||
+        lang.startsWith('en-') ||
+        lang === 'eng' ||
+        label.includes('english') ||
+        label.includes('eng')
+      );
+    };
+
+    if (isAnime) {
+      finalSubtitles = finalSubtitles.filter(isEnglishSubtitle);
+    }
+    
     // Fetch OpenSubtitles if no English subs found from providers (same logic as Direct4K)
-    const hasEnglishSub = finalSubtitles.some(s => s.language === 'en' || s.label.toLowerCase().includes('english'));
+    const hasEnglishSub = finalSubtitles.some(isEnglishSubtitle);
     if (!hasEnglishSub || finalSubtitles.length === 0) {
       try {
         const { getImdbIdFromTmdb, fetchOpenSubtitles } = await import('../../../lib/subtitles');
@@ -639,6 +659,9 @@ export async function GET(request: NextRequest) {
             for (const s of openSubs) {
               const rawLabel = (s.label || s.language || 'English').trim();
               const norm = normalizeSubtitle(rawLabel, s.language || 'en');
+              if (isAnime && !isEnglishSubtitle({ language: norm.langCode, label: norm.label })) {
+                continue;
+              }
               finalSubtitles.push({
                 id: `sub-os-${norm.key}-${Math.random().toString(36).substr(2,9)}`,
                 language: norm.langCode,
@@ -652,6 +675,10 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         // Soft fail OpenSubtitles
       }
+    }
+
+    if (isAnime) {
+      finalSubtitles = finalSubtitles.filter(isEnglishSubtitle);
     }
 
     const sortedSubtitles = finalSubtitles.sort((a, b) => {
@@ -682,6 +709,7 @@ export async function GET(request: NextRequest) {
 
     const responseData = {
       success: true,
+      isAnime,
       audioLanguages: sortedAudioTracks,
       subtitles: sortedSubtitles,
       servers: precheckedServers,

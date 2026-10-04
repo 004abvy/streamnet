@@ -42,6 +42,18 @@ export interface UnifiedSubtitle {
   isDefault?: boolean;
 }
 
+const isEnglishSub = (sub: any) => {
+  const label = (sub?.label || '').toLowerCase();
+  const lang = (sub?.language || '').toLowerCase();
+  return (
+    lang === 'en' ||
+    lang.startsWith('en-') ||
+    lang === 'eng' ||
+    label.includes('english') ||
+    label.includes('eng')
+  );
+};
+
 function DirectPlayerHubContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +65,17 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
+
+  const isAnime = useMemo(() => {
+    if (!movie) return false;
+    const origLang = (movie.original_language || '').toLowerCase();
+    const genres = (movie.genres || []).map((g: any) => (typeof g === 'string' ? g : g.name));
+    const originCountry = movie.origin_country || [];
+    return (
+      origLang === 'ja' ||
+      (genres.includes('Animation') && (origLang === 'ja' || originCountry.includes('JP')))
+    );
+  }, [movie]);
 
   // Pre-scanned Unified Netflix Data (Discovered in background across all direct streams)
   const [unifiedAudioTracks, setUnifiedAudioTracks] = useState<UnifiedAudioTrack[]>([]);
@@ -342,10 +365,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             return getQ(a.quality) - getQ(b.quality);
           });
 
-          // Test all subtitles in parallel
+          // Test all subtitles in parallel (for anime, strictly keep only English subtitles)
           let workingSubs: any[] = [];
           if (data.subtitles && data.subtitles.length > 0) {
-             const proxiedSubtitles = data.subtitles.map((sub: any) => {
+             const rawSubs = (data.isAnime || isAnime)
+               ? data.subtitles.filter(isEnglishSub)
+               : data.subtitles;
+             const proxiedSubtitles = rawSubs.map((sub: any) => {
                if (sub.url && !sub.url.startsWith(window.location.origin) && !sub.url.startsWith('/')) {
                  return { ...sub, url: `/api/subtitle/proxy?url=${encodeURIComponent(sub.url)}` };
                }
@@ -504,7 +530,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             }
 
             if (omssData.subtitles && Array.isArray(omssData.subtitles) && omssData.subtitles.length > 0) {
-              const mappedSubs = omssData.subtitles.map((sub: any, idx: number) => {
+              const rawOmssSubs = isAnime
+                ? omssData.subtitles.filter(isEnglishSub)
+                : omssData.subtitles;
+              const mappedSubs = rawOmssSubs.map((sub: any, idx: number) => {
                 let subUrl = sub.url;
                 if (subUrl && !subUrl.startsWith(window.location.origin) && !subUrl.startsWith('/')) {
                   subUrl = `/api/subtitle/proxy?url=${encodeURIComponent(subUrl)}`;
@@ -674,16 +703,18 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   // Format subtitles for ArtPlayer
   const artPlayerSubtitles: ArtPlayerSubtitle[] = useMemo(() => {
-    return unifiedSubtitles.map(s => ({
+    const subs = isAnime ? unifiedSubtitles.filter(isEnglishSub) : unifiedSubtitles;
+    return subs.map(s => ({
       url: s.url,
       label: s.label,
       default: s.isDefault,
     }));
-  }, [unifiedSubtitles]);
+  }, [unifiedSubtitles, isAnime]);
 
   // Format subtitles for Vidstack Direct HLS Player (iOS Fallback)
   const vidstackSubtitles: VidstackTrack[] = useMemo(() => {
-    return unifiedSubtitles.map(s => ({
+    const subs = isAnime ? unifiedSubtitles.filter(isEnglishSub) : unifiedSubtitles;
+    return subs.map(s => ({
       src: s.url,
       label: s.label,
       language: s.language || (s.label.toLowerCase().includes('hindi') ? 'hi' : 'en'),
@@ -691,7 +722,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       default: s.isDefault,
       type: 'vtt',
     }));
-  }, [unifiedSubtitles]);
+  }, [unifiedSubtitles, isAnime]);
 
   const customPlayerSettings = useMemo(() => {
     const settings: any[] = [];

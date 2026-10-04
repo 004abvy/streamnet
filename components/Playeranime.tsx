@@ -632,15 +632,20 @@ export default function Playeranime({
                     ? rawSrc
                     : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
                   const label = (sub.label || "English").trim();
+                  const lang = (sub.language || "").toLowerCase();
                   const isEnglish =
                     label.toLowerCase().includes("english") ||
-                    sub.language === "en";
+                    label.toLowerCase().includes("eng") ||
+                    lang === "en" ||
+                    lang.startsWith("en-") ||
+                    lang === "eng";
+                  if (!isEnglish) continue;
                   allSubsList.push({
                     src: finalSrc,
                     label: label,
                     kind: "subtitles",
-                    language: sub.language || (isEnglish ? "en" : "en"),
-                    default: sub.isDefault ?? sub.default ?? isEnglish,
+                    language: "en",
+                    default: sub.isDefault ?? sub.default ?? true,
                     type: "vtt",
                   });
                 }

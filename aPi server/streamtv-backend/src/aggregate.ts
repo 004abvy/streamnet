@@ -449,6 +449,20 @@ export async function aggregateStreams(req: Request, res: Response) {
     const sortedAudioTracks = finalTracksToUse.sort((a, b) => getLanguagePriority(a) - getLanguagePriority(b));
     let finalSubtitles = Array.from(subtitleMap.values()).sort((a, b) => a.label.localeCompare(b.label));
 
+    if (isAnime) {
+      finalSubtitles = finalSubtitles.filter((s) => {
+        const label = (s.label || '').toLowerCase();
+        const lang = (s.language || '').toLowerCase();
+        return (
+          label.includes('english') ||
+          label.includes('eng') ||
+          lang === 'en' ||
+          lang.startsWith('en-') ||
+          lang === 'eng'
+        );
+      });
+    }
+
     if (finalSubtitles.length > 0 && !finalSubtitles.some(s => s.isDefault)) {
       finalSubtitles[0].isDefault = true;
     }
