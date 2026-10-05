@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Maximize2 } from 'lucide-react';
+import { installAdblockProtection } from '../utils/adblockFramework';
 
 interface RivePlayerProps {
   tmdbId: string;
@@ -23,6 +24,17 @@ export default function RivePlayer({
   const embedUrl = type === 'movie'
     ? `https://rivestream.ru/embed?type=movie&id=${tmdbId}`
     : `https://rivestream.ru/embed?type=tv&id=${tmdbId}&season=${season}&episode=${episode}`;
+
+  // Install adblock protection when Rive player is active
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const cleanup = installAdblockProtection(true, (action, target) => {
+      console.log(`[RivePlayer] Adblock intercepted: ${action}`, target);
+    });
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   // Auto-open theater mode on mobile when this player mounts
   useEffect(() => {
@@ -60,6 +72,9 @@ export default function RivePlayer({
       <iframe
         src={embedUrl}
         allowFullScreen
+        sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+        {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
         className="w-full h-full border-0 block"
         title="Rive Player"
       />
@@ -85,6 +100,9 @@ export default function RivePlayer({
         <iframe
           src={embedUrl}
           allowFullScreen
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+          {...({ webkitallowfullscreen: "true", mozallowfullscreen: "true" } as any)}
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
           className="w-full h-full border-0 block"
           title="Rive Player"
         />
