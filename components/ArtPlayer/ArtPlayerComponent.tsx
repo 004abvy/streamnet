@@ -183,6 +183,9 @@ export default function ArtPlayerComponent({
             ]
           : []),
       ],
+      fastForward: true,
+      seekStep: 10,
+      autoPlayback: true,
       customType: {
         m3u8: function (
           video: HTMLVideoElement,
@@ -194,20 +197,27 @@ export default function ArtPlayerComponent({
             const hls = new Hls({
               enableWorker: true,
               lowLatencyMode: false,
-              backBufferLength: 90,
-              maxBufferLength: 60,
-              maxMaxBufferLength: 600,
-              maxBufferSize: 60 * 1000 * 1000,
+              backBufferLength: 30,
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              maxBufferSize: 30 * 1000 * 1000,
               maxBufferHole: 0.5,
               highBufferWatchdogPeriod: 2,
-              nudgeOffset: 0.2,
+              nudgeOffset: 0.1,
               nudgeMaxRetry: 5,
-              fragLoadingMaxRetry: 8,
-              fragLoadingMaxRetryTimeout: 20000,
-              manifestLoadingMaxRetry: 8,
-              manifestLoadingMaxRetryTimeout: 20000,
-              levelLoadingMaxRetry: 8,
-              levelLoadingMaxRetryTimeout: 20000,
+              maxFragLookUpTolerance: 0.5,
+              startFragPrefetch: true,
+              testBandwidth: false,
+              progressive: true,
+              fragLoadingMaxRetry: 6,
+              fragLoadingRetryDelay: 500,
+              fragLoadingMaxRetryTimeout: 4000,
+              manifestLoadingMaxRetry: 6,
+              manifestLoadingRetryDelay: 500,
+              manifestLoadingMaxRetryTimeout: 4000,
+              levelLoadingMaxRetry: 6,
+              levelLoadingRetryDelay: 500,
+              levelLoadingMaxRetryTimeout: 4000,
             });
             hls.loadSource(m3u8Url);
             hls.attachMedia(video);
@@ -225,15 +235,6 @@ export default function ArtPlayerComponent({
                 // Handled gracefully
               }
             };
-
-            hls.on(Hls.Events.BUFFER_STALLED, () => {
-              console.log("[ArtPlayer HLS] Buffer stalled, nudging video currentTime forward...");
-              if (video && !video.paused) {
-                try {
-                  video.currentTime += 0.1;
-                } catch {}
-              }
-            });
 
             // Extract real quality levels and audio tracks from HLS manifest
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -572,6 +573,10 @@ export default function ArtPlayerComponent({
       if (art.loading) art.loading.show = false;
     });
 
+    art.on("video:seeking", () => {
+      if (art.loading) art.loading.show = true;
+    });
+
     art.on("video:seeked", () => {
       if (art.loading) art.loading.show = false;
     });
@@ -620,10 +625,10 @@ export default function ArtPlayerComponent({
       ) {
         return;
       }
-      // If video has loaded frames or is actively playing audio/video, ignore transient non-fatal errors
+      // If video has loaded frames or is actively playing or seeking, ignore transient non-fatal errors
       if (
         art.video &&
-        (art.video.currentTime > 0 || art.video.readyState >= 1)
+        (art.video.currentTime > 0 || art.video.readyState >= 1 || art.video.seeking)
       ) {
         return;
       }

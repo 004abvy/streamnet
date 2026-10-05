@@ -928,8 +928,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 activeSubtitleLabel={activeSubtitle}
                 onError={(err) => {
                   console.warn('Playback error on stream:', currentStreamUrl, err);
-                  if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1)) {
-                    return; // Video/audio is actively playing, ignore transient error
+                  if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1 || artRef.current.video.seeking)) {
+                    return; // Video/audio is actively playing or seeking, ignore transient error
                   }
                   
                   const now = Date.now();
