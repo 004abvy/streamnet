@@ -239,15 +239,23 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       .then(async data => {
         clearTimeout(fetchTimeout);
         if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
-          
+          // Instant Playback: mount stream immediately in <1 second
+          setUnifiedAudioTracks(data.audioLanguages);
+          const defaultAudio =
+            data.audioLanguages.find((a: any) => a.language === 'en') ||
+            data.audioLanguages[0];
+          setCurrentStreamUrl(defaultAudio.url);
+          setActiveAudioLabel(defaultAudio.label);
+          setFetchingStream(false);
+          setIsBackgroundScanning(false);
           setScanStatusNotice('Verifying stream integrity...');
 
-          // Test all audio streams in parallel and extract actual languages
+          // Test all audio streams in parallel and extract actual languages in the background
           const audioResults = await Promise.allSettled(
             data.audioLanguages.map(async (track: any) => {
               try {
                 const ac = new AbortController();
-                const tid = setTimeout(() => ac.abort(), 20000);
+                const tid = setTimeout(() => ac.abort(), 10000);
                 // Use GET instead of HEAD to read manifest contents
                 const r = await fetch(track.url, { method: 'GET', signal: ac.signal });
                 clearTimeout(tid);
@@ -360,7 +368,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                proxiedSubtitles.map(async (sub: any) => {
                  try {
                    const ac = new AbortController();
-                   const tid = setTimeout(() => ac.abort(), 6000);
+                   const tid = setTimeout(() => ac.abort(), 4000);
                    const r = await fetch(sub.url, { method: 'GET', signal: ac.signal });
                    clearTimeout(tid);
                    return r.ok ? sub : null;
@@ -376,11 +384,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
           if (workingAudio.length > 0) {
             setUnifiedAudioTracks(workingAudio);
-
-            const defaultAudio = workingAudio.find((a: any) => a.language === 'en') || workingAudio[0];
-            setCurrentStreamUrl(defaultAudio.url);
-            setActiveAudioLabel(defaultAudio.label);
-
             if (workingSubs.length > 0) {
               setUnifiedSubtitles(workingSubs);
               const defaultSub = workingSubs.find((s: any) => s.isDefault) || workingSubs[0];
@@ -388,14 +391,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 setActiveSubtitle(defaultSub.label);
               }
             }
-
-            setFetchingStream(false);
-            setIsBackgroundScanning(false);
-            setScanStatusNotice('Streams verified and ready');
-            setTimeout(() => setScanStatusNotice(null), 3000);
-          } else {
-            fallbackDirectFetch();
           }
+          setScanStatusNotice(null);
         } else {
           fallbackDirectFetch();
         }
@@ -425,6 +422,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               quality: s.quality || '1080p',
               isDefault: idx === 0,
             }));
+
+            // Instant Playback for Fallback sources
+            setUnifiedAudioTracks(mappedTracks);
+            setCurrentStreamUrl(mappedTracks[0].url);
+            setActiveAudioLabel(mappedTracks[0].label);
+            setFetchingStream(false);
+            setIsBackgroundScanning(false);
 
             // Test fallback audio streams in parallel and extract languages
             setScanStatusNotice('Verifying stream integrity...');
