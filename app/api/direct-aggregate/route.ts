@@ -317,15 +317,19 @@ export async function GET(request: NextRequest) {
           if (!rawUrl || seenUrls.has(rawUrl)) return;
           seenUrls.add(rawUrl);
 
+          const isMp4 = rawUrl.toLowerCase().includes('.mp4') && !rawUrl.toLowerCase().includes('.m3u8');
           const proxyParams = new URLSearchParams({
             url: rawUrl,
-            manifest: '1',
             headers: JSON.stringify({
               'Referer': 'https://rivestream.ru/',
               'Origin': 'https://rivestream.ru'
             })
           });
-          const proxiedUrl = `${currentOrigin}/api/stream/proxy.m3u8?${proxyParams.toString()}`;
+          if (!isMp4) {
+            proxyParams.set('manifest', '1');
+          }
+          const endpoint = isMp4 ? 'proxy.mp4' : 'proxy.m3u8';
+          const proxiedUrl = `${currentOrigin}/api/stream/${endpoint}?${proxyParams.toString()}`;
           if (!primaryStreamUrl) primaryStreamUrl = proxiedUrl;
 
           // Categorize and label cleanly

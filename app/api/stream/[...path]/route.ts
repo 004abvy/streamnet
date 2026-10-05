@@ -69,7 +69,8 @@ export async function GET(
         } catch {}
       }
 
-      const isManifest = searchParams.get('manifest') === '1' || subPath.endsWith('.m3u8') || decodedUrl.includes('.m3u8');
+      const isExplicitMp4 = decodedUrl.toLowerCase().includes('.mp4') && !decodedUrl.toLowerCase().includes('.m3u8');
+      const isManifest = (searchParams.get('manifest') === '1' || subPath.endsWith('.m3u8') || decodedUrl.includes('.m3u8')) && !isExplicitMp4;
 
       // Determine clean Referer and optional Origin based on target CDN domain
       let effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || '';
@@ -167,76 +168,82 @@ export async function GET(
       }
 
       const contentType = response.headers.get('content-type') || '';
-      const isActuallyManifest = isManifest || contentType.toLowerCase().includes('mpegurl') || decodedUrl.includes('playlist');
+      const isActuallyManifest = !isExplicitMp4 && (isManifest || contentType.toLowerCase().includes('mpegurl') || decodedUrl.includes('playlist'));
 
       if (isActuallyManifest) {
         const manifestText = await response.text();
-        const host = request.headers.get('host') || 'localhost:3000';
-        const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
-        const proxyUrl = (targetUrl: string, manifest: boolean) => {
-          let cleanTarget = targetUrl;
-          let cleanHeaders = { ...upstreamHeaders };
-          if (cleanTarget.includes('valhallastream.com') && (cleanTarget.includes('?url=') || cleanTarget.includes('&url='))) {
-            try {
-              const p = new URL(cleanTarget);
-              const innerU = p.searchParams.get('url');
-              const innerH = p.searchParams.get('headers');
-              if (innerU) {
-                cleanTarget = innerU;
-                if (innerH) {
-                  try {
-                    Object.assign(cleanHeaders, JSON.parse(innerH));
-                  } catch {}
+        const trimmed = manifestText.trimStart();
+        if (trimmed.startsWith('#EXTM3U') || trimmed.startsWith('#EXT-X-') || trimmed.startsWith('#EXTINF')) {
+          const host = request.headers.get('host') || 'localhost:3000';
+          const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+          const proxyUrl = (targetUrl: string, manifest: boolean) => {
+            let cleanTarget = targetUrl;
+            let cleanHeaders = { ...upstreamHeaders };
+            if (cleanTarget.includes('valhallastream.com') && (cleanTarget.includes('?url=') || cleanTarget.includes('&url='))) {
+              try {
+                const p = new URL(cleanTarget);
+                const innerU = p.searchParams.get('url');
+                const innerH = p.searchParams.get('headers');
+                if (innerU) {
+                  cleanTarget = innerU;
+                  if (innerH) {
+                    try {
+                      Object.assign(cleanHeaders, JSON.parse(innerH));
+                    } catch {}
+                  }
                 }
+              } catch {}
+            }
+            const isSubMp4 = cleanTarget.toLowerCase().includes('.mp4') && !cleanTarget.toLowerCase().includes('.m3u8');
+            const params = new URLSearchParams({
+              url: cleanTarget,
+              headers: JSON.stringify(cleanHeaders),
+            });
+            if (manifest && !isSubMp4) params.set('manifest', '1');
+            const endpoint = (manifest && !isSubMp4) ? 'proxy.m3u8' : (isSubMp4 ? 'proxy.mp4' : 'proxy.ts');
+            return `${protocol}://${host}/api/stream/${endpoint}?${params.toString()}`;
+          };
+          const lines = manifestText.split('\n');
+          const rewritten = lines.map(line => {
+            const uriMatch = line.match(/URI="([^"]+)"/);
+            if (uriMatch) {
+              try {
+                const mediaUrl = new URL(uriMatch[1], decodedUrl).href;
+                const isSubManifest = (/\.m3u8(?:\?|$)/i.test(mediaUrl) || mediaUrl.includes('playlist')) && !mediaUrl.includes('.mp4');
+                return line.replace(uriMatch[1], proxyUrl(mediaUrl, isSubManifest));
+              } catch {
+                return line;
               }
-            } catch {}
-          }
-          const params = new URLSearchParams({
-            url: cleanTarget,
-            headers: JSON.stringify(cleanHeaders),
+            }
+
+            const trimmedLine = line.trim();
+            if (trimmedLine && !trimmedLine.startsWith('#')) {
+              try {
+                const fullChunkUrl = new URL(trimmedLine, decodedUrl).href;
+                const isSubManifest = (/\.m3u8(?:\?|$)/i.test(fullChunkUrl) || fullChunkUrl.includes('playlist')) && !fullChunkUrl.includes('.mp4');
+                return proxyUrl(fullChunkUrl, isSubManifest);
+              } catch {
+                return line;
+              }
+            }
+            return line;
+          }).join('\n');
+
+          return new NextResponse(rewritten, {
+            headers: {
+              'Content-Type': 'application/vnd.apple.mpegurl',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+              Pragma: 'no-cache',
+              Expires: '0',
+            }
           });
-          if (manifest) params.set('manifest', '1');
-          const endpoint = manifest ? 'proxy.m3u8' : 'proxy.ts';
-          return `${protocol}://${host}/api/stream/${endpoint}?${params.toString()}`;
-        };
-        const lines = manifestText.split('\n');
-        const rewritten = lines.map(line => {
-          const uriMatch = line.match(/URI="([^"]+)"/);
-          if (uriMatch) {
-            try {
-              const mediaUrl = new URL(uriMatch[1], decodedUrl).href;
-              const isSubManifest = /\.m3u8(?:\?|$)/i.test(mediaUrl) || mediaUrl.includes('playlist');
-              return line.replace(uriMatch[1], proxyUrl(mediaUrl, isSubManifest));
-            } catch {
-              return line;
-            }
-          }
+        }
+      }
 
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith('#')) {
-            try {
-              const fullChunkUrl = new URL(trimmed, decodedUrl).href;
-              const isSubManifest = /\.m3u8(?:\?|$)/i.test(fullChunkUrl) || fullChunkUrl.includes('playlist');
-              return proxyUrl(fullChunkUrl, isSubManifest);
-            } catch {
-              return line;
-            }
-          }
-          return line;
-        }).join('\n');
-
-        return new NextResponse(rewritten, {
-          headers: {
-            'Content-Type': 'application/vnd.apple.mpegurl',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          }
-        });
-      } else {
-        let arrayBuffer = await response.arrayBuffer();
-        let contentType = response.headers.get('content-type') || (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/MP2T');
+      let arrayBuffer = await response.arrayBuffer();
+      let streamContentType = response.headers.get('content-type') || (isExplicitMp4 ? 'video/mp4' : (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/mp4'));
+      if (isExplicitMp4) streamContentType = 'video/mp4';
         
         // Unwrap FlixCloud HD-2 image segments
         const flixImageSegmentXorKey = new Uint8Array([157, 42, 241, 71, 179, 142, 92, 112, 166, 25, 228, 59, 216, 98, 15, 197]);
@@ -262,13 +269,13 @@ export async function GET(
             }
           }
           arrayBuffer = out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength);
-          contentType = 'video/mp2t';
+          streamContentType = 'video/mp2t';
         }
 
         const totalBytes = arrayBuffer.byteLength;
         let status = response.status;
         const respHeaders: Record<string, string> = {
-          'Content-Type': contentType,
+          'Content-Type': streamContentType,
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length',
           'Accept-Ranges': 'bytes',
@@ -289,7 +296,6 @@ export async function GET(
           headers: respHeaders,
         });
       }
-    }
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   } catch (err: any) {

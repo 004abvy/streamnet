@@ -106,15 +106,15 @@ export default function ArtPlayerComponent({
     // Settings gear SVG icon for the control bar
     const settingsIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.9;transition:transform 0.3s ease"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 
-    // Store callback ref so it persists across renders
-    const settingsClickRef = onSettingsClick;
-
+    const lower = url.toLowerCase();
     const isM3u8Url =
-      url.toLowerCase().includes(".m3u8") ||
-      url.toLowerCase().includes("m3u8") ||
-      url.toLowerCase().includes("/stream/") ||
-      url.toLowerCase().includes("/direct/") ||
-      url.toLowerCase().includes("hls");
+      (lower.includes(".m3u8") ||
+       lower.includes("proxy.m3u8") ||
+       lower.includes("manifest=1") ||
+       lower.includes("hls") ||
+       lower.includes("master") ||
+       lower.includes("playlist")) &&
+      !lower.includes(".mp4");
 
     const art = new Artplayer({
       container: containerRef.current,
@@ -660,8 +660,25 @@ export default function ArtPlayerComponent({
         ? initialTime
         : art.video?.currentTime || art.currentTime || 0;
 
+    const lower = url.toLowerCase();
+    const isNewM3u8 =
+      (lower.includes(".m3u8") ||
+       lower.includes("proxy.m3u8") ||
+       lower.includes("manifest=1") ||
+       lower.includes("hls") ||
+       lower.includes("master") ||
+       lower.includes("playlist")) &&
+      !lower.includes(".mp4");
+
+    if (!isNewM3u8 && art.hls) {
+      try {
+        art.hls.destroy();
+        art.hls = null;
+      } catch {}
+    }
+
     art
-      .switchUrl(url)
+      .switchUrl(url, isNewM3u8 ? "m3u8" : undefined)
       .then(() => {
         if (targetTime > 0) {
           try {

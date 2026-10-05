@@ -259,8 +259,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           const audioResults = await Promise.allSettled(
             data.audioLanguages.map(async (track: any) => {
               try {
-                // If it's already an identified anime track, preserve it directly
-                if (track.id?.startsWith('anime-') || track.language === 'ja' || track.language === 'en-dub') {
+                // If it's already an identified anime track or direct MP4 stream, preserve it directly
+                if (track.id?.startsWith('anime-') || track.language === 'ja' || track.language === 'en-dub' || track.url.toLowerCase().includes('.mp4')) {
                   return track;
                 }
                 const ac = new AbortController();
