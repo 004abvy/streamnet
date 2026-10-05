@@ -95,30 +95,11 @@ export default function ArtPlayerComponent({
     }
   };
 
+  const currentUrlRef = useRef<string>(url);
+
   useEffect(() => {
     if (!containerRef.current || !url) return;
-
-    // Smoothly switch URL if player instance already exists
-    if (artInstanceRef.current) {
-      const art = artInstanceRef.current;
-      const targetTime = initialTime && initialTime > 0 ? initialTime : (art.video?.currentTime || art.currentTime || 0);
-      art.switchUrl(url).then(() => {
-        if (targetTime > 0) {
-          try {
-            art.currentTime = targetTime;
-          } catch {}
-        }
-        if (autoPlay) {
-          art.play().catch(() => {});
-        }
-      }).catch(() => {
-        try {
-          art.destroy(false);
-        } catch {}
-        artInstanceRef.current = null;
-      });
-      if (artInstanceRef.current) return;
-    }
+    currentUrlRef.current = url;
 
     const defaultSub = subtitles.find((s) => s.default) || subtitles[0];
 
@@ -665,7 +646,36 @@ export default function ArtPlayerComponent({
         audioContextRef.current = null;
       }
     };
-  }, [url]);
+  }, []);
+
+  // Smoothly switch URL whenever `url` prop updates without unmounting
+  useEffect(() => {
+    if (!url || !artInstanceRef.current) return;
+    if (currentUrlRef.current === url) return;
+    currentUrlRef.current = url;
+
+    const art = artInstanceRef.current;
+    const targetTime =
+      initialTime && initialTime > 0
+        ? initialTime
+        : art.video?.currentTime || art.currentTime || 0;
+
+    art
+      .switchUrl(url)
+      .then(() => {
+        if (targetTime > 0) {
+          try {
+            art.currentTime = targetTime;
+          } catch {}
+        }
+        if (autoPlay) {
+          art.play().catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.warn("[ArtPlayer] switchUrl note:", err);
+      });
+  }, [url, initialTime, autoPlay]);
 
   // Synchronize audioBoost
   useEffect(() => {

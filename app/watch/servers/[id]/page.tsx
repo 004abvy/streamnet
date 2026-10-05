@@ -969,27 +969,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1 || artRef.current.video.seeking)) {
                     return; // Video/audio is actively playing or seeking, ignore transient error
                   }
-                  
-                  const now = Date.now();
-                  if (now - lastErrorSwitchRef.current > 15000) {
-                    errorCountRef.current = 0;
-                  }
-                  
-                  if (errorCountRef.current >= 2) {
-                    console.warn('Auto stream switch limit reached to prevent reloading loop.');
-                    setErrorMessage('Playback error on current stream. Please select another audio track or server.');
-                    return;
-                  }
-
-                  const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
-                  if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
-                    errorCountRef.current += 1;
-                    lastErrorSwitchRef.current = now;
-                    const nextTrack = unifiedAudioTracks[currentIdx + 1];
-                    setCurrentStreamUrl(nextTrack.url);
-                    setActiveAudioLabel(nextTrack.label);
-                  } else {
-                    setErrorMessage('No working stream found. Please try another audio track or server.');
+                  // Do not automatically cycle streams on transient startup errors
+                  if (artRef.current?.notice) {
+                    artRef.current.notice.show = 'Stream buffering issue. Please choose an audio track or server.';
                   }
                 }}
                 customSettings={customPlayerSettings}
