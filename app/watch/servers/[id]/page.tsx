@@ -241,11 +241,16 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
           // Instant Playback: mount stream immediately in <1 second
           setUnifiedAudioTracks(data.audioLanguages);
-          const defaultAudio =
-            data.audioLanguages.find((a: any) => a.language === 'en') ||
-            data.audioLanguages[0];
-          setCurrentStreamUrl(defaultAudio.url);
-          setActiveAudioLabel(defaultAudio.label);
+          const defaultAudio = (data.isAnime || isAnime)
+            ? (data.audioLanguages.find((a: any) => a.language === 'ja') ||
+               data.audioLanguages.find((a: any) => a.language === 'en-dub') ||
+               data.audioLanguages[0])
+            : (data.audioLanguages.find((a: any) => a.language === 'en') ||
+               data.audioLanguages[0]);
+          const initialUrl = data.defaultStreamUrl || defaultAudio?.url;
+          const initialLabel = data.defaultAudioLabel || defaultAudio?.label;
+          setCurrentStreamUrl(initialUrl);
+          setActiveAudioLabel(initialLabel);
           setFetchingStream(false);
           setIsBackgroundScanning(false);
           setScanStatusNotice('Verifying stream integrity...');
@@ -254,6 +259,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           const audioResults = await Promise.allSettled(
             data.audioLanguages.map(async (track: any) => {
               try {
+                // If it's already an identified anime track, preserve it directly
+                if (track.id?.startsWith('anime-') || track.language === 'ja' || track.language === 'en-dub') {
+                  return track;
+                }
                 const ac = new AbortController();
                 const tid = setTimeout(() => ac.abort(), 10000);
                 // Use GET instead of HEAD to read manifest contents
@@ -338,9 +347,16 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
             .map((r: any) => r.value);
 
-          // Group and sort: English first, then Hindi, then others, sorted by quality
+          // Group and sort: For anime Japanese first, then English Dub. For movies English then Hindi.
           workingAudio.sort((a: any, b: any) => {
             const getRank = (lang: string) => {
+              if (data.isAnime || isAnime) {
+                if (lang === 'ja') return 0;
+                if (lang === 'en-dub') return 1;
+                if (lang === 'en' || lang.includes('en-')) return 2;
+                if (lang === 'hi' || lang.includes('hi-')) return 3;
+                return 4;
+              }
               if (lang === 'en' || lang.includes('en-')) return 0;
               if (lang === 'hi' || lang.includes('hi-')) return 1;
               return 2;

@@ -110,12 +110,14 @@ export async function GET(request: NextRequest) {
 
   // Detect if current title is Japanese anime
   let isAnime = false;
+  let animeTitle = '';
   try {
     const tmdbRes = await fetch(`${currentOrigin}/api/${type === 'tv' ? 'tv' : 'movies'}/${id}`, {
       signal: AbortSignal.timeout(10000),
     });
     if (tmdbRes.ok) {
       const tmdbData = await tmdbRes.json();
+      animeTitle = tmdbData?.name || tmdbData?.title || tmdbData?.original_name || tmdbData?.original_title || '';
       const origLang = (tmdbData?.original_language || '').toLowerCase();
       const genres = (tmdbData?.genres || []).map((g: any) => (typeof g === 'string' ? g : g.name));
       const originCountry = tmdbData?.origin_country || [];
@@ -188,10 +190,77 @@ export async function GET(request: NextRequest) {
       }
     })();
 
-    // Run both sweeps concurrently
-    const [riveResults, directResolvedStreams] = await Promise.all([
+    // 3. Probe Dedicated Anime Resolvers for rock-solid Japanese & English Dub HLS playback
+    const animeResolversPromise = (async () => {
+      if (!isAnime || !animeTitle) return [];
+      try {
+        const ANIVEXA_URL = process.env.NEXT_PUBLIC_ANIVEXA_URL || 'http://localhost:4000';
+        const searchRes = await fetch(
+          `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(animeTitle)}`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (!searchRes.ok) return [];
+        const searchData = await searchRes.json();
+        const mediaId = searchData?.data?.Media?.id;
+        if (!mediaId) return [];
+
+        const epRes = await fetch(
+          `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${mediaId}`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!epRes.ok) return [];
+        const epData = await epRes.json();
+        const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
+        const targetEpNum = Number(episode) || 1;
+        const results: any[] = [];
+
+        for (const mode of ['sub', 'dub'] as const) {
+          let chosenEpId: string | null = null;
+          for (const p of providers) {
+            const eps = epData[p]?.episodes?.[mode];
+            if (Array.isArray(eps)) {
+              const matched = eps.find((e: any) => Number(e.number) === targetEpNum);
+              if (matched) {
+                chosenEpId = matched.id;
+                break;
+              }
+            }
+          }
+
+          if (chosenEpId) {
+            try {
+              const streamRes = await fetch(`${ANIVEXA_URL}/${chosenEpId}`, {
+                signal: AbortSignal.timeout(8000),
+              });
+              if (streamRes.ok) {
+                const streamJson = await streamRes.json();
+                const directHls =
+                  streamJson.stream_url ||
+                  streamJson.streams?.find((s: any) => s.type === 'hls' || s.url?.includes('.m3u8'))?.url;
+                if (directHls) {
+                  results.push({
+                    mode,
+                    url: directHls,
+                    headers: streamJson.headers || {},
+                    subtitles: streamJson.subtitles || [],
+                  });
+                }
+              }
+            } catch {}
+          }
+        }
+        return results;
+      } catch (err) {
+        console.warn('[direct-aggregate] Anime resolver error:', err);
+        return [];
+      }
+    })();
+
+    // Run all sweeps concurrently
+    const [riveResults, directResolvedStreams, animeResolvedStreams] = await Promise.all([
       Promise.allSettled(rivestreamPromises),
       directResolversPromise,
+      animeResolversPromise,
     ]);
 
     const audioTracks: UnifiedAudioTrack[] = [];
@@ -478,6 +547,53 @@ export async function GET(request: NextRequest) {
               language: norm.langCode,
               label: norm.label,
               url: `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(s.url)}`,
+              isDefault: norm.key === 'en',
+            });
+          }
+        }
+      });
+    }
+
+    // Process Dedicated Anime Streams (Anivexa / Anikoto / HiAnime / Aniwatch)
+    if (Array.isArray(animeResolvedStreams)) {
+      animeResolvedStreams.forEach((item: any, idx: number) => {
+        if (!item.url || seenUrls.has(item.url)) return;
+        seenUrls.add(item.url);
+
+        const proxyParams = new URLSearchParams({
+          url: item.url,
+          headers: JSON.stringify(item.headers || {}),
+          manifest: '1',
+        });
+        const proxiedUrl = `${currentOrigin}/api/stream/proxy?${proxyParams.toString()}`;
+        const isSub = item.mode === 'sub';
+
+        audioTracks.unshift({
+          id: `anime-${item.mode}-${idx}`,
+          language: isSub ? 'ja' : 'en-dub',
+          label: isSub ? 'Japanese [Original]' : 'English [Dub]',
+          badge: '1080p HD',
+          url: proxiedUrl,
+          rawUrl: item.url,
+          headers: item.headers || {},
+          quality: '1080p HD',
+          isDefault: isSub,
+        });
+
+        // Add subtitles from anime extractor
+        if (item.subtitles && Array.isArray(item.subtitles)) {
+          for (const s of item.subtitles) {
+            const subUrl = s.url || s.file;
+            if (!subUrl) continue;
+            const rawLabel = (s.label || s.lang || s.language || 'English').trim();
+            const norm = normalizeSubtitle(rawLabel, s.lang || s.language);
+            subtitleMap.set(norm.key, {
+              id: `sub-anime-${norm.key}`,
+              language: norm.langCode,
+              label: norm.label,
+              url: subUrl.startsWith('http')
+                ? `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(subUrl)}`
+                : subUrl,
               isDefault: norm.key === 'en',
             });
           }

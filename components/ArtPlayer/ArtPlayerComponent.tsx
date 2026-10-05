@@ -252,10 +252,13 @@ export default function ArtPlayerComponent({
                   m3u8Url.includes("lang=en") ||
                   m3u8Url.includes("audioTrack=1");
 
-                // If the URL explicitly forces a track index, use it unconditionally
+                // If the URL explicitly forces a track index, use it if within valid range
                 const forceTrackMatch = m3u8Url.match(/forceTrack=(\d+)/);
                 if (forceTrackMatch) {
-                  hls.audioTrack = parseInt(forceTrackMatch[1], 10);
+                  const forcedIdx = parseInt(forceTrackMatch[1], 10);
+                  if (forcedIdx >= 0 && forcedIdx < hls.audioTracks.length) {
+                    hls.audioTrack = forcedIdx;
+                  }
                 } else {
                   let targetTrack = -1;
                   if (wantsJap) {
@@ -281,7 +284,7 @@ export default function ArtPlayerComponent({
                     if (targetTrack === -1) targetTrack = 0; // fallback
                   }
 
-                  if (targetTrack !== -1) {
+                  if (targetTrack >= 0 && targetTrack < hls.audioTracks.length) {
                     hls.audioTrack = targetTrack;
                   }
                 }
