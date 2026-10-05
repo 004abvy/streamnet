@@ -75,7 +75,7 @@ export default function Playeranime({
 
   // Source selector
   type AnimeSource = "anivexa" | "hianime" | "aniwatch";
-  const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
+  const [activeSource, setActiveSource] = useState<AnimeSource>("aniwatch");
   const [activeHianimeServer, setActiveHianimeServer] = useState<string>("hd-1");
 
   // Helper to fetch with timeout
@@ -636,10 +636,15 @@ export default function Playeranime({
                           const mappedTracks = tracks
                             .filter((t: any) => t && t.file && t.kind !== "thumbnails")
                             .map((t: any) => {
-                              const isEng = (t.label || "").toLowerCase().includes("english") || (t.label || "").toLowerCase().includes("eng") || t.default === true;
+                              const isEng =
+                                (t.label || "").toLowerCase().includes("english") ||
+                                (t.label || "").toLowerCase().includes("eng") ||
+                                t.default === true;
                               return {
-                                src: t.file?.startsWith("http") ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}` : t.file,
-                                label: t.label ? `${t.label} (AniWatch)` : "English (AniWatch)",
+                                src: t.file?.startsWith("http")
+                                  ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}`
+                                  : t.file,
+                                label: t.label || "English",
                                 kind: "subtitles",
                                 language: isEng ? "en" : (t.lang || "en"),
                                 default: t.default ?? isEng,
