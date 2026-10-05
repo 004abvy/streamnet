@@ -531,112 +531,120 @@ class _VipPlayerPageState extends State<VipPlayerPage> {
   Widget _buildVipAuthScreen() {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: Center(
-        child: Container(
-          width: 420,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBg,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.15),
-                blurRadius: 30,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(LucideIcons.sparkles, color: Colors.black, size: 32),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'VIP Stream Player',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Enter passkey (123) to unlock 4K Ultra HD & multi-audio streams.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _passkeyController,
-                obscureText: true,
-                style: const TextStyle(color: Colors.white, letterSpacing: 3),
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  hintText: 'Passkey (e.g. 123)',
-                  hintStyle: const TextStyle(color: AppTheme.textMuted, letterSpacing: 1),
-                  filled: true,
-                  fillColor: Colors.black.withValues(alpha: 0.4),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.cardBorder),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.cardBorder),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
-                  ),
-                ),
-                onSubmitted: (_) => _unlockVip(),
-              ),
-              if (_passkeyError != null) ...[
-                const SizedBox(height: 10),
-                Text(_passkeyError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-              ],
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white70,
-                        side: const BorderSide(color: AppTheme.cardBorder),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Back'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD700),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: _unlockVip,
-                      child: const Text('Unlock VIP', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Container(
+              width: 420,
+              constraints: const BoxConstraints(maxWidth: 420),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBg,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                    blurRadius: 30,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.sparkles, color: Colors.black, size: 26),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'VIP Stream Player',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Enter passkey (123) to unlock 4K Ultra HD & multi-audio streams.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _passkeyController,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white, letterSpacing: 3),
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      hintText: 'Passkey (e.g. 123)',
+                      hintStyle: const TextStyle(color: AppTheme.textMuted, letterSpacing: 1),
+                      filled: true,
+                      fillColor: Colors.black.withValues(alpha: 0.4),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppTheme.cardBorder),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: AppTheme.cardBorder),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (_) => _unlockVip(),
+                  ),
+                  if (_passkeyError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(_passkeyError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                            side: const BorderSide(color: AppTheme.cardBorder),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Back'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFD700),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: _unlockVip,
+                          child: const Text('Unlock VIP', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

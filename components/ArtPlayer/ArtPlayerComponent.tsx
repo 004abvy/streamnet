@@ -9,6 +9,7 @@ import { clearMediaSession, suppressMediaSession } from "../../utils/mediaSessio
 export interface ArtPlayerSubtitle {
   url: string;
   label: string;
+  language?: string;
   default?: boolean;
 }
 
@@ -156,10 +157,7 @@ export default function ArtPlayerComponent({
       ],
       moreVideoAttr: {
         playsInline: true,
-        "webkit-playsinline": "true",
-        "x5-playsinline": "true",
-        "x5-video-player-type": "h5",
-      },
+      } as any,
       subtitle: {
         url: defaultSub?.url || "data:text/vtt;charset=utf-8,WEBVTT%0A%0A",
         type: "vtt" as const,
@@ -179,8 +177,8 @@ export default function ArtPlayerComponent({
                 html: settingsIconSvg,
                 tooltip: "Settings",
                 click: function () {
-                  if (settingsClickRef) {
-                    settingsClickRef();
+                  if (onSettingsClick) {
+                    onSettingsClick();
                   }
                 },
               },
@@ -188,7 +186,6 @@ export default function ArtPlayerComponent({
           : []),
       ],
       fastForward: true,
-      seekStep: 10,
       autoPlayback: true,
       customType: {
         m3u8: function (
@@ -267,7 +264,7 @@ export default function ArtPlayerComponent({
                   let targetTrack = -1;
                   if (wantsJap) {
                     targetTrack = hls.audioTracks.findIndex(
-                      (t) =>
+                      (t: any) =>
                         t.name?.toLowerCase().includes("jp") ||
                         t.name?.toLowerCase().includes("ja") ||
                         t.language?.toLowerCase().includes("ja"),
@@ -275,14 +272,14 @@ export default function ArtPlayerComponent({
                     if (targetTrack === -1) targetTrack = 0; // fallback
                   } else {
                     targetTrack = hls.audioTracks.findIndex(
-                      (t) =>
+                      (t: any) =>
                         t.name?.toLowerCase().includes("en") ||
                         t.language?.toLowerCase().includes("en")
                     );
                     // If no English track found, try finding Hindi, otherwise fallback to 0
                     if (targetTrack === -1) {
                       targetTrack = hls.audioTracks.findIndex(
-                        (t) => t.name?.toLowerCase().includes("hin") || t.language?.toLowerCase().includes("hi")
+                        (t: any) => t.name?.toLowerCase().includes("hin") || t.language?.toLowerCase().includes("hi")
                       );
                     }
                     if (targetTrack === -1) targetTrack = 0; // fallback
@@ -291,6 +288,34 @@ export default function ArtPlayerComponent({
                   if (targetTrack >= 0 && targetTrack < hls.audioTracks.length) {
                     hls.audioTrack = targetTrack;
                   }
+                }
+
+                try {
+                  const audioTrackOptions = hls.audioTracks.map((t: any, idx: number) => ({
+                    default: idx === hls.audioTrack,
+                    html: t.name || (t.language ? t.language.toUpperCase() : `Audio ${idx + 1}`),
+                    trackIndex: idx,
+                  }));
+                  const audioSetting = {
+                    name: "audio-language-menu",
+                    width: 250,
+                    html: "Audio Language",
+                    tooltip: hls.audioTracks[hls.audioTrack]?.name || "Multi-Audio",
+                    selector: audioTrackOptions,
+                    onSelect: function (item: any) {
+                      hls.audioTrack = item.trackIndex;
+                      return item.html;
+                    },
+                  };
+                  try {
+                    artInstance.setting.update(audioSetting);
+                  } catch {
+                    try {
+                      artInstance.setting.add(audioSetting);
+                    } catch {}
+                  }
+                } catch (e) {
+                  console.warn("[ArtPlayer] Could not update audio-language setting:", e);
                 }
               }
               if (hls.levels && hls.levels.length > 1) {
@@ -390,23 +415,25 @@ export default function ArtPlayerComponent({
         },
       },
       settings: [
-        // Native Audio Boost (1x to 3x) in ArtPlayer's setting menu
-        {
-          html: "Audio Boost",
-          width: 200,
-          tooltip: "1x (Normal)",
-          selector: [
-            { default: true, html: "Normal (1x)", value: 1 },
-            { html: "Boost 1.5x (+50%)", value: 1.5 },
-            { html: "Double Boost 2x (+100%)", value: 2 },
-            { html: "Super Boost 3x (+200%)", value: 3 },
-          ],
-          onSelect: function (item: any) {
-            applyAudioBoost(art.video, item.value);
-            return item.html;
-          },
-        },
-        // Subtitle Selector in ArtPlayer's setting menu
+        // 1. Audio Language / Multi-Audio (Hindi, English, Japanese, etc.)
+        ...(customSettings && customSettings.length > 0
+          ? customSettings
+          : [
+              {
+                name: "audio-language-menu",
+                html: "Audio Language",
+                width: 250,
+                tooltip: "Multi-Audio",
+                selector: [
+                  { default: true, html: "Hindi", value: "hi" },
+                  { html: "English", value: "en" },
+                ],
+                onSelect: function (item: any) {
+                  return item.html;
+                },
+              },
+            ]),
+        // 2. Subtitle Selector in ArtPlayer's setting menu
         {
           name: "subtitles-menu",
           html: "Subtitles",
@@ -433,7 +460,7 @@ export default function ArtPlayerComponent({
             return item.html;
           },
         },
-        // Playback Speed
+        // 3. Playback Speed
         {
           name: "play-speed-menu",
           html: "Play Speed",
@@ -452,7 +479,24 @@ export default function ArtPlayerComponent({
             return item.html;
           },
         },
-        // Aspect Ratio
+        // 4. Native Audio Boost (1x to 3x) in ArtPlayer's setting menu
+        {
+          name: "audio-boost-menu",
+          html: "Audio Boost",
+          width: 200,
+          tooltip: "1x (Normal)",
+          selector: [
+            { default: true, html: "Normal (1x)", value: 1 },
+            { html: "Boost 1.5x (+50%)", value: 1.5 },
+            { html: "Double Boost 2x (+100%)", value: 2 },
+            { html: "Super Boost 3x (+200%)", value: 3 },
+          ],
+          onSelect: function (item: any) {
+            applyAudioBoost(art.video, item.value);
+            return item.html;
+          },
+        },
+        // 5. Aspect Ratio
         {
           name: "aspect-ratio-menu",
           html: "Aspect Ratio",
@@ -469,68 +513,13 @@ export default function ArtPlayerComponent({
             return item.html;
           },
         },
-        // Video Flip
-        {
-          name: "video-flip-menu",
-          html: "Video Flip",
-          width: 200,
-          tooltip: "Normal",
-          selector: [
-            { default: true, html: "Normal", value: "normal" },
-            { html: "Horizontal", value: "horizontal" },
-            { html: "Vertical", value: "vertical" },
-          ],
-          onSelect: function (item: any) {
-            if (item.value === "normal") {
-              art.flip = "normal";
-            } else {
-              art.flip = item.value;
-            }
-            return item.html;
-          },
-        },
-        // Subtitle Offset
-        {
-          name: "subtitle-offset-menu",
-          html: "Subtitle Offset",
-          width: 200,
-          tooltip: "0s",
-          selector: [
-            { html: "-2s", value: -2 },
-            { html: "-1s", value: -1 },
-            { html: "-0.5s", value: -0.5 },
-            { default: true, html: "0s", value: 0 },
-            { html: "+0.5s", value: 0.5 },
-            { html: "+1s", value: 1 },
-            { html: "+2s", value: 2 },
-          ],
-          onSelect: function (item: any) {
-            try {
-              art.subtitleOffset = item.value;
-            } catch (err) {
-              console.warn("[ArtPlayer] Subtitle offset unsupported natively:", err);
-            }
-            return item.html;
-          },
-        },
-        ...customSettings,
-        // Download current source
-        {
-          html: "Download Stream",
-          width: 180,
-          tooltip: "Direct Link",
-          onSelect: function () {
-            window.open(url, "_blank");
-            return "Opening...";
-          },
-        },
       ],
     });
 
     artInstanceRef.current = art;
 
     const updatePortalTarget = () => {
-      const popupWrapper = art.template?.$layers?.querySelector(
+      const popupWrapper = (art.template as any)?.$layers?.querySelector(
         ".artplayer-react-popup-wrapper",
       ) as HTMLElement;
       if (popupWrapper) {
@@ -679,12 +668,12 @@ export default function ArtPlayerComponent({
 
     if (!isNewM3u8 && art.hls) {
       try {
-        art.hls.destroy();
+        (art.hls as any).destroy();
         art.hls = null;
       } catch {}
     }
 
-    art
+    (art as any)
       .switchUrl(url, isNewM3u8 ? "m3u8" : undefined)
       .then(() => {
         if (targetTime > 0) {
@@ -696,7 +685,7 @@ export default function ArtPlayerComponent({
           art.play().catch(() => {});
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.warn("[ArtPlayer] switchUrl note:", err);
       });
   }, [url, initialTime, autoPlay]);
@@ -719,24 +708,13 @@ export default function ArtPlayerComponent({
   useEffect(() => {
     if (artInstanceRef.current && aspectRatio) {
       try {
-        artInstanceRef.current.aspectRatio =
+        (artInstanceRef.current as any).aspectRatio =
           aspectRatio === "Default" ? "default" : aspectRatio;
       } catch (e) {
         // Handled gracefully
       }
     }
   }, [aspectRatio]);
-
-  // Synchronize videoFlip
-  useEffect(() => {
-    if (artInstanceRef.current && videoFlip) {
-      if (videoFlip === "Flip Horizontal")
-        artInstanceRef.current.flip = "horizontal";
-      else if (videoFlip === "Flip Vertical")
-        artInstanceRef.current.flip = "vertical";
-      else artInstanceRef.current.flip = "normal";
-    }
-  }, [videoFlip]);
 
   // Synchronize subtitleOffset
   useEffect(() => {
@@ -827,6 +805,23 @@ export default function ArtPlayerComponent({
       }
     }
   }, [subtitles]);
+
+  // Synchronize customSettings (e.g. Multi-Audio Language menu: Hindi, English, Japanese, etc.)
+  useEffect(() => {
+    if (artInstanceRef.current?.setting && customSettings.length > 0) {
+      try {
+        customSettings.forEach((setting) => {
+          if (typeof artInstanceRef.current?.setting?.update === "function") {
+            artInstanceRef.current.setting.update(setting);
+          } else if (typeof artInstanceRef.current?.setting?.add === "function") {
+            artInstanceRef.current.setting.add(setting);
+          }
+        });
+      } catch (e) {
+        console.warn("[ArtPlayer] Could not update customSettings:", e);
+      }
+    }
+  }, [customSettings]);
 
   return (
     <div

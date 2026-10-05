@@ -141,102 +141,195 @@ body {
   }
 }
 
-/* Artplayer Settings Popup Premium Override */
-.art-video-player .art-settings,
+/* ==========================================================================
+   ARTPLAYER (VIP CINEMA & DIRECT 4K) SETTINGS POPUP OVERRIDES (MOBILE & LAPTOP)
+   ========================================================================== */
+.art-video-player .art-settings {
+  position: absolute !important;
+  bottom: 54px !important;
+  right: 12px !important;
+  left: auto !important;
+  top: auto !important;
+  background: rgba(14, 14, 20, 0.96) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  padding: 6px !important;
+  z-index: 99999 !important;
+  transform-origin: bottom right !important;
+  overflow: hidden !important;
+  max-width: min(320px, calc(100vw - 24px)) !important;
+  min-width: min(240px, calc(100vw - 24px)) !important;
+}
+
 .art-video-player .art-setting-panel,
 .art-video-player .art-panel,
 .art-setting-inner {
-  max-height: 90vh !important;
-  min-width: 300px !important;
+  max-height: min(72vh, 320px) !important;
+  width: 100% !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
-/* Glassmorphism Backdrop */
-.art-video-player .art-settings {
-  background: rgba(12, 12, 18, 0.85) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  padding: 8px !important;
+/* Hide redundant repetitive slider/equalizer icons on main menu rows for a clean list */
+.art-video-player .art-setting-item-left .art-icon,
+.art-video-player .art-setting-item .art-icon-setting {
+  display: none !important;
 }
 
 /* Scrollbar for Settings */
 .art-video-player .art-settings::-webkit-scrollbar,
 .art-video-player .art-setting-panel::-webkit-scrollbar,
 .art-setting-inner::-webkit-scrollbar {
-  width: 6px !important;
+  width: 4px !important;
 }
 .art-video-player .art-settings::-webkit-scrollbar-thumb,
 .art-video-player .art-setting-panel::-webkit-scrollbar-thumb,
 .art-setting-inner::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
 }
 
 /* Menu Items */
 .art-video-player .art-setting-item {
-  border-radius: 10px !important;
-  transition: all 0.2s ease !important;
-  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  transition: all 0.15s ease !important;
+  padding: 8px 12px !important;
   margin-bottom: 2px !important;
   background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
 }
 
 .art-video-player .art-setting-item:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Text Colors */
+/* Clean text styles */
 .art-video-player .art-setting-item-left {
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   font-size: 13px !important;
-  color: #ffffff !important;
+  color: #f3f4f6 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .art-video-player .art-setting-item-right {
-  font-weight: 500 !important;
+  font-weight: 400 !important;
   font-size: 12px !important;
-  color: rgba(255, 255, 255, 0.5) !important;
-  transition: color 0.2s ease !important;
+  color: #9ca3af !important;
+  transition: color 0.15s ease !important;
 }
 
 .art-video-player .art-setting-item:hover .art-setting-item-right {
-  color: #f59e0b !important; /* Amber highlight on hover */
+  color: #fbbf24 !important; /* Soft Amber */
 }
 
 /* Active State / Checked State */
-.art-video-player .art-setting-item.art-current .art-setting-item-left,
+.art-video-player .art-setting-item.art-current {
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+.art-video-player .art-setting-item.art-current .art-setting-item-left {
+  color: #f59e0b !important;
+  font-weight: 600 !important;
+}
 .art-video-player .art-setting-item.art-current .art-setting-item-right {
   color: #f59e0b !important;
+  font-weight: 500 !important;
+}
+
+/* Checkmark indicator for selected item in submenus */
+.art-video-player .art-setting-item .art-icon-check {
+  color: #f59e0b !important;
+  margin-right: 6px !important;
 }
 
 /* Settings Header (when navigating into submenus) */
 .art-video-player .art-setting-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  padding-bottom: 8px !important;
-  margin-bottom: 8px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 4px 10px 8px 10px !important;
+  margin-bottom: 6px !important;
   background: transparent !important;
 }
 .art-video-player .art-setting-header .art-setting-item-left {
   color: #f59e0b !important;
-  font-weight: bold !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+.art-video-player .art-setting-header .art-icon-back {
+  margin-right: 6px !important;
+}
+
+/* Responsive ArtPlayer Popup Overrides for Mobile Screens */
+@media (max-width: 640px) {
+  .art-video-player .art-settings {
+    bottom: 46px !important;
+    right: 8px !important;
+    max-height: min(70vh, 260px) !important;
+    max-width: calc(100% - 16px) !important;
+    min-width: 210px !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+  }
+  
+  .art-video-player .art-setting-item {
+    padding: 7px 10px !important;
+  }
+  
+  .art-video-player .art-setting-item-left {
+    font-size: 12px !important;
+  }
+  
+  .art-video-player .art-setting-item-right {
+    font-size: 11px !important;
+  }
+}
+
+/* Fullscreen Settings positioning */
+.art-video-player.art-fullscreen .art-settings,
+.art-video-player.art-fullscreen-web .art-settings,
+:fullscreen .art-video-player .art-settings {
+  bottom: 64px !important;
+  right: 20px !important;
+  max-height: min(80vh, 380px) !important;
 }
 
 /* ==========================================================================
-   VIDSTACK PLAYER MENU & SETTINGS POPUP STYLES
+   VIDSTACK PLAYER MENU & SETTINGS POPUP STYLES (MOBILE & DESKTOP)
    ========================================================================== */
+.vds-video-layout .vds-menu-items[data-root],
+[data-media-player] .vds-menu-items[data-root],
+.vds-menu-items[data-root]:not([data-placement]),
 .vds-menu-items[data-root] {
+  position: absolute !important;
+  bottom: 52px !important;
+  right: 10px !important;
+  left: auto !important;
+  top: auto !important;
+  max-width: min(320px, calc(100% - 20px)) !important;
+  min-width: 200px !important;
+  max-height: min(75%, 260px) !important;
   background-color: rgba(14, 14, 22, 0.95) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  margin: 0 !important;
   padding: 6px !important;
   z-index: 99999 !important;
+  transform-origin: bottom right !important;
+}
+
+[data-media-player]:fullscreen .vds-menu-items[data-root],
+[data-media-player][data-fullscreen] .vds-menu-items[data-root] {
+  bottom: 60px !important;
+  right: 18px !important;
+  max-height: min(80vh, 340px) !important;
 }
 
 .vds-menu-item,

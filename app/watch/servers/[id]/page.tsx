@@ -54,6 +54,120 @@ const isEnglishSub = (sub: any) => {
   );
 };
 
+export function cleanAndDeduplicateAudioTracks(
+  tracks: UnifiedAudioTrack[],
+  isAnimeMode: boolean,
+): UnifiedAudioTrack[] {
+  const langNames: Record<string, string> = {
+    hi: 'Hindi',
+    en: 'English',
+    ja: 'Japanese',
+    ta: 'Tamil',
+    te: 'Telugu',
+    fr: 'French',
+    es: 'Spanish',
+    ru: 'Russian',
+    de: 'German',
+    it: 'Italian',
+    ko: 'Korean',
+    zh: 'Chinese',
+    pt: 'Portuguese',
+    ar: 'Arabic',
+  };
+
+  const getCleanLangName = (track: UnifiedAudioTrack): string => {
+    const raw = (track.label || '').trim();
+    const langCode = (track.language || '').toLowerCase().substring(0, 2);
+
+    if (track.language === 'ja' || raw.toLowerCase().includes('japanese')) return 'Japanese';
+    if (track.language === 'en-dub' || raw.toLowerCase().includes('english dub') || raw.toLowerCase().includes('eng dub')) return 'English [Dub]';
+    if (raw.toLowerCase().includes('hindi')) return 'Hindi';
+    if (raw.toLowerCase().includes('tamil')) return 'Tamil';
+    if (raw.toLowerCase().includes('telugu')) return 'Telugu';
+    if (raw.toLowerCase().includes('french')) return 'French';
+    if (raw.toLowerCase().includes('spanish')) return 'Spanish';
+    if (raw.toLowerCase().includes('russian')) return 'Russian';
+    if (raw.toLowerCase().includes('german')) return 'German';
+    if (raw.toLowerCase().includes('italian')) return 'Italian';
+    if (raw.toLowerCase().includes('korean')) return 'Korean';
+    if (raw.toLowerCase().includes('chinese')) return 'Chinese';
+    if (raw.toLowerCase().includes('english')) return 'English';
+
+    // Remove noise, bracketed items, and quality labels
+    let cleaned = raw
+      .replace(/\[.*?\]/g, '')
+      .replace(/\b(4K|2160p|1080p|720p|480p|HD|Full HD|Ultra HD|HDR|Direct Server \d+|Multi-Audio|Direct Citadel|Citadel|Server \d+)\b/gi, '')
+      .trim();
+
+    if (cleaned && cleaned.length >= 2) return cleaned;
+    return langNames[langCode] || 'English';
+  };
+
+  const getCleanQualityBadge = (track: UnifiedAudioTrack): string => {
+    const combined = `${track.badge || ''} ${track.quality || ''} ${track.label || ''}`.toUpperCase();
+    if (combined.includes('4K') || combined.includes('2160')) return '4K HDR';
+    if (combined.includes('1080')) return '1080p';
+    if (combined.includes('720')) return '720p';
+    if (combined.includes('480')) return '480p';
+    return '1080p';
+  };
+
+  const qualityScore = (badge: string): number => {
+    if (badge.includes('4K')) return 4;
+    if (badge.includes('1080')) return 3;
+    if (badge.includes('720')) return 2;
+    return 1;
+  };
+
+  const mapped = tracks.map((t) => {
+    const cleanLang = getCleanLangName(t);
+    const cleanBadge = getCleanQualityBadge(t);
+    return {
+      ...t,
+      label: cleanLang,
+      badge: cleanBadge,
+    };
+  });
+
+  // Deduplicate by clean label: keep highest quality stream per language
+  const deduplicated = new Map<string, UnifiedAudioTrack>();
+  for (const t of mapped) {
+    const key = t.label.toLowerCase();
+    const existing = deduplicated.get(key);
+    if (!existing || qualityScore(t.badge) > qualityScore(existing.badge)) {
+      deduplicated.set(key, t);
+    }
+  }
+
+  const result = Array.from(deduplicated.values());
+
+  // Sort logically:
+  result.sort((a, b) => {
+    const getRank = (lang: string) => {
+      const l = lang.toLowerCase();
+      if (isAnimeMode) {
+        if (l.includes('japan')) return 0;
+        if (l.includes('dub')) return 1;
+        if (l.includes('eng')) return 2;
+        if (l.includes('hin')) return 3;
+        return 4;
+      }
+      if (l.includes('hin')) return 0;
+      if (l.includes('eng')) return 1;
+      if (l.includes('tam')) return 2;
+      if (l.includes('tel')) return 3;
+      if (l.includes('fre')) return 4;
+      if (l.includes('spa')) return 5;
+      return 6;
+    };
+    const rankDiff = getRank(a.label) - getRank(b.label);
+    if (rankDiff !== 0) return rankDiff;
+    return qualityScore(b.badge) - qualityScore(a.badge);
+  });
+
+  return result;
+}
+
 function DirectPlayerHubContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,6 +199,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authCode, setAuthCode] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -240,15 +355,17 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         clearTimeout(fetchTimeout);
         if (data && data.success && data.audioLanguages && data.audioLanguages.length > 0) {
           // Instant Playback: mount stream immediately in <1 second
-          setUnifiedAudioTracks(data.audioLanguages);
+          const cleanInitial = cleanAndDeduplicateAudioTracks(data.audioLanguages, data.isAnime || isAnime);
+          setUnifiedAudioTracks(cleanInitial);
           const defaultAudio = (data.isAnime || isAnime)
-            ? (data.audioLanguages.find((a: any) => a.language === 'ja') ||
-               data.audioLanguages.find((a: any) => a.language === 'en-dub') ||
-               data.audioLanguages[0])
-            : (data.audioLanguages.find((a: any) => a.language === 'en') ||
-               data.audioLanguages[0]);
-          const initialUrl = data.defaultStreamUrl || defaultAudio?.url;
-          const initialLabel = data.defaultAudioLabel || defaultAudio?.label;
+            ? (cleanInitial.find((a: any) => a.language === 'ja' || a.label.toLowerCase().includes('japan')) ||
+               cleanInitial.find((a: any) => a.language === 'en-dub' || a.label.toLowerCase().includes('dub')) ||
+               cleanInitial[0])
+            : (cleanInitial.find((a: any) => a.label.toLowerCase().includes('hindi') || a.language === 'hi') ||
+               cleanInitial.find((a: any) => a.language === 'en' || a.label.toLowerCase().includes('english')) ||
+               cleanInitial[0]);
+          const initialUrl = defaultAudio?.url || data.defaultStreamUrl;
+          const initialLabel = defaultAudio?.label || data.defaultAudioLabel || 'Audio';
           setCurrentStreamUrl(initialUrl);
           setActiveAudioLabel(initialLabel);
           setFetchingStream(false);
@@ -312,16 +429,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   let finalLangs = Array.from(new Set([...validNames, ...validFromCodes]));
 
                   if (finalLangs.length > 0) {
-                    let baseLabel = finalLangs.length > 1 
-                      ? `Multi-Audio [${finalLangs.slice(0, 2).map(n => n.substring(0,3)).join('/')}]`
-                      : finalLangs[0];
+                    let baseLabel = finalLangs[0];
 
-                    if (track.label.includes('[')) {
-                      const bracketSuffix = track.label.substring(track.label.indexOf('['));
-                      track.label = `${baseLabel} ${bracketSuffix}`;
-                    } else {
-                      track.label = baseLabel;
-                    }
+                    track.label = baseLabel;
 
                     const firstLang = finalLangs[0].toLowerCase();
                     if (firstLang.includes('hin')) track.language = 'hi';
@@ -346,27 +456,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           const workingAudio = audioResults
             .filter((r) => r.status === 'fulfilled' && r.value !== null)
             .map((r: any) => r.value);
-
-          // Group and sort: For anime Japanese first, then English Dub. For movies English then Hindi.
-          workingAudio.sort((a: any, b: any) => {
-            const getRank = (lang: string) => {
-              if (data.isAnime || isAnime) {
-                if (lang === 'ja') return 0;
-                if (lang === 'en-dub') return 1;
-                if (lang === 'en' || lang.includes('en-')) return 2;
-                if (lang === 'hi' || lang.includes('hi-')) return 3;
-                return 4;
-              }
-              if (lang === 'en' || lang.includes('en-')) return 0;
-              if (lang === 'hi' || lang.includes('hi-')) return 1;
-              return 2;
-            };
-            const rankA = getRank(a.language);
-            const rankB = getRank(b.language);
-            if (rankA !== rankB) return rankA - rankB;
-            const getQ = (q: string) => q.includes('4K') ? 0 : q.includes('1080') ? 1 : q.includes('720') ? 2 : 3;
-            return getQ(a.quality) - getQ(b.quality);
-          });
 
           // Test all subtitles in parallel (for anime, strictly keep only English subtitles)
           let workingSubs: any[] = [];
@@ -399,7 +488,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
 
           if (workingAudio.length > 0) {
-            setUnifiedAudioTracks(workingAudio);
+            const cleaned = cleanAndDeduplicateAudioTracks(workingAudio, data.isAnime || isAnime);
+            setUnifiedAudioTracks(cleaned);
             if (workingSubs.length > 0) {
               setUnifiedSubtitles(workingSubs);
               const defaultSub = workingSubs.find((s: any) => s.isDefault) || workingSubs[0];
@@ -440,9 +530,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             }));
 
             // Instant Playback for Fallback sources
-            setUnifiedAudioTracks(mappedTracks);
-            setCurrentStreamUrl(mappedTracks[0].url);
-            setActiveAudioLabel(mappedTracks[0].label);
+            const cleanFallback = cleanAndDeduplicateAudioTracks(mappedTracks, isAnime);
+            setUnifiedAudioTracks(cleanFallback);
+            setCurrentStreamUrl(cleanFallback[0]?.url || mappedTracks[0].url);
+            setActiveAudioLabel(cleanFallback[0]?.label || mappedTracks[0].label);
             setFetchingStream(false);
             setIsBackgroundScanning(false);
 
@@ -468,17 +559,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                     
                     if (audioNames.length > 0) {
                       const uniqueNames = Array.from(new Set(audioNames));
-                      // Replace "English" base label with the extracted names
-                      let baseLabel = uniqueNames.length > 1 
-                        ? `Multi-Audio [${uniqueNames.slice(0, 2).map(n => n.substring(0,3)).join('/')}]`
-                        : uniqueNames[0];
-                      
-                      if (track.label.includes('[')) {
-                        const bracketSuffix = track.label.substring(track.label.indexOf('['));
-                        track.label = `${baseLabel} ${bracketSuffix}`;
-                      } else {
-                        track.label = baseLabel;
-                      }
+                      let baseLabel = uniqueNames[0];
+
+                      track.label = baseLabel;
 
                       const firstLang = (uniqueNames[0] || langCodes[0] || '').toLowerCase();
                       if (firstLang.includes('hin') || firstLang === 'hi') track.language = 'hi';
@@ -504,23 +587,11 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               .filter((r) => r.status === 'fulfilled' && r.value !== null)
               .map((r: any) => r.value);
 
-            workingAudio.sort((a: any, b: any) => {
-              const getRank = (lang: string) => {
-                if (lang === 'en' || lang.includes('en-')) return 0;
-                if (lang === 'hi' || lang.includes('hi-')) return 1;
-                return 2;
-              };
-              const rankA = getRank(a.language);
-              const rankB = getRank(b.language);
-              if (rankA !== rankB) return rankA - rankB;
-              const getQ = (q: string) => q.includes('4K') ? 0 : q.includes('1080') ? 1 : q.includes('720') ? 2 : 3;
-              return getQ(a.quality) - getQ(b.quality);
-            });
-
             if (workingAudio.length > 0) {
-              setUnifiedAudioTracks(workingAudio);
-              if (!currentStreamUrl) {
-                const defaultTrack = workingAudio.find((t: any) => t.language === 'en') || workingAudio[0];
+              const cleaned = cleanAndDeduplicateAudioTracks(workingAudio, isAnime);
+              setUnifiedAudioTracks(cleaned);
+              if (!currentStreamUrl && cleaned.length > 0) {
+                const defaultTrack = cleaned.find((t: any) => t.language === 'en' || t.label.toLowerCase().includes('english')) || cleaned[0];
                 setCurrentStreamUrl(defaultTrack.url);
                 setActiveAudioLabel(defaultTrack.label);
               }
@@ -757,14 +828,23 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       settings.push({
         name: "audio-language-menu",
         html: "Audio Language",
-        width: 250,
-        tooltip: activeAudioLabel,
-        selector: unifiedAudioTracks.map(track => ({
-          default: activeAudioLabel === track.label,
-          html: `${track.label} <span style="font-size:10px; color:#aaa; margin-left:6px">${track.badge}</span>`,
-          value: track.id,
-          track: track,
-        })),
+        width: 230,
+        tooltip: activeAudioLabel || "Audio",
+        selector: unifiedAudioTracks.map(track => {
+          const isSelected =
+            activeAudioLabel === track.label ||
+            activeAudioLabel?.toLowerCase() === track.label.toLowerCase();
+
+          return {
+            default: isSelected,
+            html: `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:8px">
+              <span style="font-weight:500; font-size:13px">${track.label}</span>
+              <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.08); color:#f59e0b">${track.badge}</span>
+            </div>`,
+            value: track.id,
+            track: track,
+          };
+        }),
         onSelect: function (item: any) {
           handleSelectAudioTrack(item.track);
           return item.track.label;
@@ -784,14 +864,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     }
   };
 
-  const getVideoFlipStyle = () => {
-    switch (videoFlip) {
-      case 'Flip Horizontal': return 'scale-x-[-1]';
-      case 'Flip Vertical': return 'scale-y-[-1]';
-      default: return '';
-    }
-  };
-
   const getNumericPlaySpeed = (speedStr: string): number => {
     switch (speedStr) {
       case '0.5x': return 0.5;
@@ -801,46 +873,69 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       case '2x': return 2.0;
       default: return 1.0;
     }
-  };
-
-  const handleAuth = (e: React.FormEvent) => {
+  };  const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    if (authCode === '123') {
+    if (authCode.trim() === '123') {
       sessionStorage.setItem('vip_auth', '123');
       localStorage.setItem('vip_auth', '123');
+      setAuthError(null);
       setIsAuthenticated(true);
     } else {
-      alert('Invalid VIP code');
+      setAuthError('Invalid VIP Passkey. Please enter 123.');
     }
   };
 
   if (!isAuthenticated) {
     return (
-      <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-2xl p-8 shadow-2xl">
-          <h1 className="text-2xl font-bold mb-2">VIP Access Required</h1>
-          <p className="text-neutral-400 mb-6 text-sm">
+      <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-3 sm:p-6 text-center relative overflow-hidden">
+        {/* Cinematic Background Glow */}
+        {mounted && backdropUrl && (
+          <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+            <img
+              src={backdropUrl}
+              alt=""
+              className="w-full h-full object-cover blur-[100px] opacity-20 scale-110"
+            />
+            <div className="absolute inset-0 bg-neutral-950/85" />
+          </div>
+        )}
+
+        <div className="w-full max-w-[340px] sm:max-w-md bg-neutral-900/90 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(245,158,11,0.2)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-3 sm:mb-4 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+            <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
+          </div>
+
+          <h1 className="text-xl sm:text-2xl font-black mb-1.5 text-white tracking-tight">VIP Access Required</h1>
+          <p className="text-neutral-400 mb-5 text-xs sm:text-sm">
             Enter <span className="text-amber-400 font-bold font-mono px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">123</span> to access premium 4K VIP servers.
           </p>
-          <form onSubmit={handleAuth} className="flex flex-col gap-4">
+          <form onSubmit={handleAuth} className="flex flex-col gap-3 sm:gap-4">
             <input 
               type="text"
               placeholder="Enter 123"
               value={authCode}
-              onChange={(e) => setAuthCode(e.target.value)}
-              className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:border-amber-400 transition-colors text-center font-mono tracking-widest text-lg"
+              onChange={(e) => {
+                setAuthCode(e.target.value);
+                setAuthError(null);
+              }}
+              className="w-full bg-black/80 border border-white/20 rounded-xl px-4 py-2.5 sm:py-3 text-white outline-none focus:border-amber-400 transition-colors text-center font-mono tracking-widest text-base sm:text-lg placeholder:tracking-normal placeholder:text-neutral-500 shadow-inner"
               autoFocus
             />
+
+            {authError && (
+              <p className="text-xs text-red-400 font-semibold animate-shake">{authError}</p>
+            )}
+
             <button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-black font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)]"
+              className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black py-2.5 sm:py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] cursor-pointer text-xs sm:text-sm uppercase tracking-wider active:scale-95"
             >
               Unlock Player
             </button>
             <button 
-              type="button"
+              type="button" 
               onClick={() => router.back()}
-              className="w-full bg-white/5 hover:bg-white/10 text-neutral-300 py-3 rounded-xl transition-colors mt-2"
+              className="w-full bg-white/5 hover:bg-white/10 text-neutral-300 py-2.5 sm:py-3 rounded-xl transition-colors text-xs sm:text-sm font-semibold cursor-pointer active:scale-95"
             >
               Go Back
             </button>
@@ -947,7 +1042,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           ref={containerRef}
           className="w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.95)] bg-black z-10"
         >
-          <div className={`w-full ${getAspectRatioStyle()} ${getVideoFlipStyle()} transition-all duration-300 relative`}>
+          <div className={`w-full ${getAspectRatioStyle()} transition-all duration-300 relative`}>
             {fetchingStream ? (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-black gap-3">
                 <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
@@ -965,7 +1060,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 audioBoost={audioBoost}
                 playbackRate={getNumericPlaySpeed(playSpeed)}
                 aspectRatio={aspectRatio}
-                videoFlip={videoFlip}
                 subtitleOffset={subtitleOffset}
                 activeSubtitleUrl={artPlayerSubtitles.find(s => s.label === activeSubtitle)?.url || (activeSubtitle === 'Off' ? '' : undefined)}
                 activeSubtitleLabel={activeSubtitle}
