@@ -851,7 +851,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-3 sm:px-6 md:px-8 py-10 sm:py-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
       {/* Cinematic Ambient Background Backdrop */}
       {mounted && backdropUrl && (
         <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
@@ -865,12 +865,12 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       )}
 
       {/* Top Responsive Header Bar */}
-      <header className="w-full max-w-[92rem] flex items-center justify-between gap-1.5 sm:gap-3 py-1 sm:py-2 px-1 mb-2 sm:mb-3">
+      <header className="w-full max-w-[92rem] flex items-center justify-between gap-2 sm:gap-3 py-1 sm:py-2 px-1 mb-3 sm:mb-4">
         {/* Left: Back + Title */}
-        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => router.push(type === 'tv' ? `/watch/tv/${id}/${season}/${episode}` : `/watch/${id}`)}
-            className="p-1.5 sm:p-2 rounded-xl bg-white/[0.07] hover:bg-white/15 border border-white/10 text-neutral-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0"
+            className="p-1.5 sm:p-2 rounded-xl bg-white/[0.07] hover:bg-white/15 border border-white/10 text-neutral-300 hover:text-white transition-all cursor-pointer shadow-sm shrink-0 active:scale-95"
             title="Return to Standard Watch Page"
           >
             <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
