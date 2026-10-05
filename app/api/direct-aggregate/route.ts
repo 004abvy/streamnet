@@ -190,101 +190,252 @@ export async function GET(request: NextRequest) {
       }
     })();
 
-    // 3. Probe Dedicated Anime Resolvers for rock-solid Japanese & English Dub HLS playback
+    // 3. Dedicated Anime Resolvers using AniList GraphQL Mapping & Multi-Provider Stream Extraction
     const animeResolversPromise = (async () => {
       if (!isAnime || !animeTitle) return [];
       try {
         const ANIVEXA_URL = process.env.NEXT_PUBLIC_ANIVEXA_URL || 'http://localhost:4000';
         const seasonNum = Number(season) || 1;
         const targetEpNum = Number(episode) || 1;
+        const results: any[] = [];
 
-        // Try searching specific season first if season > 1, with fallback to base anime title
-        let mediaId: number | null = null;
+        // 3.1. Direct AniList GraphQL Query for accurate Romaji, English, and Synonym metadata
+        const anilistQuery = `
+          query ($search: String) {
+            Media (search: $search, type: ANIME, sort: SEARCH_MATCH) {
+              id
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              synonyms
+              episodes
+            }
+          }
+        `;
+
+        let anilistMedia: any = null;
         if (seasonNum > 1) {
           try {
-            const seasonSearchRes = await fetch(
-              `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(`${animeTitle} Season ${seasonNum}`)}`,
-              { signal: AbortSignal.timeout(6000) }
-            );
-            if (seasonSearchRes.ok) {
-              const seasonSearchData = await seasonSearchRes.json();
-              mediaId = seasonSearchData?.data?.Media?.id || null;
+            const aniRes = await fetch('https://graphql.anilist.co', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ query: anilistQuery, variables: { search: `${animeTitle} Season ${seasonNum}` } }),
+              signal: AbortSignal.timeout(4500),
+            });
+            if (aniRes.ok) {
+              const aniJson = await aniRes.json();
+              anilistMedia = aniJson?.data?.Media;
             }
           } catch {}
         }
 
-        if (!mediaId) {
-          const searchRes = await fetch(
-            `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(animeTitle)}`,
-            { signal: AbortSignal.timeout(6000) }
-          );
-          if (searchRes.ok) {
-            const searchData = await searchRes.json();
-            mediaId = searchData?.data?.Media?.id || null;
-          }
+        if (!anilistMedia) {
+          try {
+            const aniRes = await fetch('https://graphql.anilist.co', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ query: anilistQuery, variables: { search: animeTitle } }),
+              signal: AbortSignal.timeout(4500),
+            });
+            if (aniRes.ok) {
+              const aniJson = await aniRes.json();
+              anilistMedia = aniJson?.data?.Media;
+            }
+          } catch {}
         }
 
-        if (!mediaId) return [];
+        const anilistId = anilistMedia?.id;
+        const englishTitle = anilistMedia?.title?.english || animeTitle;
+        const romajiTitle = anilistMedia?.title?.romaji || animeTitle;
+        const searchTitles = Array.from(new Set([
+          seasonNum > 1 ? `${englishTitle} Season ${seasonNum}` : englishTitle,
+          seasonNum > 1 ? `${romajiTitle} Season ${seasonNum}` : romajiTitle,
+          englishTitle,
+          romajiTitle,
+          ...(anilistMedia?.synonyms || [])
+        ])).filter(Boolean);
 
-        const epRes = await fetch(
-          `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${mediaId}`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!epRes.ok) return [];
-        const epData = await epRes.json();
-        const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
-        const results: any[] = [];
+        // 3.2. Provider A: Anivexa / Anikoto / ReAnime / AnimeGG by AniList ID
+        const anivexaPromise = (async () => {
+          if (!anilistId) return [];
+          try {
+            const epRes = await fetch(
+              `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${anilistId}`,
+              { signal: AbortSignal.timeout(7000) }
+            );
+            if (!epRes.ok) return [];
+            const epData = await epRes.json();
+            const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
+            const subResults: any[] = [];
 
-        for (const mode of ['sub', 'dub'] as const) {
-          let chosenEpId: string | null = null;
-          for (const p of providers) {
-            const eps = epData[p]?.episodes?.[mode];
-            if (Array.isArray(eps)) {
-              const matched = eps.find((e: any) => Number(e.number) === targetEpNum);
-              if (matched) {
-                chosenEpId = matched.id;
-                break;
+            for (const mode of ['sub', 'dub'] as const) {
+              let chosenEpId: string | null = null;
+              for (const p of providers) {
+                const eps = epData[p]?.episodes?.[mode];
+                if (Array.isArray(eps)) {
+                  const matched = eps.find((e: any) => Number(e.number) === targetEpNum);
+                  if (matched) {
+                    chosenEpId = matched.id;
+                    break;
+                  }
+                }
+              }
+
+              if (chosenEpId) {
+                try {
+                  const streamRes = await fetch(`${ANIVEXA_URL}/${chosenEpId}`, {
+                    signal: AbortSignal.timeout(6000),
+                  });
+                  if (streamRes.ok) {
+                    const streamJson = await streamRes.json();
+                    const directHls = streamJson.stream || streamJson.url || streamJson.sources?.[0]?.url || streamJson.streams?.[0]?.url || streamJson.streams?.[0]?.file;
+                    const rawSubs = [
+                      ...(streamJson.subtitles || []),
+                      ...(streamJson.tracks || []),
+                      ...(streamJson.captions || []),
+                    ];
+                    if (streamJson.streams && Array.isArray(streamJson.streams)) {
+                      for (const s of streamJson.streams) {
+                        if (s.subtitles && Array.isArray(s.subtitles)) rawSubs.push(...s.subtitles);
+                        if (s.tracks && Array.isArray(s.tracks)) rawSubs.push(...s.tracks);
+                      }
+                    }
+                    if (directHls) {
+                      subResults.push({
+                        provider: 'Anivexa',
+                        mode,
+                        url: directHls,
+                        headers: streamJson.headers || {},
+                        subtitles: rawSubs,
+                        quality: '1080p HD',
+                      });
+                    }
+                  }
+                } catch {}
               }
             }
+            return subResults;
+          } catch {
+            return [];
           }
+        })();
 
-          if (chosenEpId) {
-            try {
-              const streamRes = await fetch(`${ANIVEXA_URL}/${chosenEpId}`, {
-                signal: AbortSignal.timeout(8000),
-              });
-              if (streamRes.ok) {
-                const streamJson = await streamRes.json();
-                const rawSubs = [
-                  ...(streamJson.subtitles || []),
-                  ...(streamJson.tracks || []),
-                  ...(streamJson.captions || []),
-                ];
-                if (streamJson.streams && Array.isArray(streamJson.streams)) {
-                  for (const s of streamJson.streams) {
-                    if (s.subtitles && Array.isArray(s.subtitles)) {
-                      rawSubs.push(...s.subtitles);
-                    }
-                    if (s.tracks && Array.isArray(s.tracks)) {
-                      rawSubs.push(...s.tracks);
+        // 3.3. Provider B: HiAnime Engine (Port 4002 /api/v2/hianime)
+        const hianimePromise = (async () => {
+          try {
+            const HIANIME_URL = process.env.NEXT_PUBLIC_HIANIME_URL || 'http://localhost:4002';
+            for (const qTitle of searchTitles.slice(0, 2)) {
+              try {
+                const searchRes = await fetch(`${HIANIME_URL}/api/v2/hianime/search?q=${encodeURIComponent(qTitle)}`, {
+                  signal: AbortSignal.timeout(4000),
+                });
+                if (!searchRes.ok) continue;
+                const searchData = await searchRes.json();
+                const animeList = searchData?.data?.animes || [];
+                if (animeList.length > 0) {
+                  const targetAnime = animeList[0];
+                  const epsRes = await fetch(`${HIANIME_URL}/api/v2/hianime/anime/${targetAnime.id}/episodes`, {
+                    signal: AbortSignal.timeout(4000),
+                  });
+                  if (!epsRes.ok) continue;
+                  const epsData = await epsRes.json();
+                  const episodes = epsData?.data?.episodes || [];
+                  const matchedEp = episodes.find((e: any) => Number(e.number) === targetEpNum);
+                  if (matchedEp) {
+                    const srcRes = await fetch(`${HIANIME_URL}/api/v2/hianime/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=hd-1&category=sub`, {
+                      signal: AbortSignal.timeout(5000),
+                    });
+                    if (srcRes.ok) {
+                      const srcData = await srcRes.json();
+                      const sources = srcData?.data?.sources || [];
+                      const tracks = srcData?.data?.tracks || [];
+                      if (sources.length > 0) {
+                        return [{
+                          provider: 'HiAnime',
+                          mode: 'sub',
+                          url: sources[0].url,
+                          headers: { Referer: 'https://megacloud.tv/' },
+                          subtitles: tracks,
+                          quality: '1080p Ultra HD',
+                        }];
+                      }
                     }
                   }
                 }
-                if (directHls) {
-                  results.push({
-                    mode,
-                    url: directHls,
-                    headers: streamJson.headers || {},
-                    subtitles: rawSubs,
-                  });
-                }
-              }
-            } catch {}
+              } catch {}
+            }
+            return [];
+          } catch {
+            return [];
           }
-        }
+        })();
+
+        // 3.4. Provider C: Aniwatch Engine (Port 4001 /api/v2/hianime)
+        const aniwatchPromise = (async () => {
+          try {
+            const ANIWATCH_URL = process.env.NEXT_PUBLIC_ANIWATCH_URL || 'http://localhost:4001';
+            for (const qTitle of searchTitles.slice(0, 2)) {
+              try {
+                const searchRes = await fetch(`${ANIWATCH_URL}/api/v2/hianime/search?q=${encodeURIComponent(qTitle)}`, {
+                  signal: AbortSignal.timeout(4000),
+                });
+                if (!searchRes.ok) continue;
+                const searchData = await searchRes.json();
+                const animeList = searchData?.data?.animes || [];
+                if (animeList.length > 0) {
+                  const targetAnime = animeList[0];
+                  const epsRes = await fetch(`${ANIWATCH_URL}/api/v2/hianime/anime/${targetAnime.id}/episodes`, {
+                    signal: AbortSignal.timeout(4000),
+                  });
+                  if (!epsRes.ok) continue;
+                  const epsData = await epsRes.json();
+                  const episodes = epsData?.data?.episodes || [];
+                  const matchedEp = episodes.find((e: any) => Number(e.number) === targetEpNum);
+                  if (matchedEp) {
+                    const srcRes = await fetch(`${ANIWATCH_URL}/api/v2/hianime/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=hd-1&category=dub`, {
+                      signal: AbortSignal.timeout(5000),
+                    });
+                    if (srcRes.ok) {
+                      const srcData = await srcRes.json();
+                      const sources = srcData?.data?.sources || [];
+                      const tracks = srcData?.data?.tracks || [];
+                      if (sources.length > 0) {
+                        return [{
+                          provider: 'Aniwatch',
+                          mode: 'dub',
+                          url: sources[0].url,
+                          headers: { Referer: 'https://megacloud.tv/' },
+                          subtitles: tracks,
+                          quality: '1080p Ultra HD',
+                        }];
+                      }
+                    }
+                  }
+                }
+              } catch {}
+            }
+            return [];
+          } catch {
+            return [];
+          }
+        })();
+
+        const [anivexaRes, hianimeRes, aniwatchRes] = await Promise.allSettled([
+          anivexaPromise,
+          hianimePromise,
+          aniwatchPromise,
+        ]);
+
+        if (anivexaRes.status === 'fulfilled') results.push(...anivexaRes.value);
+        if (hianimeRes.status === 'fulfilled') results.push(...hianimeRes.value);
+        if (aniwatchRes.status === 'fulfilled') results.push(...aniwatchRes.value);
+
         return results;
       } catch (err) {
-        console.warn('[direct-aggregate] Anime resolver error:', err);
+        console.warn('[direct-aggregate] Anime multi-provider resolver error:', err);
         return [];
       }
     })();
@@ -567,30 +718,35 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Process Dedicated Anime Streams (Anivexa / Anikoto / HiAnime / Aniwatch)
+    // Process Dedicated Anime Streams (Anivexa / Gogoanime / HiAnime / Zoro)
     if (Array.isArray(animeResolvedStreams)) {
       animeResolvedStreams.forEach((item: any, idx: number) => {
         if (!item.url || seenUrls.has(item.url)) return;
         seenUrls.add(item.url);
 
+        const isMp4 = item.url.toLowerCase().includes('.mp4') && !item.url.toLowerCase().includes('.m3u8');
         const proxyParams = new URLSearchParams({
           url: item.url,
           headers: JSON.stringify(item.headers || {}),
-          manifest: '1',
         });
-        const proxiedUrl = `${currentOrigin}/api/stream/proxy?${proxyParams.toString()}`;
+        if (!isMp4) {
+          proxyParams.set('manifest', '1');
+        }
+        const endpoint = isMp4 ? 'proxy.mp4' : 'proxy.m3u8';
+        const proxiedUrl = `${currentOrigin}/api/stream/${endpoint}?${proxyParams.toString()}`;
         const isSub = item.mode === 'sub';
+        const providerName = item.provider || 'Anime Stream';
 
         audioTracks.unshift({
-          id: `anime-${item.mode}-${idx}`,
+          id: `anime-${item.mode}-${(item.provider || 'stream').toLowerCase()}-${idx}`,
           language: isSub ? 'ja' : 'en-dub',
-          label: isSub ? 'Japanese [Original]' : 'English [Dub]',
-          badge: '1080p HD',
+          label: isSub ? `Japanese [${providerName}]` : `English Dub [${providerName}]`,
+          badge: item.quality || '1080p HD',
           url: proxiedUrl,
           rawUrl: item.url,
           headers: item.headers || {},
-          quality: '1080p HD',
-          isDefault: isSub,
+          quality: item.quality || '1080p HD',
+          isDefault: isSub && idx === 0,
         });
 
         // Add subtitles from anime extractor
