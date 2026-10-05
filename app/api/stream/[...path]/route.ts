@@ -37,8 +37,7 @@ export async function GET(
       const rawUrl = searchParams.get('url');
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
-      const decodedUrl = rawUrl;
-      const isManifest = searchParams.get('manifest') === '1' || subPath.endsWith('.m3u8') || decodedUrl.includes('.m3u8');
+      let decodedUrl = rawUrl;
       let upstreamHeaders: Record<string, string> = {};
       try {
         const serializedHeaders = searchParams.get('headers');
@@ -52,15 +51,37 @@ export async function GET(
         upstreamHeaders = {};
       }
 
+      // Unwrap nested proxy.valhallastream.com / m3u8-proxy / ts-proxy URLs
+      if (decodedUrl.includes('valhallastream.com') && (decodedUrl.includes('?url=') || decodedUrl.includes('&url='))) {
+        try {
+          const parsedValhalla = new URL(decodedUrl);
+          const innerUrl = parsedValhalla.searchParams.get('url');
+          const innerHeaders = parsedValhalla.searchParams.get('headers');
+          if (innerUrl) {
+            decodedUrl = innerUrl;
+            if (innerHeaders) {
+              try {
+                const parsedInner = JSON.parse(innerHeaders);
+                Object.assign(upstreamHeaders, parsedInner);
+              } catch {}
+            }
+          }
+        } catch {}
+      }
+
+      const isManifest = searchParams.get('manifest') === '1' || subPath.endsWith('.m3u8') || decodedUrl.includes('.m3u8');
+
       // Determine clean Referer and optional Origin based on target CDN domain
       let effectiveReferer = upstreamHeaders['Referer'] || upstreamHeaders['referer'] || '';
-      let effectiveOrigin: string | undefined = undefined;
+      let effectiveOrigin: string | undefined = upstreamHeaders['Origin'] || upstreamHeaders['origin'] || undefined;
 
       const lowerUrl = decodedUrl.toLowerCase();
-      if (
+      if (lowerUrl.includes('cheaptruckrepairs') || lowerUrl.includes('cinejoy')) {
+        effectiveReferer = 'https://cinejoy.pk/';
+        effectiveOrigin = 'https://cinejoy.pk';
+      } else if (
         lowerUrl.includes('rivestream') ||
         lowerUrl.includes('valhallastream') ||
-        lowerUrl.includes('m3u8-proxy') ||
         lowerUrl.includes('bxcnv') ||
         lowerUrl.includes('flkow') ||
         lowerUrl.includes('hoxcv') ||
@@ -71,15 +92,12 @@ export async function GET(
         lowerUrl.includes('flocw') ||
         lowerUrl.includes('hls_mps')
       ) {
-        effectiveReferer = 'https://rivestream.ru/';
-        effectiveOrigin = 'https://rivestream.ru';
+        effectiveReferer = effectiveReferer || 'https://rivestream.ru/';
+        effectiveOrigin = effectiveOrigin || 'https://rivestream.ru';
       } else if (lowerUrl.includes('vimeos')) {
         effectiveReferer = 'https://vimeos.net/';
       } else if (lowerUrl.includes('peakstorm')) {
         effectiveReferer = 'https://videasy.net/';
-        // Peakstorm rejects requests with Origin header (returns 403)
-      } else if (lowerUrl.includes('hakunaymatata') || lowerUrl.includes('vidlink')) {
-        effectiveReferer = 'https://vidlink.pro/';
       } else if (lowerUrl.includes('vixsrc')) {
         effectiveReferer = 'https://vixsrc.to/';
       } else if (lowerUrl.includes('autoembed')) {
@@ -156,9 +174,26 @@ export async function GET(
         const host = request.headers.get('host') || 'localhost:3000';
         const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
         const proxyUrl = (targetUrl: string, manifest: boolean) => {
+          let cleanTarget = targetUrl;
+          let cleanHeaders = { ...upstreamHeaders };
+          if (cleanTarget.includes('valhallastream.com') && (cleanTarget.includes('?url=') || cleanTarget.includes('&url='))) {
+            try {
+              const p = new URL(cleanTarget);
+              const innerU = p.searchParams.get('url');
+              const innerH = p.searchParams.get('headers');
+              if (innerU) {
+                cleanTarget = innerU;
+                if (innerH) {
+                  try {
+                    Object.assign(cleanHeaders, JSON.parse(innerH));
+                  } catch {}
+                }
+              }
+            } catch {}
+          }
           const params = new URLSearchParams({
-            url: targetUrl,
-            headers: JSON.stringify(upstreamHeaders),
+            url: cleanTarget,
+            headers: JSON.stringify(cleanHeaders),
           });
           if (manifest) params.set('manifest', '1');
           const endpoint = manifest ? 'proxy.m3u8' : 'proxy.ts';
