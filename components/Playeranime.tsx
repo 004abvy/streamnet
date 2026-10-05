@@ -75,7 +75,7 @@ export default function Playeranime({
 
   // Source selector
   type AnimeSource = "anivexa" | "hianime" | "aniwatch";
-  const [activeSource, setActiveSource] = useState<AnimeSource>("aniwatch");
+  const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
   const [activeHianimeServer, setActiveHianimeServer] = useState<string>("hd-1");
 
   // Helper to fetch with timeout
@@ -767,6 +767,8 @@ export default function Playeranime({
 
         const directHls =
           streamData.stream_url ||
+          streamData.stream ||
+          streamData.sources?.[0]?.url ||
           streamData.streams?.find(
             (s: any) => s.type === "hls" || s.url?.includes(".m3u8"),
           )?.url;
@@ -775,7 +777,7 @@ export default function Playeranime({
           const referer =
             streamData.headers?.Referer ||
             streamData.streams?.find((s: any) => s.url === directHls)?.referer ||
-            "";
+            "https://megaplay.buzz/";
           const headers: Record<string, string> = {};
           if (referer) headers["Referer"] = referer;
           const proxiedUrl = `/api/stream/proxy.m3u8?url=${encodeURIComponent(
