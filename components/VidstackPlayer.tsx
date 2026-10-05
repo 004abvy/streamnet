@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 're
 import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, TextTrack, type AudioTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
 import { clearMediaSession, suppressMediaSession } from '../utils/mediaSessionManager';
+import { Clock, RotateCcw, X } from 'lucide-react';
 
 import '@vidstack/react/player/styles/default/theme.css';
 import '@vidstack/react/player/styles/default/layouts/video.css';
@@ -122,6 +123,93 @@ export default function VidstackPlayer({
   }, [activeMediaSrc]);
 
   const [failedTrackSrcs, setFailedTrackSrcs] = useState<Set<string>>(new Set());
+  const [subtitleOffset, setSubtitleOffset] = useState<number>(0);
+  const [isSyncPanelOpen, setIsSyncPanelOpen] = useState<boolean>(false);
+  const [hudMessage, setHudMessage] = useState<string | null>(null);
+  const hudTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncPanelRef = useRef<HTMLDivElement>(null);
+
+  // Restore saved subtitle offset for this media
+  useEffect(() => {
+    if (tmdbId) {
+      const savedOffset = localStorage.getItem(`streamnet_sub_offset_${tmdbId}`);
+      if (savedOffset) {
+        const val = parseFloat(savedOffset);
+        if (!isNaN(val)) {
+          setSubtitleOffset(val);
+        }
+      }
+    }
+  }, [tmdbId, src]);
+
+  // Function to apply offset to all loaded cues
+  const applyOffsetToCues = (offsetSeconds: number) => {
+    if (!player.current) return;
+    try {
+      const textTracks = player.current.textTracks;
+      if (!textTracks) return;
+
+      const trackList = Array.from(textTracks).filter(Boolean) as any[];
+      for (const track of trackList) {
+        const cues = track.cues || track._cues;
+        if (cues && cues.length > 0) {
+          for (let i = 0; i < cues.length; i++) {
+            const cue = cues[i];
+            if (cue && typeof cue.startTime === 'number') {
+              if (cue._origStart === undefined) {
+                cue._origStart = cue.startTime;
+                cue._origEnd = cue.endTime;
+              }
+              cue.startTime = Math.max(0, cue._origStart + offsetSeconds);
+              cue.endTime = Math.max(0, cue._origEnd + offsetSeconds);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[VidstackPlayer] Error adjusting subtitle cues:', e);
+    }
+  };
+
+  const handleUpdateOffset = (newOffset: number) => {
+    const rounded = Math.round(newOffset * 20) / 20; // 0.05s precision
+    setSubtitleOffset(rounded);
+    applyOffsetToCues(rounded);
+
+    if (tmdbId) {
+      localStorage.setItem(`streamnet_sub_offset_${tmdbId}`, rounded.toString());
+    }
+
+    const sign = rounded > 0 ? `+${rounded.toFixed(1)}s` : `${rounded.toFixed(1)}s`;
+    const msg = rounded === 0 ? 'Subtitles Synced (0.0s)' : `Subtitle Sync: ${sign}`;
+    setHudMessage(msg);
+    if (hudTimeoutRef.current) clearTimeout(hudTimeoutRef.current);
+    hudTimeoutRef.current = setTimeout(() => setHudMessage(null), 2200);
+  };
+
+  // Re-apply offset periodically if non-zero to catch any newly parsed chunk cues
+  useEffect(() => {
+    if (subtitleOffset === 0) return;
+    const interval = setInterval(() => {
+      applyOffsetToCues(subtitleOffset);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [subtitleOffset]);
+
+  // Click outside to close sync panel
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (syncPanelRef.current && !syncPanelRef.current.contains(e.target as Node)) {
+        setIsSyncPanelOpen(false);
+      }
+    };
+    if (isSyncPanelOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSyncPanelOpen]);
 
   // Reset failed tracks on media source change
   useEffect(() => {
@@ -518,6 +606,139 @@ export default function VidstackPlayer({
           icons={defaultLayoutIcons}
           noModal={true}
         />
+
+        {/* HUD Indicator Notification */}
+        {hudMessage && (
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300">
+            <div className="px-4 py-2 rounded-full bg-neutral-900/90 border border-amber-500/50 text-white font-bold text-xs sm:text-sm shadow-[0_0_25px_rgba(245,158,11,0.35)] backdrop-blur-md flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span>{hudMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Subtitle Offset / Delay Quick Controller */}
+        {uniqueTracks.length > 0 && (
+          <div 
+            ref={syncPanelRef}
+            className="absolute top-3 left-3 z-30 pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Quick Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsSyncPanelOpen((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all shadow-md backdrop-blur-md cursor-pointer border ${
+                subtitleOffset !== 0
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                  : 'bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-white border-white/15'
+              }`}
+              title="Subtitle Sync / Delay Controller"
+            >
+              <Clock className={`w-3.5 h-3.5 ${subtitleOffset !== 0 ? 'text-amber-400' : 'text-neutral-400'}`} />
+              <span>
+                {subtitleOffset !== 0 
+                  ? `Sync: ${subtitleOffset > 0 ? `+${subtitleOffset.toFixed(1)}s` : `${subtitleOffset.toFixed(1)}s`}` 
+                  : 'Sub Sync'}
+              </span>
+            </button>
+
+            {/* Expandable Sync Modal / Card */}
+            {isSyncPanelOpen && (
+              <div className="mt-2 w-72 sm:w-80 bg-neutral-900/95 border border-white/15 rounded-2xl p-4 shadow-[0_15px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl text-white">
+                <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-200">Subtitle Sync</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md ${
+                      subtitleOffset !== 0 
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                        : 'bg-white/10 text-neutral-300'
+                    }`}>
+                      {subtitleOffset > 0 ? `+${subtitleOffset.toFixed(1)}s` : `${subtitleOffset.toFixed(1)}s`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSyncPanelOpen(false)}
+                      className="p-1 rounded-full bg-white/5 hover:bg-white/15 text-neutral-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fine-Tuning Steppers */}
+                <div className="mb-3.5">
+                  <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-1.5">Fine Adjustment</div>
+                  <div className="grid grid-cols-5 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOffset(subtitleOffset - 0.5)}
+                      className="py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-bold text-neutral-200 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      -0.5s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOffset(subtitleOffset - 0.1)}
+                      className="py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-bold text-neutral-200 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      -0.1s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOffset(0)}
+                      className="py-1.5 px-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-400 text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+                      title="Reset Offset to 0s"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOffset(subtitleOffset + 0.1)}
+                      className="py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-bold text-neutral-200 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      +0.1s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateOffset(subtitleOffset + 0.5)}
+                      className="py-1.5 px-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-bold text-neutral-200 hover:text-white transition-all text-center cursor-pointer"
+                    >
+                      +0.5s
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Timing Presets */}
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider mb-1.5">Common Presets</div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[-3.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0].map((preset) => {
+                      const isActive = Math.abs(subtitleOffset - preset) < 0.01;
+                      return (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handleUpdateOffset(preset)}
+                          className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-amber-500 text-black shadow-sm font-black'
+                              : 'bg-white/5 hover:bg-white/15 text-neutral-300 hover:text-white border border-white/10'
+                          }`}
+                        >
+                          {preset === 0 ? '0s' : preset > 0 ? `+${preset}s` : `${preset}s`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </MediaPlayer>
     </div>
   );
