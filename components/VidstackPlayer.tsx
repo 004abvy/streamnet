@@ -274,6 +274,8 @@ export default function VidstackPlayer({
         textTrack.mode = 'showing';
       } else if (!savedSub && isDefault) {
         textTrack.mode = 'showing';
+      } else if (savedSub && !uniqueTracks.some(u => u.label === savedSub) && isDefault) {
+        textTrack.mode = 'showing';
       } else {
         textTrack.mode = 'disabled';
       }
@@ -319,7 +321,9 @@ export default function VidstackPlayer({
         for (const t of trackList) {
           if (!t) continue;
           if (t === target) {
-            t.mode = 'showing';
+            if (t.mode !== 'showing') {
+              t.mode = 'showing';
+            }
           } else if (t.mode === 'showing') {
             t.mode = 'disabled';
           }
@@ -327,14 +331,16 @@ export default function VidstackPlayer({
       }
     };
 
-    const timer1 = setTimeout(activateSubtitle, 150);
-    const timer2 = setTimeout(activateSubtitle, 600);
-    const timer3 = setTimeout(activateSubtitle, 1500);
+    const timer1 = setTimeout(activateSubtitle, 100);
+    const timer2 = setTimeout(activateSubtitle, 400);
+    const timer3 = setTimeout(activateSubtitle, 1000);
+    const timer4 = setTimeout(activateSubtitle, 2200);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
+      clearTimeout(timer4);
     };
   }, [uniqueTracks, tmdbId]);
 
@@ -389,18 +395,27 @@ export default function VidstackPlayer({
 
         if (savedSub === 'off') {
           // User explicitly toggled subtitles off
-        } else if (savedSub) {
-          const targetSub = textTracks.find(t => t.label === savedSub);
-          if (targetSub && targetSub.mode !== 'showing') {
-            targetSub.mode = 'showing';
-          }
         } else {
-          const activeSub = textTracks.find(t => (t as any).default) ||
-            textTracks.find(t =>
-              t.label.toLowerCase().includes('english') || t.language?.startsWith('en')
-            ) || textTracks[0];
-          if (activeSub && activeSub.mode !== 'showing') {
-            activeSub.mode = 'showing';
+          let targetSub: TextTrack | undefined;
+          if (savedSub) {
+            targetSub = textTracks.find(t => t && t.label === savedSub);
+          }
+          if (!targetSub) {
+            targetSub = textTracks.find(t => t && (t as any).default) ||
+              textTracks.find(t =>
+                t && (t.label.toLowerCase().includes('english') || t.language?.startsWith('en'))
+              ) || textTracks[0];
+          }
+
+          if (targetSub) {
+            for (const t of textTracks) {
+              if (!t) continue;
+              if (t === targetSub) {
+                if (t.mode !== 'showing') t.mode = 'showing';
+              } else if (t.mode === 'showing') {
+                t.mode = 'disabled';
+              }
+            }
           }
         }
       }
