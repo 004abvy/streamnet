@@ -708,17 +708,52 @@ export default function Playeranime({
           }
         }
 
-        // 0. Extract stream native subtitles from anime provider (Anivexa)
+        // 0. Extract stream and native subtitles from anime provider (Anivexa / Server 1)
         let streamData: any = null;
         if (!selectedEpisodeId.startsWith("season-") && !selectedEpisodeId.startsWith("tmdb-")) {
+          // Attempt 1: Fetch currently selected episode
           try {
             const res = await fetch(
               `/api/anime-api/stream-info/${encodeURIComponent(selectedEpisodeId || "")}`
             );
             if (res.ok) {
-              streamData = await res.json();
+              const parsed = await res.json();
+              if (parsed?.stream_url || parsed?.stream || parsed?.sources?.length || parsed?.streams?.length || parsed?.embeds?.length) {
+                streamData = parsed;
+              }
             }
           } catch {}
+
+          // Attempt 2: Auto-fallback across other providers in animeData if primary provider stream failed
+          if (!streamData && animeData) {
+            const currentEp =
+              activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
+              episodes.find((e) => e.id === selectedEpisodeId);
+            const epNum = currentEp?.number;
+            if (epNum) {
+              const priorityProviders = ["anikoto", "reanime", "mkissa", "animegg", "2dhive", "kaa"];
+              for (const p of priorityProviders) {
+                const altEps = animeData[p]?.episodes?.[audioType];
+                if (altEps && Array.isArray(altEps)) {
+                  const altEp = altEps.find((e: any) => e.number === epNum);
+                  if (altEp && altEp.id && altEp.id !== selectedEpisodeId) {
+                    try {
+                      const altRes = await fetch(
+                        `/api/anime-api/stream-info/${encodeURIComponent(altEp.id)}`
+                      );
+                      if (altRes.ok) {
+                        const altParsed = await altRes.json();
+                        if (altParsed?.stream_url || altParsed?.stream || altParsed?.sources?.length || altParsed?.streams?.length || altParsed?.embeds?.length) {
+                          streamData = altParsed;
+                          break;
+                        }
+                      }
+                    } catch {}
+                  }
+                }
+              }
+            }
+          }
         }
 
         const nativeSubs: any[] = [];
@@ -785,17 +820,17 @@ export default function Playeranime({
         }
 
         const directHls =
-          streamData.stream_url ||
-          streamData.stream ||
-          streamData.sources?.[0]?.url ||
-          streamData.streams?.find(
+          streamData?.stream_url ||
+          streamData?.stream ||
+          streamData?.sources?.[0]?.url ||
+          streamData?.streams?.find(
             (s: any) => s.type === "hls" || s.url?.includes(".m3u8"),
           )?.url;
 
         if (directHls) {
           const referer =
-            streamData.headers?.Referer ||
-            streamData.streams?.find((s: any) => s.url === directHls)?.referer ||
+            streamData?.headers?.Referer ||
+            streamData?.streams?.find((s: any) => s.url === directHls)?.referer ||
             "https://megaplay.buzz/";
           const headers: Record<string, string> = {};
           if (referer) headers["Referer"] = referer;
@@ -805,11 +840,11 @@ export default function Playeranime({
 
           setStreamUrl(proxiedUrl);
           setIsIframe(false);
-        } else if (streamData.embeds && streamData.embeds.length > 0) {
+        } else if (streamData?.embeds && streamData.embeds.length > 0) {
           setStreamUrl(streamData.embeds[0].url);
           setIsIframe(true);
         } else if (
-          streamData.streams &&
+          streamData?.streams &&
           streamData.streams.some((s: any) => s.type === "embed" || s.embedUrl)
         ) {
           const embedStream = streamData.streams.find(
@@ -820,8 +855,14 @@ export default function Playeranime({
         } else if (tmdbId) {
           // Robust direct aggregate fallback for next seasons & missing streams
           try {
+            const currentEp =
+              activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
+              episodes.find((e) => e.id === selectedEpisodeId);
+            const epNum = currentEp?.number || 1;
+            const currentSeasonNum = activeGroup?.seasonNumber || 1;
+            const routeType = type === "movie" ? "movie" : "tv";
             const aggRes = await fetch(
-              `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=${currentSeasonNum}&episode=${targetEpForQuery}&vip=true`
+              `/api/direct-aggregate?id=${tmdbId}&type=${routeType}&season=${currentSeasonNum}&episode=${epNum}&vip=true`
             );
             if (aggRes.ok) {
               const aggData = await aggRes.json();
@@ -843,9 +884,9 @@ export default function Playeranime({
               }
             }
           } catch {}
-          setError("No streaming source found.");
+          setError("No streaming source found. Try switching to Server 2 or Server 3.");
         } else {
-          setError("No streaming source found.");
+          setError("No streaming source found. Try switching to Server 2 or Server 3.");
         }
       } catch (err: any) {
         setError(err.message || "Error fetching stream URL");
