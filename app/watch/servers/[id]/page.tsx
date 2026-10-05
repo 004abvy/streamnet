@@ -608,8 +608,13 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     setPlaybackTimestamp(currentTime);
     playbackTimeRef.current = currentTime;
 
-    // Fast-path: If the currently active HLS instance has multiple audio tracks, switch audio track instantly in-place!
-    if (artRef.current?.hls?.audioTracks && artRef.current.hls.audioTracks.length > 1) {
+    // Fast-path: Only switch in-place if it is the exact same underlying manifest with multiple audio tracks
+    const isSameManifest = currentStreamUrl && (
+      currentStreamUrl.split('&lang=')[0].split('&forceTrack=')[0] === 
+      track.url.split('&lang=')[0].split('&forceTrack=')[0]
+    );
+
+    if (isSameManifest && artRef.current?.hls?.audioTracks && artRef.current.hls.audioTracks.length > 1) {
       const targetLang = track.language.toLowerCase();
       let targetIdx = -1;
       if (targetLang === 'ja' || targetLang.includes('ja')) {

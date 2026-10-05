@@ -255,15 +255,27 @@ export async function GET(request: NextRequest) {
               });
               if (streamRes.ok) {
                 const streamJson = await streamRes.json();
-                const directHls =
-                  streamJson.stream_url ||
-                  streamJson.streams?.find((s: any) => s.type === 'hls' || s.url?.includes('.m3u8'))?.url;
+                const rawSubs = [
+                  ...(streamJson.subtitles || []),
+                  ...(streamJson.tracks || []),
+                  ...(streamJson.captions || []),
+                ];
+                if (streamJson.streams && Array.isArray(streamJson.streams)) {
+                  for (const s of streamJson.streams) {
+                    if (s.subtitles && Array.isArray(s.subtitles)) {
+                      rawSubs.push(...s.subtitles);
+                    }
+                    if (s.tracks && Array.isArray(s.tracks)) {
+                      rawSubs.push(...s.tracks);
+                    }
+                  }
+                }
                 if (directHls) {
                   results.push({
                     mode,
                     url: directHls,
                     headers: streamJson.headers || {},
-                    subtitles: streamJson.subtitles || [],
+                    subtitles: rawSubs,
                   });
                 }
               }
@@ -580,10 +592,12 @@ export async function GET(request: NextRequest) {
         // Add subtitles from anime extractor
         if (item.subtitles && Array.isArray(item.subtitles)) {
           for (const s of item.subtitles) {
-            const subUrl = s.url || s.file;
+            const subUrl = s.url || s.file || s.src;
             if (!subUrl) continue;
-            const rawLabel = (s.label || s.lang || s.language || 'English').trim();
-            const norm = normalizeSubtitle(rawLabel, s.lang || s.language);
+            const rawLabel = (s.label || s.name || s.lang || s.language || 'English').trim();
+            const norm = normalizeSubtitle(rawLabel, s.lang || s.language || s.srclang || 'en');
+            const isEng = norm.langCode === 'en' || norm.label.toLowerCase().includes('eng');
+            if (isAnime && !isEng) continue;
             subtitleMap.set(norm.key, {
               id: `sub-anime-${norm.key}`,
               language: norm.langCode,
@@ -591,7 +605,7 @@ export async function GET(request: NextRequest) {
               url: subUrl.startsWith('http')
                 ? `${currentOrigin}/api/subtitle/proxy?url=${encodeURIComponent(subUrl)}`
                 : subUrl,
-              isDefault: norm.key === 'en',
+              isDefault: isEng,
             });
           }
         }
