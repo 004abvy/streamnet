@@ -193,43 +193,56 @@ export default function ArtPlayerComponent({
             if (artInstance.hls) artInstance.hls.destroy();
             const hls = new Hls({
               enableWorker: true,
-              lowLatencyMode: true,
-              startPosition: initialTime && initialTime > 0 ? initialTime : -1,
-              // Relaxed retry limits to support slower streaming proxy servers
-              fragLoadingMaxRetry: 6,
-              fragLoadingMaxRetryTimeout: 15000,
-              manifestLoadingMaxRetry: 6,
-              manifestLoadingMaxRetryTimeout: 15000,
-              levelLoadingMaxRetry: 6,
-              levelLoadingMaxRetryTimeout: 15000,
+              lowLatencyMode: false,
+              backBufferLength: 90,
+              maxBufferLength: 60,
+              maxMaxBufferLength: 600,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
+              highBufferWatchdogPeriod: 2,
+              nudgeOffset: 0.2,
+              nudgeMaxRetry: 5,
+              fragLoadingMaxRetry: 8,
+              fragLoadingMaxRetryTimeout: 20000,
+              manifestLoadingMaxRetry: 8,
+              manifestLoadingMaxRetryTimeout: 20000,
+              levelLoadingMaxRetry: 8,
+              levelLoadingMaxRetryTimeout: 20000,
             });
             hls.loadSource(m3u8Url);
             hls.attachMedia(video);
             artInstance.hls = hls;
 
             let hasRestoredSeek = false;
-            let mediaErrorRecoveries = 0; // Cap recoverMediaError attempts
+            let mediaErrorRecoveries = 0;
             const applyInitialSeek = () => {
               if (hasRestoredSeek || !initialTime || initialTime <= 0) return;
+              hasRestoredSeek = true;
               try {
-                if (
-                  video.currentTime < initialTime - 0.8 ||
-                  video.currentTime === 0
-                ) {
-                  video.currentTime = initialTime;
-                  if (artInstance) artInstance.currentTime = initialTime;
-                }
-                if (video.currentTime >= initialTime - 1) {
-                  hasRestoredSeek = true;
-                }
+                video.currentTime = initialTime;
+                if (artInstance) artInstance.currentTime = initialTime;
               } catch {
                 // Handled gracefully
               }
             };
 
+            hls.on(Hls.Events.BUFFER_STALLED, () => {
+              console.log("[ArtPlayer HLS] Buffer stalled, nudging video currentTime forward...");
+              if (video && !video.paused) {
+                try {
+                  video.currentTime += 0.1;
+                } catch {}
+              }
+            });
+
             // Extract real quality levels and audio tracks from HLS manifest
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
               applyInitialSeek();
+              if (autoPlay) {
+                artInstance.play().catch(() => {
+                  if (artInstance.loading) artInstance.loading.show = false;
+                });
+              }
               if (hls.audioTracks && hls.audioTracks.length > 1) {
                 const wantsJap =
                   m3u8Url.includes("lang=ja") ||
@@ -302,36 +315,22 @@ export default function ArtPlayerComponent({
               }
             });
 
-            hls.on(Hls.Events.LEVEL_LOADED, applyInitialSeek);
             video.addEventListener("loadedmetadata", applyInitialSeek, {
               once: true,
             });
-            video.addEventListener("canplay", applyInitialSeek, { once: true });
-            video.addEventListener(
-              "playing",
-              () => {
-                if (!hasRestoredSeek && initialTime > 0) {
-                  applyInitialSeek();
-                }
-              },
-              { once: true },
-            );
 
             hls.on(Hls.Events.ERROR, (event: any, data: any) => {
               if (data.fatal) {
                 switch (data.type) {
                   case Hls.ErrorTypes.NETWORK_ERROR:
                     console.warn(
-                      "[ArtPlayer HLS] Fatal network error, halting:",
+                      "[ArtPlayer HLS] Fatal network error, attempting recovery:",
                       data,
                     );
-                    hls.stopLoad();
-                    artInstance.notice.show =
-                      "Stream unreachable. Try another track.";
-                    artInstance.emit("error", data);
+                    hls.startLoad();
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
-                    if (mediaErrorRecoveries < 1) {
+                    if (mediaErrorRecoveries < 2) {
                       mediaErrorRecoveries++;
                       console.warn(
                         "[ArtPlayer HLS] Media error, attempting recovery (attempt " +
@@ -539,13 +538,46 @@ export default function ArtPlayerComponent({
       suppressMediaSession();
       clearMediaSession();
       updatePortalTarget();
+
+      if (autoPlay) {
+        art.play().catch(() => {
+          if (art.loading) art.loading.show = false;
+        });
+      }
+
       if (initialTime && initialTime > 0) {
         try {
-          if (art.currentTime < initialTime - 0.8 || art.currentTime === 0) {
+          if (Math.abs(art.currentTime - initialTime) > 1) {
             art.currentTime = initialTime;
           }
         } catch {}
       }
+
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:canplay", () => {
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:playing", () => {
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:play", () => {
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:pause", () => {
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:seeked", () => {
+      if (art.loading) art.loading.show = false;
+    });
+
+    art.on("video:waiting", () => {
+      if (art.loading) art.loading.show = true;
     });
 
     art.on("fullscreen", () => {
