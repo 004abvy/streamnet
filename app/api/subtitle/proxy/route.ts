@@ -263,23 +263,47 @@ export async function GET(request: NextRequest) {
       } catch {}
     }
 
+    const customReferer = searchParams.get('referer');
+    const customHeadersParam = searchParams.get('headers');
+    let customHeaders: Record<string, string> = {};
+    if (customHeadersParam) {
+      try {
+        customHeaders = JSON.parse(customHeadersParam);
+      } catch {}
+    }
+
     // Determine clean Referer and User-Agent
     const lowerUrl = decodedUrl.toLowerCase();
-    let referer = 'https://megacloud.tv/';
-    if (lowerUrl.includes('megacloud') || lowerUrl.includes('rabbitstream') || lowerUrl.includes('rapid-cloud') || lowerUrl.includes('aniwatch') || lowerUrl.includes('hianime')) {
-      referer = 'https://megacloud.tv/';
-    } else if (lowerUrl.includes('bingr.one') || lowerUrl.includes('hakunaymatata') || lowerUrl.includes('rivestream')) {
-      referer = 'https://bingr.one/';
-    } else if (lowerUrl.includes('vixsrc')) {
-      referer = 'https://vixsrc.to/';
-    } else if (lowerUrl.includes('videasy')) {
-      referer = 'https://videasy.net/';
-    } else if (lowerUrl.includes('autoembed')) {
-      referer = 'https://autoembed.cc/';
-    } else if (lowerUrl.includes('opensubtitles')) {
-      referer = 'https://www.opensubtitles.org/';
-    } else if (lowerUrl.includes('cheaptruckrepairs') || lowerUrl.includes('cinejoy')) {
-      referer = 'https://cinejoy.pk/';
+    let referer = customReferer || customHeaders['Referer'] || 'https://megaplay.buzz/';
+
+    if (!customReferer && !customHeaders['Referer']) {
+      if (
+        lowerUrl.includes('stellarfrontier') ||
+        lowerUrl.includes('nexabloom') ||
+        lowerUrl.includes('hiddenvertex') ||
+        lowerUrl.includes('megaplay') ||
+        lowerUrl.includes('anikoto') ||
+        lowerUrl.includes('reanime') ||
+        lowerUrl.includes('2dhive') ||
+        lowerUrl.includes('mkissa') ||
+        lowerUrl.includes('kaa')
+      ) {
+        referer = 'https://megaplay.buzz/';
+      } else if (lowerUrl.includes('megacloud') || lowerUrl.includes('rabbitstream') || lowerUrl.includes('rapid-cloud') || lowerUrl.includes('aniwatch') || lowerUrl.includes('hianime')) {
+        referer = 'https://megacloud.tv/';
+      } else if (lowerUrl.includes('bingr.one') || lowerUrl.includes('hakunaymatata') || lowerUrl.includes('rivestream')) {
+        referer = 'https://bingr.one/';
+      } else if (lowerUrl.includes('vixsrc')) {
+        referer = 'https://vixsrc.to/';
+      } else if (lowerUrl.includes('videasy')) {
+        referer = 'https://videasy.net/';
+      } else if (lowerUrl.includes('autoembed')) {
+        referer = 'https://autoembed.cc/';
+      } else if (lowerUrl.includes('opensubtitles')) {
+        referer = 'https://www.opensubtitles.org/';
+      } else if (lowerUrl.includes('cheaptruckrepairs') || lowerUrl.includes('cinejoy')) {
+        referer = 'https://cinejoy.pk/';
+      }
     }
 
     const fetchHeaders: Record<string, string> = {
@@ -288,6 +312,7 @@ export async function GET(request: NextRequest) {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       Referer: referer,
+      ...customHeaders,
     };
 
     let response: Response | null = null;

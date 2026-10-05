@@ -141,12 +141,25 @@ export default function VidstackPlayer({
       // Filter: Keep ONLY English subtitles in popup menu
       const rawLower = (track.label || '').toLowerCase();
       const langLower = (track.language || '').toLowerCase();
+      const isNonEng =
+        rawLower.includes('arabic') ||
+        rawLower.includes('italian') ||
+        rawLower.includes('russian') ||
+        rawLower.includes('french') ||
+        rawLower.includes('german') ||
+        rawLower.includes('spanish') ||
+        rawLower.includes('portuguese') ||
+        rawLower.includes('japanese') ||
+        rawLower.includes('chinese') ||
+        rawLower.includes('korean');
+
       const isEnglish =
-        rawLower.includes('english') ||
-        rawLower.includes('eng') ||
-        langLower === 'en' ||
-        langLower.startsWith('en-') ||
-        langLower === 'eng';
+        !isNonEng &&
+        (rawLower.includes('english') ||
+          rawLower.includes('eng') ||
+          langLower === 'en' ||
+          langLower.startsWith('en-') ||
+          langLower === 'eng');
 
       if (!isEnglish) {
         continue;
@@ -241,11 +254,14 @@ export default function VidstackPlayer({
 
       if (savedSub === 'off') return;
 
+      const isAnyShowing = trackList.some((t) => t && t.mode === 'showing');
+      if (isAnyShowing && !savedSub) return;
+
       let target: TextTrack | undefined;
       if (savedSub) {
         target = trackList.find((t) => t && t.label === savedSub);
       }
-      if (!target) {
+      if (!target && !isAnyShowing) {
         target =
           trackList.find((t) => t && (t as any).default) ||
           trackList.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
@@ -262,13 +278,11 @@ export default function VidstackPlayer({
           trackList[0];
       }
 
-      if (target) {
+      if (target && target.mode !== 'showing') {
         for (const t of trackList) {
           if (!t) continue;
           if (t === target) {
-            if (t.mode !== 'showing') {
-              t.mode = 'showing';
-            }
+            t.mode = 'showing';
           } else if (t.mode === 'showing') {
             t.mode = 'disabled';
           }
@@ -341,25 +355,26 @@ export default function VidstackPlayer({
         if (savedSub === 'off') {
           // User explicitly toggled subtitles off
         } else {
-          let targetSub: TextTrack | undefined;
-          if (savedSub) {
-            targetSub = textTracks.find(t => t && t.label === savedSub);
-          }
-          if (!targetSub) {
-            targetSub = textTracks.find(t => t && (t as any).default) ||
-              textTracks.find(t =>
-                t && (t.label.toLowerCase().includes('english') || t.language?.startsWith('en'))
-              ) || textTracks[0];
-          }
+          const isAnyShowing = textTracks.some((t) => t && t.mode === 'showing');
+          if (!isAnyShowing) {
+            let targetSub: TextTrack | undefined;
+            if (savedSub) {
+              targetSub = textTracks.find((t) => t && t.label === savedSub);
+            }
+            if (!targetSub) {
+              targetSub =
+                textTracks.find((t) => t && (t as any).default) ||
+                textTracks.find(
+                  (t) =>
+                    t &&
+                    (t.label.toLowerCase().includes('english') ||
+                      t.language?.startsWith('en')),
+                ) ||
+                textTracks[0];
+            }
 
-          if (targetSub) {
-            for (const t of textTracks) {
-              if (!t) continue;
-              if (t === targetSub) {
-                if (t.mode !== 'showing') t.mode = 'showing';
-              } else if (t.mode === 'showing') {
-                t.mode = 'disabled';
-              }
+            if (targetSub && targetSub.mode !== 'showing') {
+              targetSub.mode = 'showing';
             }
           }
         }

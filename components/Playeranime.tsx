@@ -735,18 +735,37 @@ export default function Playeranime({
               }
             }
           }
+          const streamReferer =
+            streamData.headers?.Referer ||
+            streamData.streams?.find((s: any) => s.referer)?.referer ||
+            "https://megaplay.buzz/";
           for (const sub of rawNativeSubs) {
             const rawSrc = sub.url || sub.file || sub.src;
             if (!rawSrc) continue;
             const finalSrc = rawSrc.startsWith("/api/subtitle/proxy")
               ? rawSrc
-              : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}`;
+              : `/api/subtitle/proxy?url=${encodeURIComponent(rawSrc)}&referer=${encodeURIComponent(streamReferer)}`;
             const label = (sub.label || sub.name || "English").trim();
+            const lowerLabel = label.toLowerCase();
+            const isNonEnglishLabel =
+              lowerLabel.includes("arabic") ||
+              lowerLabel.includes("italian") ||
+              lowerLabel.includes("russian") ||
+              lowerLabel.includes("french") ||
+              lowerLabel.includes("german") ||
+              lowerLabel.includes("spanish") ||
+              lowerLabel.includes("portuguese") ||
+              lowerLabel.includes("japanese") ||
+              lowerLabel.includes("chinese") ||
+              lowerLabel.includes("korean");
+
             const isEnglish =
-              label.toLowerCase().includes("english") ||
-              label.toLowerCase().includes("eng") ||
-              sub.srclang === "en" ||
-              sub.language === "en";
+              !isNonEnglishLabel &&
+              (lowerLabel.includes("english") ||
+                lowerLabel.includes("eng") ||
+                sub.srclang === "en" ||
+                sub.language === "en");
+
             if (!isEnglish) continue;
             nativeSubs.push({
               src: finalSrc,
@@ -848,12 +867,25 @@ export default function Playeranime({
       let rawLabel = (track.label || "English").trim();
       const lower = rawLabel.toLowerCase();
       const langLower = (track.language || "").toLowerCase();
+      const isNonEng =
+        lower.includes("arabic") ||
+        lower.includes("italian") ||
+        lower.includes("russian") ||
+        lower.includes("french") ||
+        lower.includes("german") ||
+        lower.includes("spanish") ||
+        lower.includes("portuguese") ||
+        lower.includes("japanese") ||
+        lower.includes("chinese") ||
+        lower.includes("korean");
+
       const isEng =
-        lower.includes("english") ||
-        lower.includes("eng") ||
-        langLower === "en" ||
-        langLower.startsWith("en-") ||
-        langLower === "eng";
+        !isNonEng &&
+        (lower.includes("english") ||
+          lower.includes("eng") ||
+          langLower === "en" ||
+          langLower.startsWith("en-") ||
+          langLower === "eng");
 
       if (!isEng) continue; // Keep only English subtitles
 

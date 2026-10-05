@@ -27,9 +27,11 @@ export async function GET(
       subPath === 'proxy' ||
       subPath === 'proxy.m3u8' ||
       subPath === 'proxy.ts' ||
+      subPath === 'proxy.vtt' ||
       subPath.startsWith('proxy') ||
       subPath.endsWith('.m3u8') ||
       subPath.endsWith('.ts') ||
+      subPath.endsWith('.vtt') ||
       subPath.endsWith('.mp4') ||
       subPath.endsWith('.m4s')
     ) {
@@ -80,6 +82,28 @@ export async function GET(
       if (lowerUrl.includes('cheaptruckrepairs') || lowerUrl.includes('cinejoy')) {
         effectiveReferer = 'https://cinejoy.pk/';
         effectiveOrigin = 'https://cinejoy.pk';
+      } else if (
+        lowerUrl.includes('stellarfrontier') ||
+        lowerUrl.includes('nexabloom') ||
+        lowerUrl.includes('hiddenvertex') ||
+        lowerUrl.includes('megaplay') ||
+        lowerUrl.includes('anikoto') ||
+        lowerUrl.includes('reanime') ||
+        lowerUrl.includes('2dhive') ||
+        lowerUrl.includes('mkissa') ||
+        lowerUrl.includes('kaa')
+      ) {
+        effectiveReferer = effectiveReferer || 'https://megaplay.buzz/';
+        effectiveOrigin = effectiveOrigin || 'https://megaplay.buzz';
+      } else if (
+        lowerUrl.includes('megacloud') ||
+        lowerUrl.includes('rabbitstream') ||
+        lowerUrl.includes('rapid-cloud') ||
+        lowerUrl.includes('aniwatch') ||
+        lowerUrl.includes('hianime')
+      ) {
+        effectiveReferer = effectiveReferer || 'https://megacloud.tv/';
+        effectiveOrigin = effectiveOrigin || 'https://megacloud.tv';
       } else if (
         lowerUrl.includes('rivestream') ||
         lowerUrl.includes('valhallastream') ||
@@ -194,6 +218,9 @@ export async function GET(
                 }
               } catch {}
             }
+            if (cleanTarget.toLowerCase().includes('.vtt') || cleanTarget.toLowerCase().includes('.srt')) {
+              return `${protocol}://${host}/api/subtitle/proxy?url=${encodeURIComponent(cleanTarget)}&referer=${encodeURIComponent(effectiveReferer || 'https://megaplay.buzz/')}`;
+            }
             const isSubMp4 = cleanTarget.toLowerCase().includes('.mp4') && !cleanTarget.toLowerCase().includes('.m3u8');
             const params = new URLSearchParams({
               url: cleanTarget,
@@ -209,6 +236,9 @@ export async function GET(
             if (uriMatch) {
               try {
                 const mediaUrl = new URL(uriMatch[1], decodedUrl).href;
+                if (line.includes('TYPE=SUBTITLES') || mediaUrl.toLowerCase().includes('.vtt') || mediaUrl.toLowerCase().includes('.srt')) {
+                  return line.replace(uriMatch[1], `${protocol}://${host}/api/subtitle/proxy?url=${encodeURIComponent(mediaUrl)}&referer=${encodeURIComponent(effectiveReferer || 'https://megaplay.buzz/')}`);
+                }
                 const isSubManifest = (/\.m3u8(?:\?|$)/i.test(mediaUrl) || mediaUrl.includes('playlist')) && !mediaUrl.includes('.mp4');
                 return line.replace(uriMatch[1], proxyUrl(mediaUrl, isSubManifest));
               } catch {
@@ -220,6 +250,9 @@ export async function GET(
             if (trimmedLine && !trimmedLine.startsWith('#')) {
               try {
                 const fullChunkUrl = new URL(trimmedLine, decodedUrl).href;
+                if (fullChunkUrl.toLowerCase().includes('.vtt') || fullChunkUrl.toLowerCase().includes('.srt')) {
+                  return `${protocol}://${host}/api/subtitle/proxy?url=${encodeURIComponent(fullChunkUrl)}&referer=${encodeURIComponent(effectiveReferer || 'https://megaplay.buzz/')}`;
+                }
                 const isSubManifest = (/\.m3u8(?:\?|$)/i.test(fullChunkUrl) || fullChunkUrl.includes('playlist')) && !fullChunkUrl.includes('.mp4');
                 return proxyUrl(fullChunkUrl, isSubManifest);
               } catch {
@@ -242,7 +275,9 @@ export async function GET(
       }
 
       let arrayBuffer = await response.arrayBuffer();
-      let streamContentType = response.headers.get('content-type') || (isExplicitMp4 ? 'video/mp4' : (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/mp4'));
+      const isVtt = subPath.endsWith('.vtt') || decodedUrl.toLowerCase().includes('.vtt');
+      let streamContentType = response.headers.get('content-type') || (isVtt ? 'text/vtt; charset=utf-8' : (isExplicitMp4 ? 'video/mp4' : (subPath.endsWith('.ts') ? 'video/mp2t' : 'video/mp4')));
+      if (isVtt) streamContentType = 'text/vtt; charset=utf-8';
       if (isExplicitMp4) streamContentType = 'video/mp4';
         
         // Unwrap FlixCloud HD-2 image segments
