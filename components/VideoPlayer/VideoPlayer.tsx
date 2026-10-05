@@ -314,7 +314,7 @@ export default function VideoPlayer({
       )}
 
       {/* Video Container Frame with Refined Ambient Cinema Glow (All 3 Players) */}
-      <div className="w-full max-w-6xl relative" style={{ isolation: 'isolate' }}>
+      <div className="w-full max-w-[88rem] relative" style={{ isolation: 'isolate' }}>
         {/* Dynamic Ambient Glow (lessened & elegant, shades subtly bleeding outside player frame) */}
         {!isFullscreen && (
           <div
@@ -363,7 +363,7 @@ export default function VideoPlayer({
           className={`w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10 ${vpStyles.playerFrameContainer}`}
         >
           {isDirectMode ? (
-            <div className="w-full aspect-video">
+            <div className="w-full h-[64vw] max-h-[420px] min-h-[250px] sm:h-[56vw] sm:max-h-[520px] md:h-[650px] md:max-h-[80vh] md:min-h-[540px] lg:h-[720px] xl:h-[780px]">
               <HlsPlayer
                 key={activeServer}
                 serverId={activeServer}
@@ -387,7 +387,7 @@ export default function VideoPlayer({
               episode={episode}
             />
           ) : (
-            <div className="w-full aspect-video relative overflow-hidden bg-black">
+            <div className="w-full h-[64vw] max-h-[420px] min-h-[250px] sm:h-[56vw] sm:max-h-[520px] md:h-[650px] md:max-h-[80vh] md:min-h-[540px] lg:h-[720px] xl:h-[780px] relative overflow-hidden bg-black">
               <iframe
                 src={embedUrl}
                 allowFullScreen
@@ -403,7 +403,7 @@ export default function VideoPlayer({
       </div>
 
       {/* Sleek Responsive Floating Server Capsule */}
-      <div className="relative z-30 flex items-center justify-center w-full max-w-6xl pt-2 pb-4 px-1">
+      <div className="relative z-30 flex items-center justify-center w-full max-w-[88rem] pt-2 pb-4 px-1">
         <div className="inline-flex items-center gap-0.5 sm:gap-1.5 p-1 sm:p-1.5 bg-[#121218]/80 hover:bg-[#121218]/95 border border-white/15 hover:border-white/25 rounded-full backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)] transition-all duration-300 max-w-full overflow-x-auto scrollbar-none">
           <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-neutral-400 pl-2 sm:pl-3 pr-1 select-none shrink-0">
             Server

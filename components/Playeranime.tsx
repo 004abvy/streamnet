@@ -1099,7 +1099,7 @@ export default function Playeranime({
 
       {/* Main Container */}
       <div className="w-full flex flex-col items-center px-3 sm:px-6 md:px-8 pt-4 pb-16 min-h-screen">
-        <div className="w-full max-w-6xl">
+        <div className="w-full max-w-[88rem]">
           {/* Top Bar & Controls */}
           <div className="flex flex-col gap-3.5 sm:gap-4.5 mb-5 sm:mb-6 pt-1">
             {/* Row 1: Back, Title & Primary Actions (VIP Cinema + Close) */}
@@ -1238,7 +1238,7 @@ export default function Playeranime({
           </div>
 
           {/* Video Player Box */}
-          <div className="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center">
+          <div className="relative w-full h-[64vw] max-h-[420px] min-h-[250px] sm:h-[56vw] sm:max-h-[520px] md:h-[650px] md:max-h-[80vh] md:min-h-[540px] lg:h-[720px] xl:h-[780px] rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center">
             {loading ? (
               <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900/90 gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/5 border border-amber-500/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.3)] animate-pulse">

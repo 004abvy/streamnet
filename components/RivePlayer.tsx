@@ -34,7 +34,7 @@ export default function RivePlayer({
   }, []);
 
   return (
-    <div className={`w-full aspect-video relative overflow-hidden bg-black ${className}`}>
+    <div className={`w-full h-[64vw] max-h-[420px] min-h-[250px] sm:h-[56vw] sm:max-h-[520px] md:h-[650px] md:max-h-[80vh] md:min-h-[540px] lg:h-[720px] xl:h-[780px] relative overflow-hidden bg-black ${className}`}>
       <iframe
         src={embedUrl}
         allowFullScreen

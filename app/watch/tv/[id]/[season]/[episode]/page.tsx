@@ -75,7 +75,7 @@ export default function WatchTvPage() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden">
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-[88rem]">
         {loading ? (
           <div className="w-full flex flex-col gap-6">
             <div className="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900/90 border border-white/10 shadow-2xl flex flex-col items-center justify-center p-6">
