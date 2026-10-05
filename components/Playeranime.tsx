@@ -605,60 +605,100 @@ export default function Playeranime({
             }
           }
 
-          const endpointBase = activeSource === "hianime" ? "/api/hianime" : "/api/aniwatch";
-          try {
-            const searchRes = await fetch(`${endpointBase}/anime/search?q=${encodeURIComponent(animeTitle)}`);
-            if (searchRes.ok) {
-              const searchData = await searchRes.json();
-              const animes = searchData.data?.animes || [];
-              if (animes.length > 0) {
-                const targetAnime = animes[0];
-                const epsRes = await fetch(`${endpointBase}/anime/${targetAnime.id}/episodes`);
-                if (epsRes.ok) {
-                  const epsData = await epsRes.json();
-                  const epsList = epsData.data?.episodes || [];
-                  const matchedEp = epsList.find((e: any) => Number(e.number) === epNum) || epsList[0];
-                  if (matchedEp) {
-                    const srcRes = await fetch(`${endpointBase}/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=${activeHianimeServer}&category=${audioType}`);
-                    if (srcRes.ok) {
-                      const srcData = await srcRes.json();
-                      const sources = srcData.data?.sources || [];
-                      const tracks = srcData.data?.tracks || [];
-                      if (sources.length > 0 && sources[0].url) {
-                        const isHls = sources[0].url.includes(".m3u8");
-                        const proxied = isHls
-                          ? `/api/stream/proxy.m3u8?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}&manifest=1`
-                          : `/api/stream/proxy.mp4?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}`;
-                        setStreamUrl(proxied);
-                        setIsIframe(false);
+          const seasonNum = activeGroup?.seasonNumber || 1;
+          const relativeEpNum =
+            activeGroup && currentEp?.number && typeof currentEp.number === "number" && activeGroup.startEp
+              ? currentEp.number - activeGroup.startEp + 1
+              : epNum;
+          const targetEpForQuery = (relativeEpNum > 0 && relativeEpNum <= (activeGroup?.count || 999)) ? relativeEpNum : epNum;
 
-                        if (tracks.length > 0) {
-                          const mappedTracks = tracks
-                            .filter((t: any) => t && t.file && t.kind !== "thumbnails")
-                            .map((t: any) => {
-                              const isEng =
-                                (t.label || "").toLowerCase().includes("english") ||
-                                (t.label || "").toLowerCase().includes("eng") ||
-                                t.default === true;
-                              return {
-                                src: t.file?.startsWith("http")
-                                  ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}`
-                                  : t.file,
-                                label: t.label || "English",
-                                kind: "subtitles",
-                                language: isEng ? "en" : (t.lang || "en"),
-                                default: t.default ?? isEng,
-                                type: "vtt",
-                              };
-                            });
-                          if (mappedTracks.length > 0) {
-                            setSubtitles(mappedTracks);
-                          }
+          const endpointBase = activeSource === "hianime" ? "/api/hianime" : "/api/aniwatch";
+          const searchQueries = [
+            seasonNum > 1 ? `${animeTitle} Season ${seasonNum}` : animeTitle,
+            seasonNum > 1 ? `${animeTitle} ${seasonNum}` : animeTitle,
+            animeTitle,
+          ];
+
+          try {
+            let targetAnime: any = null;
+            let epsList: any[] = [];
+
+            for (const q of searchQueries) {
+              try {
+                const searchRes = await fetch(`${endpointBase}/anime/search?q=${encodeURIComponent(q)}`);
+                if (searchRes.ok) {
+                  const searchData = await searchRes.json();
+                  const animes = searchData.data?.animes || [];
+                  if (animes.length > 0) {
+                    targetAnime = animes.find((a: any) => {
+                      const an = (a.name || "").toLowerCase();
+                      if (seasonNum > 1) {
+                        return an.includes(`season ${seasonNum}`) || an.includes(` ${seasonNum}`) || an.includes(`part ${seasonNum}`) || an.includes(`s${seasonNum}`);
+                      }
+                      return true;
+                    }) || animes[0];
+
+                    if (targetAnime) {
+                      const epsRes = await fetch(`${endpointBase}/anime/${targetAnime.id}/episodes`);
+                      if (epsRes.ok) {
+                        const epsData = await epsRes.json();
+                        const list = epsData.data?.episodes || [];
+                        if (list.length > 0) {
+                          epsList = list;
+                          break;
                         }
-                        setLoading(false);
-                        return;
                       }
                     }
+                  }
+                }
+              } catch {}
+            }
+
+            if (epsList.length > 0) {
+              const matchedEp =
+                epsList.find((e: any) => Number(e.number) === targetEpForQuery) ||
+                epsList.find((e: any) => Number(e.number) === epNum) ||
+                epsList[0];
+
+              if (matchedEp) {
+                const srcRes = await fetch(`${endpointBase}/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=${activeHianimeServer}&category=${audioType}`);
+                if (srcRes.ok) {
+                  const srcData = await srcRes.json();
+                  const sources = srcData.data?.sources || [];
+                  const tracks = srcData.data?.tracks || [];
+                  if (sources.length > 0 && sources[0].url) {
+                    const isHls = sources[0].url.includes(".m3u8");
+                    const proxied = isHls
+                      ? `/api/stream/proxy.m3u8?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}&manifest=1`
+                      : `/api/stream/proxy.mp4?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}`;
+                    setStreamUrl(proxied);
+                    setIsIframe(false);
+
+                    if (tracks.length > 0) {
+                      const mappedTracks = tracks
+                        .filter((t: any) => t && t.file && t.kind !== "thumbnails")
+                        .map((t: any) => {
+                          const isEng =
+                            (t.label || "").toLowerCase().includes("english") ||
+                            (t.label || "").toLowerCase().includes("eng") ||
+                            t.default === true;
+                          return {
+                            src: t.file?.startsWith("http")
+                              ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}`
+                              : t.file,
+                            label: t.label || "English",
+                            kind: "subtitles",
+                            language: isEng ? "en" : (t.lang || "en"),
+                            default: t.default ?? isEng,
+                            type: "vtt",
+                          };
+                        });
+                      if (mappedTracks.length > 0) {
+                        setSubtitles(mappedTracks);
+                      }
+                    }
+                    setLoading(false);
+                    return;
                   }
                 }
               }
