@@ -91,7 +91,6 @@ export async function resolveAllStreams(
     { name: 'VixSrc', fn: () => withTimeout(resolveVixSrc(tmdbId, mediaType, season, episode), 2000) },
     { name: 'AutoEmbed', fn: () => withTimeout(resolveAutoembed(tmdbId, mediaType, season, episode), 2000) },
     { name: 'Videasy', fn: () => withTimeout(resolveVideasy(tmdbId, mediaType, season, episode), 2000) },
-    { name: 'VidLink', fn: () => withTimeout(resolveVidLink(tmdbId, mediaType, season, episode), 2000) },
   ];
 
   // Instantiate OMSS Providers

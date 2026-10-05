@@ -345,34 +345,10 @@ export async function GET(request: NextRequest) {
             availableLangs.push('Arabic');
           } else if (provider === 'vanguard' || rawQuality.includes('4k')) {
             topQuality = '4K HDR';
-            if (isAnime) {
-              availableLangs.push('Japanese 4K');
-              availableLangs.push('English Dub 4K');
-              audioTracks.push({
-                id: `vanguard-ja-4k`,
-                language: 'ja',
-                label: 'Japanese [Original]',
-                badge: '4K HDR',
-                url: `${proxiedUrl}&lang=ja&forceTrack=1`,
-                quality: '4K HDR',
-                isDefault: true,
-              });
-              audioTracks.push({
-                id: `vanguard-en-dub-4k`,
-                language: 'en-dub',
-                label: 'English [Dub]',
-                badge: '4K HDR',
-                url: `${proxiedUrl}&lang=en&forceTrack=0`,
-                quality: '4K HDR',
-                isDefault: false,
-              });
-              return;
-            } else {
-              langKey = 'en-4k';
-              label = 'English [Ultra HD]';
-              badge = '4K HDR';
-              availableLangs.push('English 4K');
-            }
+            langKey = 'en-4k';
+            label = 'English [Ultra HD]';
+            badge = '4K HDR';
+            availableLangs.push('English 4K');
           } else if (provider === 'borealis') {
             langKey = 'en-borealis';
             label = 'English [Master]';

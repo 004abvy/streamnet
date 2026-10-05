@@ -107,12 +107,13 @@ export async function GET(
       let response: Response | null = null;
       let lastErr: any = null;
 
-      // 1. Direct Fetch from serverless Node
+      // 1. Direct Fetch from serverless Node with fast timeout
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const directCandidate = await fetch(decodedUrl, {
             cache: 'no-store',
             headers: proxyFetchHeaders,
+            signal: AbortSignal.timeout(3500),
           });
           response = directCandidate;
           if (directCandidate.ok) {
@@ -120,14 +121,16 @@ export async function GET(
           }
         } catch (err: any) {
           lastErr = err;
-          console.log('[stream/proxy] directCandidate error:', err);
         }
       }
 
       // 2. Cloudflare Worker edge proxy fallback if direct fetch wasn't OK
       if (!response || !response.ok) {
         try {
-          const workerCandidate = await fetch(targetWorkerUrl, { cache: 'no-store' });
+          const workerCandidate = await fetch(targetWorkerUrl, {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(3500),
+          });
           if (workerCandidate.ok) {
             response = workerCandidate;
           }
