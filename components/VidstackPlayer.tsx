@@ -516,6 +516,7 @@ export default function VidstackPlayer({
         <DefaultVideoLayout
           thumbnails={thumbnails}
           icons={defaultLayoutIcons}
+          noModal={true}
         />
       </MediaPlayer>
     </div>
