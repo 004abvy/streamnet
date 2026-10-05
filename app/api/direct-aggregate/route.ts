@@ -195,13 +195,35 @@ export async function GET(request: NextRequest) {
       if (!isAnime || !animeTitle) return [];
       try {
         const ANIVEXA_URL = process.env.NEXT_PUBLIC_ANIVEXA_URL || 'http://localhost:4000';
-        const searchRes = await fetch(
-          `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(animeTitle)}`,
-          { signal: AbortSignal.timeout(8000) }
-        );
-        if (!searchRes.ok) return [];
-        const searchData = await searchRes.json();
-        const mediaId = searchData?.data?.Media?.id;
+        const seasonNum = Number(season) || 1;
+        const targetEpNum = Number(episode) || 1;
+
+        // Try searching specific season first if season > 1, with fallback to base anime title
+        let mediaId: number | null = null;
+        if (seasonNum > 1) {
+          try {
+            const seasonSearchRes = await fetch(
+              `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(`${animeTitle} Season ${seasonNum}`)}`,
+              { signal: AbortSignal.timeout(6000) }
+            );
+            if (seasonSearchRes.ok) {
+              const seasonSearchData = await seasonSearchRes.json();
+              mediaId = seasonSearchData?.data?.Media?.id || null;
+            }
+          } catch {}
+        }
+
+        if (!mediaId) {
+          const searchRes = await fetch(
+            `${currentOrigin}/api/anime-api/search-info?search=${encodeURIComponent(animeTitle)}`,
+            { signal: AbortSignal.timeout(6000) }
+          );
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            mediaId = searchData?.data?.Media?.id || null;
+          }
+        }
+
         if (!mediaId) return [];
 
         const epRes = await fetch(
@@ -211,7 +233,6 @@ export async function GET(request: NextRequest) {
         if (!epRes.ok) return [];
         const epData = await epRes.json();
         const providers = ['anikoto', 'reanime', 'mkissa', 'animegg'];
-        const targetEpNum = Number(episode) || 1;
         const results: any[] = [];
 
         for (const mode of ['sub', 'dub'] as const) {
