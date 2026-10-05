@@ -74,8 +74,9 @@ export default function Playeranime({
   const [isMismatchDismissed, setIsMismatchDismissed] = useState<boolean>(false);
 
   // Source selector
-  type AnimeSource = "anivexa";
+  type AnimeSource = "anivexa" | "hianime" | "aniwatch";
   const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
+  const [activeHianimeServer, setActiveHianimeServer] = useState<string>("hd-1");
 
   // Helper to fetch with timeout
   const fetchWithTimeout = async (
@@ -578,8 +579,7 @@ export default function Playeranime({
 
   // 2. Fetch stream URL when an episode is selected
   useEffect(() => {
-    if (!selectedEpisodeId || !anilistId || !selectedProvider) return;
-    if (activeSource !== "anivexa") return;
+    if (!selectedEpisodeId || (!anilistId && !tmdbId && !animeTitle)) return;
 
     async function fetchServer() {
       try {
@@ -589,7 +589,74 @@ export default function Playeranime({
         setIsMismatchDismissed(false);
         setLoading(true);
         setError(null);
-        // 0. Extract stream native subtitles from anime provider
+
+        // HiAnime / Aniwatch direct stream resolution
+        if (activeSource === "hianime" || activeSource === "aniwatch") {
+          const currentEp =
+            activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
+            episodes.find((e) => e.id === selectedEpisodeId);
+          let epNum = 1;
+          if (currentEp) {
+            if (typeof currentEp.number === "number") {
+              epNum = currentEp.number;
+            } else {
+              const parsed = parseInt(String(currentEp.number || currentEp.title || currentEp.id).replace(/\D+/g, ""), 10);
+              if (!isNaN(parsed) && parsed > 0) epNum = parsed;
+            }
+          }
+
+          const endpointBase = activeSource === "hianime" ? "/api/hianime" : "/api/aniwatch";
+          try {
+            const searchRes = await fetch(`${endpointBase}/anime/search?q=${encodeURIComponent(animeTitle)}`);
+            if (searchRes.ok) {
+              const searchData = await searchRes.json();
+              const animes = searchData.data?.animes || [];
+              if (animes.length > 0) {
+                const targetAnime = animes[0];
+                const epsRes = await fetch(`${endpointBase}/anime/${targetAnime.id}/episodes`);
+                if (epsRes.ok) {
+                  const epsData = await epsRes.json();
+                  const epsList = epsData.data?.episodes || [];
+                  const matchedEp = epsList.find((e: any) => Number(e.number) === epNum) || epsList[0];
+                  if (matchedEp) {
+                    const srcRes = await fetch(`${endpointBase}/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=${activeHianimeServer}&category=${audioType}`);
+                    if (srcRes.ok) {
+                      const srcData = await srcRes.json();
+                      const sources = srcData.data?.sources || [];
+                      const tracks = srcData.data?.tracks || [];
+                      if (sources.length > 0 && sources[0].url) {
+                        const isHls = sources[0].url.includes(".m3u8");
+                        const proxied = isHls
+                          ? `/api/stream/proxy.m3u8?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}&manifest=1`
+                          : `/api/stream/proxy.mp4?url=${encodeURIComponent(sources[0].url)}&headers=${encodeURIComponent(JSON.stringify({ Referer: 'https://megacloud.tv/' }))}`;
+                        setStreamUrl(proxied);
+                        setIsIframe(false);
+
+                        if (tracks.length > 0) {
+                          const mappedTracks = tracks.map((t: any) => ({
+                            src: t.file?.startsWith("http") ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}` : t.file,
+                            label: t.label || "English",
+                            kind: "subtitles",
+                            language: t.kind === "captions" ? "en" : "en",
+                            default: t.default ?? t.label?.toLowerCase().includes("english"),
+                            type: "vtt",
+                          }));
+                          setSubtitles(mappedTracks);
+                        }
+                        setLoading(false);
+                        return;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (err: any) {
+            console.warn(`[Playeranime] ${activeSource} stream error:`, err);
+          }
+        }
+
+        // 0. Extract stream native subtitles from anime provider (Anivexa)
         let streamData: any = null;
         if (!selectedEpisodeId.startsWith("season-") && !selectedEpisodeId.startsWith("tmdb-")) {
           try {
@@ -1074,6 +1141,46 @@ export default function Playeranime({
                 </button>
               )}
 
+              {/* Anime Source Switcher Tabs */}
+              <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10 gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveSource("anivexa")}
+                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                    activeSource === "anivexa"
+                      ? "bg-amber-500 text-black shadow-sm"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                  title="Anivexa Multi-Core Provider"
+                >
+                  <span>⚡ Anivexa</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSource("hianime")}
+                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                    activeSource === "hianime"
+                      ? "bg-amber-500 text-black shadow-sm"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                  title="HiAnime HD Provider"
+                >
+                  <span>🌸 HiAnime</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSource("aniwatch")}
+                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                    activeSource === "aniwatch"
+                      ? "bg-amber-500 text-black shadow-sm"
+                      : "text-neutral-400 hover:text-white"
+                  }`}
+                  title="AniWatch / Zoro Provider"
+                >
+                  <span>🔥 AniWatch</span>
+                </button>
+              </div>
+
               {/* Audio Type Selector */}
               <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10">
                 <button
@@ -1106,10 +1213,10 @@ export default function Playeranime({
                   type="button"
                   onClick={handleConvertToVip}
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all duration-200 cursor-pointer shrink-0"
-                  title="Unlock VIP Player"
+                  title="Unlock VIP Cinema Player"
                 >
                   <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
-                  <span>VIP</span>
+                  <span>VIP Cinema</span>
                 </button>
               )}
 
@@ -1248,30 +1355,68 @@ export default function Playeranime({
           </div>
 
           {/* Movie Mode Server Selector */}
-          {type === "movie" && availableProviders.length > 1 && activeSource === "anivexa" && (
+          {type === "movie" && (
             <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
               <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
                 Server:
               </span>
-              {availableProviders.map((p, idx) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => handleProviderChange(p)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                    selectedProvider === p
-                      ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                      : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                  }`}
-                >
-                  Server {idx + 1}
-                </button>
-              ))}
+              {activeSource === "anivexa" && availableProviders.map((p) => {
+                const providerLabels: Record<string, string> = {
+                  anikoto: "Anikoto (Fast)",
+                  reanime: "ReAnime (1080p)",
+                  animegg: "AnimeGG (HD)",
+                  mkissa: "MKissa (HD)",
+                  "2dhive": "2DHive",
+                  kaa: "KAA",
+                };
+                const displayName = providerLabels[p.toLowerCase()] || (p.charAt(0).toUpperCase() + p.slice(1));
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handleProviderChange(p)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                      selectedProvider === p
+                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                    }`}
+                  >
+                    {displayName}
+                  </button>
+                );
+              })}
+
+              {(activeSource === "hianime" || activeSource === "aniwatch") && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveHianimeServer("hd-1")}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                      activeHianimeServer === "hd-1"
+                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                    }`}
+                  >
+                    MegaCloud (HD-1)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveHianimeServer("hd-2")}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                      activeHianimeServer === "hd-2"
+                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                    }`}
+                  >
+                    VidStreaming (HD-2)
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           {/* Season / Arc & Episode Selector Section (Only shown for TV/Series) */}
-          {type !== "movie" && (activeSource === "anivexa" || activeSource === "megaplay") && episodes.length > 0 && (
+          {type !== "movie" && episodes.length > 0 && (
             <div className={styles.container}>
               {/* Header: Title, Season Dropdown & Server Selector */}
               <div className={styles.header}>
@@ -1310,7 +1455,7 @@ export default function Playeranime({
                               <div
                                 key={g.id}
                                 className={`${styles.dropdownMenuItem} ${
-                                  isActive ? styles.dropdownMenuItemActive : ""
+                                   isActive ? styles.dropdownMenuItemActive : ""
                                 }`}
                                 onClick={() => {
                                   setSelectedGroupId(g.id);
@@ -1335,12 +1480,21 @@ export default function Playeranime({
                   )}
 
                   {/* Server Selector */}
-                  {availableProviders.length > 1 && activeSource === "anivexa" && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
-                      <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
-                        Server:
-                      </span>
-                      {availableProviders.map((p, idx) => (
+                  <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
+                    <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
+                      Server:
+                    </span>
+                    {activeSource === "anivexa" && availableProviders.map((p) => {
+                      const providerLabels: Record<string, string> = {
+                        anikoto: "Anikoto (Fast)",
+                        reanime: "ReAnime (1080p)",
+                        animegg: "AnimeGG (HD)",
+                        mkissa: "MKissa (HD)",
+                        "2dhive": "2DHive",
+                        kaa: "KAA",
+                      };
+                      const displayName = providerLabels[p.toLowerCase()] || (p.charAt(0).toUpperCase() + p.slice(1));
+                      return (
                         <button
                           key={p}
                           type="button"
@@ -1351,11 +1505,38 @@ export default function Playeranime({
                               : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
                           }`}
                         >
-                          Server {idx + 1}
+                          {displayName}
                         </button>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    })}
+
+                    {(activeSource === "hianime" || activeSource === "aniwatch") && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveHianimeServer("hd-1")}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                            activeHianimeServer === "hd-1"
+                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                          }`}
+                        >
+                          MegaCloud (HD-1)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveHianimeServer("hd-2")}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                            activeHianimeServer === "hd-2"
+                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
+                          }`}
+                        >
+                          VidStreaming (HD-2)
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
