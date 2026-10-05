@@ -88,7 +88,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (sessionStorage.getItem('vip_auth') === '123') {
+      if (
+        sessionStorage.getItem('vip_auth') === '123' ||
+        localStorage.getItem('vip_auth') === '123'
+      ) {
         setIsAuthenticated(true);
       }
     }
@@ -118,6 +121,8 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
   const artRef = useRef<any>(null);
   const playbackTimeRef = useRef<number>(0);
+  const lastErrorSwitchRef = useRef<number>(0);
+  const errorCountRef = useRef<number>(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -125,20 +130,25 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   const [hasAbsorbedClick, setHasAbsorbedClick] = useState<boolean>(false);
   const [hasLiveGlow, setHasLiveGlow] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
-  const [isIOSDevice, setIsIOSDevice] = useState<boolean>(false);
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(false);
   const canvasTaintedRef = useRef<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
-    const checkIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
-    setIsIOSDevice(checkIOS);
+    const checkMobile =
+      typeof navigator !== 'undefined' &&
+      (/Android|iPhone|iPad|iPod|Mobile|Silk|BlackBerry/i.test(navigator.userAgent) ||
+        (navigator.userAgent.includes('Mac') && 'ontouchend' in document));
+    setIsMobileDevice(checkMobile);
   }, []);
 
-  // Real-time Canvas Ambilight Render Loop (Live video color projection outside player)
+  // Real-time Canvas Ambilight Render Loop (Disabled on mobile to prevent crashes & reloads)
   useEffect(() => {
+    if (isMobileDevice) return;
+
     let animFrameId: number;
     let lastDrawTime = 0;
-    const FPS = 24; // 24 FPS for real-time video color bleed
+    const FPS = 20;
     const frameInterval = 1000 / FPS;
 
     const drawFrame = () => {
@@ -147,7 +157,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
       const canvas = ambientCanvasRef.current;
       if (!video || !canvas) return;
 
-      // Draw whenever video has loaded any frames (playing, paused, seeking)
       if (video.readyState >= 1) {
         const ctx = canvas.getContext('2d', { willReadFrequently: false });
         if (ctx) {
@@ -155,7 +164,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             setHasLiveGlow(true);
           } catch {
-            // Tainted canvas fallback on iOS/Safari cross-origin
             canvasTaintedRef.current = true;
           }
         }
@@ -164,10 +172,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     const renderLoop = (timestamp: number) => {
       animFrameId = requestAnimationFrame(renderLoop);
-
-      const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document));
-      if (isIOS) return; // Disable expensive canvas extraction on iOS to prevent WebKit Jetsam memory crashes
-
       if (timestamp - lastDrawTime < frameInterval) return;
       lastDrawTime = timestamp;
 
@@ -180,35 +184,10 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     animFrameId = requestAnimationFrame(renderLoop);
 
-    // Attach direct listeners to active video element
-    const attachVideoEvents = () => {
-      const video = containerRef.current?.querySelector('video');
-      if (video) {
-        video.addEventListener('timeupdate', drawFrame);
-        video.addEventListener('play', drawFrame);
-        video.addEventListener('pause', drawFrame);
-        video.addEventListener('seeked', drawFrame);
-        video.addEventListener('canplay', drawFrame);
-        video.addEventListener('playing', drawFrame);
-      }
-    };
-    attachVideoEvents();
-    const attachTimer = setInterval(attachVideoEvents, 1000);
-
     return () => {
       cancelAnimationFrame(animFrameId);
-      clearInterval(attachTimer);
-      const video = containerRef.current?.querySelector('video');
-      if (video) {
-        video.removeEventListener('timeupdate', drawFrame);
-        video.removeEventListener('play', drawFrame);
-        video.removeEventListener('pause', drawFrame);
-        video.removeEventListener('seeked', drawFrame);
-        video.removeEventListener('canplay', drawFrame);
-        video.removeEventListener('playing', drawFrame);
-      }
     };
-  }, [currentStreamUrl]);
+  }, [currentStreamUrl, isMobileDevice]);
 
   useEffect(() => {
     setHasAbsorbedClick(false);
@@ -780,6 +759,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     e.preventDefault();
     if (authCode === '123') {
       sessionStorage.setItem('vip_auth', '123');
+      localStorage.setItem('vip_auth', '123');
       setIsAuthenticated(true);
     } else {
       alert('Invalid VIP code');
@@ -825,7 +805,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center px-3 sm:px-6 md:px-8 py-10 sm:py-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
       {/* Cinematic Ambient Background Backdrop */}
-      {mounted && backdropUrl && !isIOSDevice && (
+      {mounted && backdropUrl && (
         <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
           <img
             src={backdropUrl}
@@ -876,27 +856,29 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
       {/* Cinema Player Frame with Ambient Spill & ArtPlayer */}
       <div className="w-full max-w-[92rem] relative mb-6" style={{ isolation: 'isolate' }}>
-        {/* Dynamic Ambient Glow (shades & colors subtly bleeding outside player frame in real time) */}
-        {mounted && !isIOSDevice && (
+        {/* Dynamic Ambient Glow */}
+        {mounted && (
           <div
             className={`absolute -inset-3 sm:-inset-5 md:-inset-7 z-0 pointer-events-none transition-opacity duration-500 select-none overflow-visible ${
               isVideoPlaying ? 'opacity-75 sm:opacity-80' : 'opacity-50 sm:opacity-55'
             }`}
           >
-            {/* Real-time Video Canvas Mirror */}
-            <canvas
-              ref={ambientCanvasRef}
-              width={48}
-              height={27}
-              className={`w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07] transition-all duration-300 ${
-                hasLiveGlow ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
+            {/* Real-time Video Canvas Mirror (Only on desktop) */}
+            {!isMobileDevice && (
+              <canvas
+                ref={ambientCanvasRef}
+                width={48}
+                height={27}
+                className={`w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07] transition-all duration-300 ${
+                  hasLiveGlow ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            )}
 
             {/* Fallback Cinema Backdrop Ambient Lighting */}
             <div
               className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500 ${
-                !hasLiveGlow ? 'opacity-100' : 'opacity-25'
+                !hasLiveGlow || isMobileDevice ? 'opacity-100' : 'opacity-25'
               }`}
             >
               {backdropUrl ? (
@@ -945,11 +927,27 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1)) {
                     return; // Video/audio is actively playing, ignore transient error
                   }
+                  
+                  const now = Date.now();
+                  if (now - lastErrorSwitchRef.current > 15000) {
+                    errorCountRef.current = 0;
+                  }
+                  
+                  if (errorCountRef.current >= 2) {
+                    console.warn('Auto stream switch limit reached to prevent reloading loop.');
+                    setErrorMessage('Playback error on current stream. Please select another audio track or server.');
+                    return;
+                  }
+
                   const currentIdx = unifiedAudioTracks.findIndex(t => t.url === currentStreamUrl);
                   if (currentIdx !== -1 && currentIdx + 1 < unifiedAudioTracks.length) {
+                    errorCountRef.current += 1;
+                    lastErrorSwitchRef.current = now;
                     const nextTrack = unifiedAudioTracks[currentIdx + 1];
                     setCurrentStreamUrl(nextTrack.url);
                     setActiveAudioLabel(nextTrack.label);
+                  } else {
+                    setErrorMessage('No working stream found. Please try another audio track or server.');
                   }
                 }}
                 customSettings={customPlayerSettings}

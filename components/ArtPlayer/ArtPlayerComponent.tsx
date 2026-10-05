@@ -152,6 +152,9 @@ export default function ArtPlayerComponent({
       ],
       moreVideoAttr: {
         playsInline: true,
+        "webkit-playsinline": "true",
+        "x5-playsinline": "true",
+        "x5-video-player-type": "h5",
       },
       subtitle: {
         url: defaultSub?.url || "data:text/vtt;charset=utf-8,WEBVTT%0A%0A",
@@ -572,6 +575,19 @@ export default function ArtPlayerComponent({
 
     art.on("error", (err: any) => {
       console.warn("[ArtPlayer] Error:", err);
+      const errName = err?.name || err?.type || "";
+      const errMsg = String(err?.message || err?.detail || err || "").toLowerCase();
+      if (
+        errName === "NotAllowedError" ||
+        errName === "AbortError" ||
+        errMsg.includes("notallowederror") ||
+        errMsg.includes("aborterror") ||
+        errMsg.includes("user gesture") ||
+        errMsg.includes("play() failed") ||
+        errMsg.includes("interrupted")
+      ) {
+        return;
+      }
       // If video has loaded frames or is actively playing audio/video, ignore transient non-fatal errors
       if (
         art.video &&
