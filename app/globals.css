@@ -223,4 +223,57 @@ body {
 .art-video-player .art-setting-header .art-setting-item-left {
   color: #f59e0b !important;
   font-weight: bold !important;
+}
+
+/* ==========================================================================
+   VIDSTACK PLAYER MENU & SETTINGS POPUP OVERRIDES (MOBILE & DESKTOP)
+   ========================================================================== */
+.vds-video-layout .vds-menu-items[data-root],
+[data-media-player] .vds-menu-items[data-root],
+.vds-menu-items[data-root]:not([data-placement]),
+.vds-menu-items[data-root] {
+  position: absolute !important;
+  bottom: 52px !important;
+  right: 10px !important;
+  left: auto !important;
+  top: auto !important;
+  max-width: min(320px, calc(100% - 20px)) !important;
+  min-width: 200px !important;
+  max-height: min(75%, 260px) !important;
+  background-color: rgba(14, 14, 22, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  margin: 0 !important;
+  padding: 6px !important;
+  z-index: 99999 !important;
+  transform-origin: bottom right !important;
+}
+
+[data-media-player]:fullscreen .vds-menu-items[data-root],
+[data-media-player][data-fullscreen] .vds-menu-items[data-root] {
+  bottom: 60px !important;
+  right: 18px !important;
+  max-height: min(80vh, 340px) !important;
+}
+
+.vds-menu-item,
+.vds-radio {
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  transition: all 0.15s ease !important;
+}
+
+.vds-menu-item:hover,
+.vds-radio:hover,
+.vds-radio[aria-checked='true'] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.vds-radio[aria-checked='true'] {
+  color: #f59e0b !important;
+  font-weight: 600 !important;
 }
