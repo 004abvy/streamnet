@@ -189,6 +189,7 @@ export default function VidstackPlayer({
     function getTrackPriority(label: string): number {
       const l = (label || '').toLowerCase();
       if (l.includes('signs') || l.includes('songs') || l.includes('episode name')) return -10;
+      if (l.includes('aniwatch') || l.includes('hianime') || l.includes('megacloud') || l.includes('rapidcloud')) return 120;
       if (l.includes('netflix')) return 100;
       if (l.includes('crunchyroll')) return 95;
       if (l.includes('funimation') || l.includes('hidive')) return 90;
@@ -305,6 +306,8 @@ export default function VidstackPlayer({
       if (!target) {
         target =
           trackList.find((t) => t && (t as any).default) ||
+          trackList.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
+          trackList.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
           trackList.find((t) => t.label?.toLowerCase().includes('netflix')) ||
           trackList.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
           trackList.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||

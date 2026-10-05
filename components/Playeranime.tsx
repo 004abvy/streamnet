@@ -633,15 +633,22 @@ export default function Playeranime({
                         setIsIframe(false);
 
                         if (tracks.length > 0) {
-                          const mappedTracks = tracks.map((t: any) => ({
-                            src: t.file?.startsWith("http") ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}` : t.file,
-                            label: t.label || "English",
-                            kind: "subtitles",
-                            language: t.kind === "captions" ? "en" : "en",
-                            default: t.default ?? t.label?.toLowerCase().includes("english"),
-                            type: "vtt",
-                          }));
-                          setSubtitles(mappedTracks);
+                          const mappedTracks = tracks
+                            .filter((t: any) => t && t.file && t.kind !== "thumbnails")
+                            .map((t: any) => {
+                              const isEng = (t.label || "").toLowerCase().includes("english") || (t.label || "").toLowerCase().includes("eng") || t.default === true;
+                              return {
+                                src: t.file?.startsWith("http") ? `/api/subtitle/proxy?url=${encodeURIComponent(t.file)}` : t.file,
+                                label: t.label ? `${t.label} (AniWatch)` : "English (AniWatch)",
+                                kind: "subtitles",
+                                language: isEng ? "en" : (t.lang || "en"),
+                                default: t.default ?? isEng,
+                                type: "vtt",
+                              };
+                            });
+                          if (mappedTracks.length > 0) {
+                            setSubtitles(mappedTracks);
+                          }
                         }
                         setLoading(false);
                         return;
@@ -707,7 +714,7 @@ export default function Playeranime({
           }
         }
 
-        // Fetch OpenSubtitles, SubDL, and VIP Player subtitles in parallel with native stream subtitles
+        // Fetch AniWatch API, OpenSubtitles, SubDL, and VIP Player subtitles in parallel
         const currentEp =
           activeGroup?.episodes?.find((e: any) => e.id === selectedEpisodeId) ||
           episodes.find((e) => e.id === selectedEpisodeId);
@@ -736,7 +743,43 @@ export default function Playeranime({
           ? `tmdbId=${tmdbId}&`
           : `query=${encodeURIComponent(animeTitle)}&`;
 
+        const fetchAniwatchSubs = async () => {
+          try {
+            const searchRes = await fetch(`/api/aniwatch/anime/search?q=${encodeURIComponent(animeTitle)}`);
+            if (searchRes.ok) {
+              const searchData = await searchRes.json();
+              const animes = searchData.data?.animes || [];
+              if (animes.length > 0) {
+                const epsRes = await fetch(`/api/aniwatch/anime/${animes[0].id}/episodes`);
+                if (epsRes.ok) {
+                  const epsData = await epsRes.json();
+                  const epsList = epsData.data?.episodes || [];
+                  const matchedEp = epsList.find((e: any) => Number(e.number) === targetEpForQuery) || epsList[0];
+                  if (matchedEp) {
+                    const srcRes = await fetch(`/api/aniwatch/episode/sources?animeEpisodeId=${matchedEp.episodeId}&server=hd-1&category=sub`);
+                    if (srcRes.ok) {
+                      const srcData = await srcRes.json();
+                      const tracks = srcData.data?.tracks || [];
+                      const subs = tracks
+                        .filter((t: any) => t && t.file && t.kind !== "thumbnails")
+                        .map((t: any) => ({
+                          url: t.file,
+                          label: t.label ? `${t.label} (AniWatch)` : "English (AniWatch)",
+                          language: "en",
+                          isDefault: t.default ?? true,
+                        }));
+                      return { subtitles: subs };
+                    }
+                  }
+                }
+              }
+            }
+          } catch {}
+          return { subtitles: [] };
+        };
+
         Promise.allSettled([
+          fetchAniwatchSubs(),
           fetch(
             `/api/subtitle/anime?${tmdbParam}season=${currentSeasonNum}&episode=${targetEpForQuery}`,
           ).then((res) => res.json()),
@@ -968,6 +1011,7 @@ export default function Playeranime({
     function getSubtitlePriority(label: string): number {
       const l = (label || "").toLowerCase();
       if (l.includes("signs") || l.includes("songs") || l.includes("episode name")) return -10;
+      if (l.includes("aniwatch") || l.includes("hianime") || l.includes("megacloud") || l.includes("rapidcloud")) return 120;
       if (l.includes("netflix")) return 100;
       if (l.includes("crunchyroll")) return 95;
       if (l.includes("funimation") || l.includes("hidive")) return 90;
