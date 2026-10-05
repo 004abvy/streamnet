@@ -360,10 +360,10 @@ export default function VideoPlayer({
         {/* Video Container (Cinema OLED Floating Frame) */}
         <div
           ref={containerRef}
-          className="w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10"
+          className={`w-full relative rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.85)] bg-black z-10 ${vpStyles.playerFrameContainer}`}
         >
           {isDirectMode ? (
-            <div className={`w-full aspect-video ${vpStyles.mobileTall}`}>
+            <div className="w-full aspect-video">
               <HlsPlayer
                 key={activeServer}
                 serverId={activeServer}
@@ -387,7 +387,7 @@ export default function VideoPlayer({
               episode={episode}
             />
           ) : (
-            <div className={`w-full aspect-video relative overflow-hidden bg-black ${vpStyles.mobileTall}`}>
+            <div className="w-full aspect-video relative overflow-hidden bg-black">
               <iframe
                 src={embedUrl}
                 allowFullScreen
