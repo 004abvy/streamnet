@@ -607,17 +607,40 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
     setPlaybackTimestamp(currentTime);
     playbackTimeRef.current = currentTime;
-    setCurrentStreamUrl(track.url);
-    setActiveAudioLabel(track.label);
 
-    // If stream is already loaded with multiple HLS audio tracks, switch track instantly
+    // Fast-path: If the currently active HLS instance has multiple audio tracks, switch audio track instantly in-place!
     if (artRef.current?.hls?.audioTracks && artRef.current.hls.audioTracks.length > 1) {
-      if (track.id.includes('en-dub') || track.url.includes('audioTrack=1')) {
-        artRef.current.hls.audioTrack = 1;
-      } else if (track.language === 'ja' || track.id.includes('ja-4k')) {
-        artRef.current.hls.audioTrack = 0;
+      const targetLang = track.language.toLowerCase();
+      let targetIdx = -1;
+      if (targetLang === 'ja' || targetLang.includes('ja')) {
+        targetIdx = artRef.current.hls.audioTracks.findIndex((t: any) =>
+          t.name?.toLowerCase().includes('jp') || t.name?.toLowerCase().includes('ja') || t.language?.toLowerCase().includes('ja')
+        );
+      } else if (targetLang.includes('dub') || targetLang.startsWith('en')) {
+        targetIdx = artRef.current.hls.audioTracks.findIndex((t: any) =>
+          t.name?.toLowerCase().includes('en') || t.name?.toLowerCase().includes('dub') || t.language?.toLowerCase().includes('en')
+        );
+      } else if (targetLang.includes('hi')) {
+        targetIdx = artRef.current.hls.audioTracks.findIndex((t: any) =>
+          t.name?.toLowerCase().includes('hin') || t.language?.toLowerCase().includes('hi')
+        );
+      }
+
+      if (targetIdx === -1 && track.url.includes('forceTrack=')) {
+        const m = track.url.match(/forceTrack=(\d+)/);
+        if (m) targetIdx = parseInt(m[1], 10);
+      }
+
+      if (targetIdx >= 0 && targetIdx < artRef.current.hls.audioTracks.length) {
+        artRef.current.hls.audioTrack = targetIdx;
+        setActiveAudioLabel(track.label);
+        setActiveSubmenu(null);
+        return;
       }
     }
+
+    setCurrentStreamUrl(track.url);
+    setActiveAudioLabel(track.label);
 
     if (track.badge) {
       if (track.badge.includes('4K') || track.badge.includes('2160')) setStreamQuality('4K HDR');
@@ -929,7 +952,6 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               </div>
             ) : currentStreamUrl ? (
               <ArtPlayerComponent
-                key={currentStreamUrl}
                 url={currentStreamUrl}
                 poster={backdropUrl || ''}
                 subtitles={artPlayerSubtitles}

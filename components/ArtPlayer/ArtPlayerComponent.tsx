@@ -98,10 +98,26 @@ export default function ArtPlayerComponent({
   useEffect(() => {
     if (!containerRef.current || !url) return;
 
-    // Destroy existing instance if url changes
+    // Smoothly switch URL if player instance already exists
     if (artInstanceRef.current) {
-      artInstanceRef.current.destroy(false);
-      artInstanceRef.current = null;
+      const art = artInstanceRef.current;
+      const targetTime = initialTime && initialTime > 0 ? initialTime : (art.video?.currentTime || art.currentTime || 0);
+      art.switchUrl(url).then(() => {
+        if (targetTime > 0) {
+          try {
+            art.currentTime = targetTime;
+          } catch {}
+        }
+        if (autoPlay) {
+          art.play().catch(() => {});
+        }
+      }).catch(() => {
+        try {
+          art.destroy(false);
+        } catch {}
+        artInstanceRef.current = null;
+      });
+      if (artInstanceRef.current) return;
     }
 
     const defaultSub = subtitles.find((s) => s.default) || subtitles[0];
