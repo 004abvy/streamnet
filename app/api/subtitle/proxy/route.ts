@@ -265,8 +265,10 @@ export async function GET(request: NextRequest) {
 
     // Determine clean Referer and User-Agent
     const lowerUrl = decodedUrl.toLowerCase();
-    let referer = 'https://vidlink.pro/';
-    if (lowerUrl.includes('bingr.one') || lowerUrl.includes('hakunaymatata') || lowerUrl.includes('rivestream')) {
+    let referer = 'https://megacloud.tv/';
+    if (lowerUrl.includes('megacloud') || lowerUrl.includes('rabbitstream') || lowerUrl.includes('rapid-cloud') || lowerUrl.includes('aniwatch') || lowerUrl.includes('hianime')) {
+      referer = 'https://megacloud.tv/';
+    } else if (lowerUrl.includes('bingr.one') || lowerUrl.includes('hakunaymatata') || lowerUrl.includes('rivestream')) {
       referer = 'https://bingr.one/';
     } else if (lowerUrl.includes('vixsrc')) {
       referer = 'https://vixsrc.to/';
@@ -276,6 +278,8 @@ export async function GET(request: NextRequest) {
       referer = 'https://autoembed.cc/';
     } else if (lowerUrl.includes('opensubtitles')) {
       referer = 'https://www.opensubtitles.org/';
+    } else if (lowerUrl.includes('cheaptruckrepairs') || lowerUrl.includes('cinejoy')) {
+      referer = 'https://cinejoy.pk/';
     }
 
     const fetchHeaders: Record<string, string> = {

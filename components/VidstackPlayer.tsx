@@ -225,65 +225,7 @@ export default function VidstackPlayer({
     return result;
   }, [tracks, failedTrackSrcs]);
 
-  const useIsomorphicLayoutEffect =
-    typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-  const tracksSignature = useMemo(() => {
-    return uniqueTracks.map((t) => `${t.src}#${t.label}`).join(';;');
-  }, [uniqueTracks]);
-
-  // Imperatively synchronize text tracks with Vidstack's TextTrackList
-  useIsomorphicLayoutEffect(() => {
-    if (!player.current) return;
-    const textTracks = player.current.textTracks;
-    if (!textTracks) return;
-
-    // 1. Remove all existing non-native/custom text tracks
-    for (const t of Array.from(textTracks)) {
-      if (t) {
-        try {
-          textTracks.remove(t);
-        } catch {}
-      }
-    }
-
-    if (uniqueTracks.length === 0) return;
-
-    // 2. Add deduplicated unique tracks in priority order
-    const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
-
-    uniqueTracks.forEach((track, idx) => {
-      const isDefault = track.default ?? (idx === 0);
-      const safeLang =
-        idx === 0
-          ? track.language || 'en'
-          : `${track.language || 'en'}-${idx + 1}`;
-
-      const textTrack = new TextTrack({
-        id: `vds-trk-${idx}-${Math.random().toString(36).slice(2, 7)}`,
-        src: track.src,
-        kind: track.kind || 'subtitles',
-        label: track.label,
-        language: safeLang,
-        type: 'vtt',
-        default: isDefault,
-      });
-
-      if (savedSub === 'off') {
-        textTrack.mode = 'disabled';
-      } else if (savedSub && savedSub === track.label) {
-        textTrack.mode = 'showing';
-      } else if (!savedSub && isDefault) {
-        textTrack.mode = 'showing';
-      } else if (savedSub && !uniqueTracks.some(u => u.label === savedSub) && isDefault) {
-        textTrack.mode = 'showing';
-      } else {
-        textTrack.mode = 'disabled';
-      }
-
-      textTracks.add(textTrack);
-    });
-  }, [uniqueTracks, tracksSignature, src, tmdbId]);
 
   // Dynamic subtitle auto-activation when tracks change asynchronously
   useEffect(() => {
