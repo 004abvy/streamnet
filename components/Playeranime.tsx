@@ -1101,10 +1101,10 @@ export default function Playeranime({
       <div className="w-full flex flex-col items-center px-3 sm:px-6 md:px-8 pt-4 pb-16 min-h-screen">
         <div className="w-full max-w-6xl">
           {/* Top Bar & Controls */}
-          <div className="flex flex-col gap-2.5 mb-3">
+          <div className="flex flex-col gap-3.5 sm:gap-4.5 mb-5 sm:mb-6 pt-1">
             {/* Row 1: Back, Title & Primary Actions (VIP Cinema + Close) */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={onClose}
@@ -1115,10 +1115,10 @@ export default function Playeranime({
                 </button>
 
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight truncate flex items-center gap-1.5">
+                  <h1 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-tight truncate flex items-center gap-2">
                     <span className="truncate">{animeTitle}</span>
                     {type !== "movie" && selectedEpisode && (
-                      <span className="text-amber-400 font-medium text-xs sm:text-sm shrink-0">
+                      <span className="text-amber-400 font-semibold text-xs sm:text-sm shrink-0 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                         · Ep {selectedEpisode.number}
                       </span>
                     )}
@@ -1126,16 +1126,16 @@ export default function Playeranime({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {/* VIP Server Access Button */}
                 {tmdbId && (
                   <button
                     type="button"
                     onClick={handleConvertToVip}
-                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)] transition-all cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.35)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all cursor-pointer shrink-0 active:scale-95"
                     title="Unlock VIP Cinema Player"
                   >
-                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
+                    <Sparkles className="w-3.5 h-3.5 text-black" />
                     <span>VIP Cinema</span>
                   </button>
                 )}
@@ -1144,7 +1144,7 @@ export default function Playeranime({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1.5 rounded-full bg-white/[0.06] hover:bg-red-500/20 hover:border-red-500/40 border border-white/10 text-neutral-400 hover:text-red-400 transition-all cursor-pointer shrink-0"
+                  className="p-1.5 sm:p-2 rounded-full bg-white/[0.06] hover:bg-red-500/20 hover:border-red-500/40 border border-white/10 text-neutral-400 hover:text-red-400 transition-all cursor-pointer shrink-0 active:scale-95"
                   title="Close"
                 >
                   <X className="w-4 h-4" />
@@ -1153,15 +1153,15 @@ export default function Playeranime({
             </div>
 
             {/* Row 2: Stream Source Tabs (Server 1/2/3), Audio Toggle (SUB/DUB) & Warnings */}
-            <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
               {/* Anime Source Switcher Tabs (Server 1 / 2 / 3) */}
-              <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10 gap-0.5">
+              <div className="flex items-center bg-white/[0.06] p-1 rounded-full border border-white/10 gap-1">
                 <button
                   type="button"
                   onClick={() => setActiveSource("anivexa")}
-                  className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "anivexa"
-                      ? "bg-amber-500 text-black shadow-sm"
+                      ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
                       : "text-neutral-400 hover:text-white"
                   }`}
                   title="Server 1"
@@ -1171,9 +1171,9 @@ export default function Playeranime({
                 <button
                   type="button"
                   onClick={() => setActiveSource("hianime")}
-                  className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "hianime"
-                      ? "bg-amber-500 text-black shadow-sm"
+                      ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
                       : "text-neutral-400 hover:text-white"
                   }`}
                   title="Server 2"
@@ -1183,9 +1183,9 @@ export default function Playeranime({
                 <button
                   type="button"
                   onClick={() => setActiveSource("aniwatch")}
-                  className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "aniwatch"
-                      ? "bg-amber-500 text-black shadow-sm"
+                      ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
                       : "text-neutral-400 hover:text-white"
                   }`}
                   title="Server 3"
@@ -1194,13 +1194,13 @@ export default function Playeranime({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {/* Movie Episode/Duration Mismatch Warning Pill */}
                 {type === "movie" && isRuntimeMismatch && (
                   <button
                     type="button"
                     onClick={() => setIsMismatchDismissed(false)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer shadow-sm animate-pulse"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-[11px] sm:text-xs font-semibold transition-all cursor-pointer shadow-sm animate-pulse"
                     title="TV Episode timeline detected. Click to switch to VIP Player"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -1209,13 +1209,13 @@ export default function Playeranime({
                 )}
 
                 {/* Audio Type Selector */}
-                <div className="flex items-center bg-white/[0.06] p-0.5 rounded-full border border-white/10">
+                <div className="flex items-center bg-white/[0.06] p-1 rounded-full border border-white/10 gap-1">
                   <button
                     type="button"
                     onClick={() => handleAudioToggle("sub")}
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                       audioType === "sub"
-                        ? "bg-amber-500 text-black shadow-sm"
+                        ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
                         : "text-neutral-400 hover:text-white"
                     }`}
                   >
@@ -1224,9 +1224,9 @@ export default function Playeranime({
                   <button
                     type="button"
                     onClick={() => handleAudioToggle("dub")}
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                       audioType === "dub"
-                        ? "bg-amber-500 text-black shadow-sm"
+                        ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
                         : "text-neutral-400 hover:text-white"
                     }`}
                   >
