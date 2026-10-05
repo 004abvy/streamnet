@@ -1103,38 +1103,38 @@ export default function Playeranime({
                 <button
                   type="button"
                   onClick={() => setActiveSource("anivexa")}
-                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
                     activeSource === "anivexa"
                       ? "bg-amber-500 text-black shadow-sm"
                       : "text-neutral-400 hover:text-white"
                   }`}
-                  title="Anivexa Multi-Core Provider"
+                  title="Server 1"
                 >
-                  <span>⚡ Anivexa</span>
+                  <span>Server 1</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSource("hianime")}
-                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
                     activeSource === "hianime"
                       ? "bg-amber-500 text-black shadow-sm"
                       : "text-neutral-400 hover:text-white"
                   }`}
-                  title="HiAnime HD Provider"
+                  title="Server 2"
                 >
-                  <span>🌸 HiAnime</span>
+                  <span>Server 2</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSource("aniwatch")}
-                  className={`px-2.5 py-0.5 sm:py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
                     activeSource === "aniwatch"
                       ? "bg-amber-500 text-black shadow-sm"
                       : "text-neutral-400 hover:text-white"
                   }`}
-                  title="AniWatch / Zoro Provider"
+                  title="Server 3"
                 >
-                  <span>🔥 AniWatch</span>
+                  <span>Server 3</span>
                 </button>
               </div>
 
@@ -1311,71 +1311,10 @@ export default function Playeranime({
             ) : null}
           </div>
 
-          {/* Movie Mode Server Selector */}
-          {type === "movie" && (
-            <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
-              <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
-                Server:
-              </span>
-              {activeSource === "anivexa" && availableProviders.map((p) => {
-                const providerLabels: Record<string, string> = {
-                  anikoto: "Anikoto (Fast)",
-                  reanime: "ReAnime (1080p)",
-                  animegg: "AnimeGG (HD)",
-                  mkissa: "MKissa (HD)",
-                  "2dhive": "2DHive",
-                  kaa: "KAA",
-                };
-                const displayName = providerLabels[p.toLowerCase()] || (p.charAt(0).toUpperCase() + p.slice(1));
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => handleProviderChange(p)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                      selectedProvider === p
-                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                    }`}
-                  >
-                    {displayName}
-                  </button>
-                );
-              })}
-
-              {(activeSource === "hianime" || activeSource === "aniwatch") && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setActiveHianimeServer("hd-1")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                      activeHianimeServer === "hd-1"
-                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                    }`}
-                  >
-                    MegaCloud (HD-1)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveHianimeServer("hd-2")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                      activeHianimeServer === "hd-2"
-                        ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                    }`}
-                  >
-                    VidStreaming (HD-2)
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-
           {/* Season / Arc & Episode Selector Section (Only shown for TV/Series) */}
           {type !== "movie" && episodes.length > 0 && (
             <div className={styles.container}>
-              {/* Header: Title, Season Dropdown & Server Selector */}
+              {/* Header: Title & Season Dropdown */}
               <div className={styles.header}>
                 <div className={styles.headerTitleGroup}>
                   <h3 className={styles.title}>Episodes</h3>
@@ -1435,65 +1374,6 @@ export default function Playeranime({
                       )}
                     </div>
                   )}
-
-                  {/* Server Selector */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto max-w-full">
-                    <span className="text-xs text-neutral-400 font-medium mr-1 shrink-0">
-                      Server:
-                    </span>
-                    {activeSource === "anivexa" && availableProviders.map((p) => {
-                      const providerLabels: Record<string, string> = {
-                        anikoto: "Anikoto (Fast)",
-                        reanime: "ReAnime (1080p)",
-                        animegg: "AnimeGG (HD)",
-                        mkissa: "MKissa (HD)",
-                        "2dhive": "2DHive",
-                        kaa: "KAA",
-                      };
-                      const displayName = providerLabels[p.toLowerCase()] || (p.charAt(0).toUpperCase() + p.slice(1));
-                      return (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => handleProviderChange(p)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                            selectedProvider === p
-                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                          }`}
-                        >
-                          {displayName}
-                        </button>
-                      );
-                    })}
-
-                    {(activeSource === "hianime" || activeSource === "aniwatch") && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setActiveHianimeServer("hd-1")}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                            activeHianimeServer === "hd-1"
-                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                          }`}
-                        >
-                          MegaCloud (HD-1)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveHianimeServer("hd-2")}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                            activeHianimeServer === "hd-2"
-                              ? "bg-amber-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]"
-                              : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-                          }`}
-                        >
-                          VidStreaming (HD-2)
-                        </button>
-                      </>
-                    )}
-                  </div>
                 </div>
               </div>
 
