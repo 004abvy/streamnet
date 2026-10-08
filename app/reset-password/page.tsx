@@ -138,15 +138,11 @@ function ResetPasswordForm() {
               <label htmlFor="new-password">New Password</label>
             </div>
             <div className={styles.inputWrapper}>
-              <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
               <input
                 id="new-password"
                 className={styles.inputField}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter your new password (min. 6 chars)"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
@@ -160,15 +156,11 @@ function ResetPasswordForm() {
               <label htmlFor="confirm-password">Confirm New Password</label>
             </div>
             <div className={styles.inputWrapper}>
-              <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
               <input
                 id="confirm-password"
                 className={styles.inputField}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Re-enter your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
