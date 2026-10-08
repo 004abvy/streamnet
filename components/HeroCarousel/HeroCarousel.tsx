@@ -302,19 +302,41 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             className={styles.track}
             style={{ transform: `translate3d(-${currentIndex * 100}%, 0, 0)` }}
           >
-            {loopMovies.map((movie, index) => (
-              <div key={`${movie.id}-${index}`} className={styles.slide}>
-                <img
-                  src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
-                  alt={movie.title || movie.name || 'Hero Backdrop'}
-                  className={styles.backdrop}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                />
-                <div className={styles.overlay}></div>
-                <div className={styles.bottomGradient}></div>
-              </div>
-            ))}
+            {loopMovies.map((movie, index) => {
+              const mobilePoster = movie.poster_path
+                ? (movie.poster_path.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/original${movie.poster_path}`)
+                : (movie.backdrop_path ? (movie.backdrop_path.startsWith('http') ? movie.backdrop_path : `https://image.tmdb.org/t/p/original${movie.backdrop_path}`) : '');
+              
+              const desktopBackdrop = movie.backdrop_path
+                ? (movie.backdrop_path.startsWith('http') ? movie.backdrop_path : `https://image.tmdb.org/t/p/original${movie.backdrop_path}`)
+                : mobilePoster;
+
+              return (
+                <div key={`${movie.id}-${index}`} className={styles.slide}>
+                  <picture className={styles.backdropPicture}>
+                    {movie.poster_path && (
+                      <source
+                        media="(max-width: 768px)"
+                        srcSet={mobilePoster}
+                      />
+                    )}
+                    <source
+                      media="(min-width: 769px)"
+                      srcSet={desktopBackdrop}
+                    />
+                    <img
+                      src={desktopBackdrop || mobilePoster}
+                      alt={movie.title || movie.name || 'Hero'}
+                      className={styles.backdrop}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                    />
+                  </picture>
+                  <div className={styles.overlay}></div>
+                  <div className={styles.bottomGradient}></div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Dot Indicators at Bottom Right */}

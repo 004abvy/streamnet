@@ -70,11 +70,19 @@
   position: relative;
 }
 
+.backdropPicture {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+}
+
 .backdrop {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 20%;
+  display: block;
 }
 
 .overlay {
@@ -472,6 +480,15 @@
 
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
+  .container,
+  .skeletonHero {
+    height: clamp(520px, 78vh, 660px);
+  }
+
+  .backdrop {
+    object-position: center top;
+  }
+
   .cutoutWrapper {
     left: 0;
     transform: none;
