@@ -445,7 +445,7 @@ export default function VidstackPlayer({
         hasResumedRef.current = src;
       }
 
-      // Restore saved audio preference or force English
+      // Always default audio language to English
       if (audioTracks.length > 0) {
         const savedAudio = tmdbId ? localStorage.getItem(`streamnet_audio_${tmdbId}`) : null;
         let targetTrack = null;
@@ -454,16 +454,23 @@ export default function VidstackPlayer({
           targetTrack = audioTracks.find(t => t.label === savedAudio);
         }
 
+        // Always prioritize English by default
+        if (!targetTrack) {
+          targetTrack = audioTracks.find(t => {
+            const l = (t.label || '').toLowerCase();
+            const lang = (t.language || '').toLowerCase();
+            return l.includes('english') || l.includes('eng') || lang.startsWith('en');
+          });
+        }
+
         if (!targetTrack && preferredLanguage === 'hi') {
           targetTrack = audioTracks.find(t =>
-            t.label.toLowerCase().includes('hindi') || t.language?.startsWith('hi')
+            (t.label || '').toLowerCase().includes('hindi') || (t.language || '').startsWith('hi')
           );
         }
 
-        if (!targetTrack && !savedAudio) {
-          targetTrack = audioTracks.find(t =>
-            t.label.toLowerCase().includes('english') || t.language?.startsWith('en')
-          );
+        if (!targetTrack) {
+          targetTrack = audioTracks[0];
         }
 
         if (targetTrack && !targetTrack.selected) {

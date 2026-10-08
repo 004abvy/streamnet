@@ -423,10 +423,29 @@ body {
   font-weight: 600 !important;
 }
 
-/* Hide broken image alt text artifacts inside Vidstack player poster */
-.vds-poster,
-.vds-poster img,
-.vds-poster * {
+/* Full Coverage & Positioning for Vidstack Player Poster */
+media-poster,
+.vds-poster {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+.vds-poster img {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
   font-size: 0 !important;
   color: transparent !important;
   text-indent: -9999px !important;

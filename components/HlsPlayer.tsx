@@ -152,11 +152,18 @@ export default function HlsPlayer({
                 (s) => s.name === savedDirectSource,
               );
               if (foundIdx !== -1) initialSourceIndex = foundIdx;
-            } else if (preferredLanguage === "hi") {
-              const hindiFoundIdx = cached.initialList.findIndex((s) =>
-                s.audioLanguages?.some((l) => l.toLowerCase().includes("hin")),
+            } else {
+              const engFoundIdx = cached.initialList.findIndex((s) =>
+                s.audioLanguages?.some((l) => l.toLowerCase().includes("eng") || l.toLowerCase().includes("english")),
               );
-              if (hindiFoundIdx !== -1) initialSourceIndex = hindiFoundIdx;
+              if (engFoundIdx !== -1) {
+                initialSourceIndex = engFoundIdx;
+              } else if (preferredLanguage === "hi") {
+                const hindiFoundIdx = cached.initialList.findIndex((s) =>
+                  s.audioLanguages?.some((l) => l.toLowerCase().includes("hin")),
+                );
+                if (hindiFoundIdx !== -1) initialSourceIndex = hindiFoundIdx;
+              }
             }
 
             setCurrentSourceIndex(initialSourceIndex);
@@ -246,35 +253,35 @@ export default function HlsPlayer({
           const aQual = String(a.quality || "").toLowerCase();
           const bQual = String(b.quality || "").toLowerCase();
 
-          // 1. Check for preferred language (Hindi)
-          const aHasHindi =
-            aAudio.some((l: string) => l.includes("hin")) ||
-            aQual.includes("hindi");
-          const bHasHindi =
-            bAudio.some((l: string) => l.includes("hin")) ||
-            bQual.includes("hindi");
-
-          if (preferredLanguage === "hi") {
-            if (aHasHindi && !bHasHindi) return -1;
-            if (!aHasHindi && bHasHindi) return 1;
-          }
-
-          // 2. Prioritize English/Default
+          // 1. Always prioritize English by default
           const aHasEnglish =
             aAudio.some(
-              (l: string) => l.includes("eng") || l.includes("en-"),
+              (l: string) => l.includes("eng") || l.includes("en-") || l.includes("english"),
             ) ||
             aQual.includes("english") ||
             aAudio.length === 0;
           const bHasEnglish =
             bAudio.some(
-              (l: string) => l.includes("eng") || l.includes("en-"),
+              (l: string) => l.includes("eng") || l.includes("en-") || l.includes("english"),
             ) ||
             bQual.includes("english") ||
             bAudio.length === 0;
 
           if (aHasEnglish && !bHasEnglish) return -1;
           if (!aHasEnglish && bHasEnglish) return 1;
+
+          // 2. Check for preferred language (Hindi)
+          const aHasHindi =
+            aAudio.some((l: string) => l.includes("hin") || l.includes("hindi")) ||
+            aQual.includes("hindi");
+          const bHasHindi =
+            bAudio.some((l: string) => l.includes("hin") || l.includes("hindi")) ||
+            bQual.includes("hindi");
+
+          if (preferredLanguage === "hi") {
+            if (aHasHindi && !bHasHindi) return -1;
+            if (!aHasHindi && bHasHindi) return 1;
+          }
 
           // 3. VidSrc Priority
           const aIsVidSrc =
@@ -365,12 +372,19 @@ export default function HlsPlayer({
             (s) => s.name === savedDirectSource,
           );
           if (foundIdx !== -1) initialSourceIndex = foundIdx;
-        } else if (preferredLanguage === "hi") {
-          const hindiFoundIdx = initialList.findIndex((s) =>
-            s.audioLanguages?.some((l) => l.toLowerCase().includes("hin")),
+        } else {
+          const engFoundIdx = initialList.findIndex((s) =>
+            s.audioLanguages?.some((l) => l.toLowerCase().includes("eng") || l.toLowerCase().includes("english")),
           );
-          if (hindiFoundIdx !== -1) {
-            initialSourceIndex = hindiFoundIdx;
+          if (engFoundIdx !== -1) {
+            initialSourceIndex = engFoundIdx;
+          } else if (preferredLanguage === "hi") {
+            const hindiFoundIdx = initialList.findIndex((s) =>
+              s.audioLanguages?.some((l) => l.toLowerCase().includes("hin")),
+            );
+            if (hindiFoundIdx !== -1) {
+              initialSourceIndex = hindiFoundIdx;
+            }
           }
         }
 
@@ -611,12 +625,25 @@ export default function HlsPlayer({
   }
 
   if (loading) {
+    const formattedLoadingPoster = poster
+      ? poster.startsWith("http")
+        ? poster
+        : `https://image.tmdb.org/t/p/original${poster.startsWith("/") ? "" : "/"}${poster}`
+      : null;
+
     return (
       <div
-        className={`w-full aspect-video rounded-xl flex flex-col items-center justify-center bg-neutral-900 border border-white/10 ${className}`}
+        className={`relative w-full aspect-video rounded-xl flex flex-col items-center justify-center bg-black overflow-hidden border border-white/10 ${className}`}
       >
-        <div className="w-10 h-10 border-4 border-[#89D7B7] border-t-transparent rounded-full animate-spin mb-3"></div>
-        <p className="text-sm font-medium text-neutral-300">
+        {formattedLoadingPoster && (
+          <img
+            src={formattedLoadingPoster}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-30 filter blur-sm pointer-events-none"
+          />
+        )}
+        <div className="relative z-10 w-10 h-10 border-4 border-[#89D7B7] border-t-transparent rounded-full animate-spin mb-3 shadow-[0_0_20px_rgba(137,215,183,0.3)]"></div>
+        <p className="relative z-10 text-sm font-medium text-neutral-300 drop-shadow-md">
           Loading Please wait
         </p>
       </div>

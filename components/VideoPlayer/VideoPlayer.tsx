@@ -432,7 +432,7 @@ export default function VideoPlayer({
                 episode={episode}
                 imdbId={imdbId}
                 title={title}
-                poster={posterPath}
+                poster={backdropPath || posterPath}
                 preferredLanguage={selectedLanguage}
                 expectedRuntime={expectedRuntime}
                 className="w-full h-full border-0"
