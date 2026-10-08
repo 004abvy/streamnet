@@ -8,7 +8,7 @@ import TrendingSection from '../components/TrendingSection/TrendingSection';
 import ProvidersSection from '../components/ProvidersSection/ProvidersSection';
 import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplorerSection';
 import Footer from '../components/Footer/Footer';
-import SlingButton from '../components/reactbits/SlingButton';
+import { ArrowUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveContinueWatching, isUpcomingMedia, enrichContinueWatchingPosters } from '../utils/userStorage';
 import { motion } from 'framer-motion';
@@ -205,41 +205,22 @@ export default function Home() {
 
       <Footer />
       
-      {/* Scroll to Top Sling Button (Rendered via Portal to escape Framer Motion transforms) */}
+      {/* Sleek Floating Scroll to Top Button */}
       {mounted && typeof document !== 'undefined' && createPortal(
-        <div 
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className={styles.scrollTopBtn}
+          aria-label="Scroll to top"
+          title="Scroll to top"
           style={{
-            position: 'fixed',
-            bottom: '15%',
-            right: '2rem',
-            zIndex: 99999, // Guaranteed to be on top of everything
             opacity: showScrollTop ? 1 : 0,
             pointerEvents: showScrollTop ? 'auto' : 'none',
-            transform: showScrollTop ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.3s ease-out'
+            transform: showScrollTop ? 'translateY(0)' : 'translateY(16px)',
           }}
         >
-          <SlingButton
-            onSend={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            padColor="#f5f5f5"
-            iconColor="#18181b"
-            accentColor="#f5f5f5"
-            wellColor="#27272a"
-            bandColor="#f59e0b"
-            size={56}
-            strokeWidth={3}
-            armAt={48}
-            maxPull={160}
-            launchSpeed={2600}
-            recoil={0.2}
-            flight={120}
-            particles={14}
-            spread={60}
-            axis="vertical"
-            tapSends
-            disabled={!showScrollTop}
-          />
-        </div>,
+          <ArrowUp size={18} strokeWidth={2.5} />
+        </button>,
         document.body
       )}
     </main>
