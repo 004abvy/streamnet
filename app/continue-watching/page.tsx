@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { saveContinueWatching, getResumeHref, getMediaPosterUrl } from '../../utils/userStorage';
+import { saveContinueWatching, getResumeHref, getMediaPosterUrl, enrichContinueWatchingPosters } from '../../utils/userStorage';
 import styles from './continueWatching.module.css';
 
 interface MediaItem {
@@ -54,6 +54,7 @@ export default function ContinueWatchingPage() {
     };
 
     loadItems();
+    enrichContinueWatchingPosters();
     window.addEventListener('focus', loadItems);
     window.addEventListener('storage', loadItems);
     return () => {

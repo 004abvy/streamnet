@@ -200,35 +200,89 @@ export function clearWatchProgress(
 }
 
 /**
- * Returns a reliable, high quality poster URL for any media item with fallbacks
+ * Returns a reliable, high quality portrait poster URL for any media item
  */
 export function getMediaPosterUrl(item: any): string {
   if (!item) return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
   
+  // Strictly prefer portrait posters over horizontal backdrops
   const rawPath =
     item.poster_path ||
     item.poster ||
-    item.backdrop_path ||
-    item.backdrop ||
     item.animeCover ||
     item.cover ||
     item.image;
 
-  if (!rawPath || typeof rawPath !== 'string') {
-    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+  if (rawPath && typeof rawPath === 'string') {
+    const trimmed = rawPath.trim();
+    if (trimmed) {
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//') || trimmed.startsWith('data:')) {
+        return trimmed;
+      }
+      const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+      return `https://image.tmdb.org/t/p/w780${cleanPath}`;
+    }
   }
 
-  const trimmed = rawPath.trim();
-  if (!trimmed) {
-    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+  // Fallback only if no portrait poster exists
+  const fallbackBackdrop = item.backdrop_path || item.backdrop;
+  if (fallbackBackdrop && typeof fallbackBackdrop === 'string') {
+    const trimmed = fallbackBackdrop.trim();
+    if (trimmed) {
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//') || trimmed.startsWith('data:')) {
+        return trimmed;
+      }
+      const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+      return `https://image.tmdb.org/t/p/w780${cleanPath}`;
+    }
   }
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//') || trimmed.startsWith('data:')) {
-    return trimmed;
-  }
+  return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+}
 
-  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return `https://image.tmdb.org/t/p/w780${cleanPath}`;
+/**
+ * Automatically enriches continue watching items that are missing true portrait posters
+ */
+export async function enrichContinueWatchingPosters(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const stored = localStorage.getItem('continueWatching');
+    if (!stored) return;
+    const list = JSON.parse(stored);
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    let modified = false;
+    const updatedList = await Promise.all(
+      list.map(async (item: any) => {
+        if (!item || !item.id) return item;
+        const hasGoodPoster = item.poster_path && typeof item.poster_path === 'string' && item.poster_path.length > 5 && item.poster_path !== item.backdrop_path;
+        if (hasGoodPoster) return item;
+
+        try {
+          const isTv = item.media_type === 'tv' || (item.name && !item.title);
+          const endpoint = isTv ? `/api/tv/${item.id}` : `/api/movies/${item.id}`;
+          const res = await fetch(endpoint);
+          if (!res.ok) return item;
+          const data = await res.json();
+          if (data?.poster_path) {
+            modified = true;
+            return {
+              ...item,
+              poster_path: data.poster_path,
+              backdrop_path: data.backdrop_path || item.backdrop_path,
+              title: data.title || data.name || item.title || item.name,
+              name: data.name || data.title || item.name || item.title,
+            };
+          }
+        } catch {}
+        return item;
+      })
+    );
+
+    if (modified) {
+      saveContinueWatching(updatedList);
+    }
+  } catch {}
 }
 
 /**
@@ -276,13 +330,12 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
       }
     }
 
+    // Strictly preserve portrait poster_path and never let backdrop overwrite it
     const posterPath =
       cleanItem.poster_path ||
       existing.poster_path ||
       cleanItem.poster ||
       (existing as any).poster ||
-      cleanItem.backdrop_path ||
-      existing.backdrop_path ||
       undefined;
 
     const backdropPath = cleanItem.backdrop_path || existing.backdrop_path || undefined;

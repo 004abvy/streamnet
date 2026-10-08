@@ -10,7 +10,7 @@ import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplor
 import Footer from '../components/Footer/Footer';
 import SlingButton from '../components/reactbits/SlingButton';
 import { useAuth } from '../context/AuthContext';
-import { saveContinueWatching, isUpcomingMedia } from '../utils/userStorage';
+import { saveContinueWatching, isUpcomingMedia, enrichContinueWatchingPosters } from '../utils/userStorage';
 import { motion } from 'framer-motion';
 import styles from './page.module.css';
 
@@ -63,6 +63,7 @@ export default function Home() {
     };
 
     loadContinueWatching();
+    enrichContinueWatchingPosters();
 
     window.addEventListener('focus', loadContinueWatching);
     window.addEventListener('popstate', loadContinueWatching);
