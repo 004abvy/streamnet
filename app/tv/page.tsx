@@ -167,9 +167,10 @@ function TvContent() {
     const genreName = currentGenreObj && currentGenreObj.id ? currentGenreObj.name : '';
 
     let filterLabel = 'Popular';
-    if (filterParam === 'top_rated') filterLabel = 'Top Rated';
-    else if (filterParam === 'on_the_air') filterLabel = 'On The Air';
-    else if (filterParam === 'airing_today') filterLabel = 'Airing Today';
+    if (filterParam === '4k') filterLabel = '4K Ultra HD';
+    else if (filterParam === 'top_rated') filterLabel = 'Top Rated';
+    else if (filterParam === 'upcoming') filterLabel = 'Upcoming';
+    else if (filterParam === 'now_playing' || filterParam === 'on_the_air' || filterParam === 'airing_today') filterLabel = 'Now Playing';
 
     if (genreName && filterParam && filterParam !== 'popular') {
       return {
@@ -181,20 +182,25 @@ function TvContent() {
         title: `${genreName} Series`,
         subtitle: `Explore top ${genreName.toLowerCase()} TV shows available now.`
       };
+    } else if (filterParam === '4k') {
+      return {
+        title: '4K Ultra HD TV Series',
+        subtitle: 'Experience television with stunning 4K clarity and immersive visual depth.'
+      };
     } else if (filterParam === 'top_rated') {
       return {
         title: 'Top Rated TV Shows',
         subtitle: 'Critically acclaimed series and top-rated television shows.'
       };
-    } else if (filterParam === 'on_the_air') {
+    } else if (filterParam === 'upcoming') {
       return {
-        title: 'On The Air TV Shows',
-        subtitle: 'Series currently airing new episodes this season.'
+        title: 'Upcoming TV Shows',
+        subtitle: 'Discover upcoming television series and new seasons premiering soon.'
       };
-    } else if (filterParam === 'airing_today') {
+    } else if (filterParam === 'now_playing' || filterParam === 'on_the_air' || filterParam === 'airing_today') {
       return {
-        title: 'Airing Today TV Shows',
-        subtitle: 'TV shows with brand new episodes airing today.'
+        title: 'Now Playing TV Shows',
+        subtitle: 'Series currently airing new episodes and available to stream.'
       };
     }
 
@@ -237,16 +243,23 @@ function TvContent() {
               Top Rated
             </button>
             <button
-              className={`${styles.filterBtn} ${filterParam === 'on_the_air' ? styles.activeFilterBtn : ''}`}
-              onClick={() => updateQueryParams('on_the_air', undefined)}
+              className={`${styles.filterBtn} ${filterParam === '4k' ? styles.activeFilterBtn : ''}`}
+              onClick={() => updateQueryParams('4k', undefined)}
             >
-              On The Air
+              <span style={{ background: '#fff', color: '#000', padding: '1px 4px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 }}>4K</span>
+              4K Series
             </button>
             <button
-              className={`${styles.filterBtn} ${filterParam === 'airing_today' ? styles.activeFilterBtn : ''}`}
-              onClick={() => updateQueryParams('airing_today', undefined)}
+              className={`${styles.filterBtn} ${filterParam === 'upcoming' ? styles.activeFilterBtn : ''}`}
+              onClick={() => updateQueryParams('upcoming', undefined)}
             >
-              Airing Today
+              Upcoming
+            </button>
+            <button
+              className={`${styles.filterBtn} ${filterParam === 'now_playing' || filterParam === 'on_the_air' || filterParam === 'airing_today' ? styles.activeFilterBtn : ''}`}
+              onClick={() => updateQueryParams('now_playing', undefined)}
+            >
+              Now Playing
             </button>
           </div>
         </div>

@@ -216,7 +216,12 @@ export async function GET(
         }
       }
 
-      if (filter === 'top_rated') {
+      if (filter === '4k') {
+        endpoint = '/discover/tv';
+        params.sort_by = 'vote_average.desc';
+        params['vote_count.gte'] = 200;
+        params.with_original_language = 'en';
+      } else if (filter === 'top_rated') {
         if (genre) {
           endpoint = '/discover/tv';
           params.sort_by = 'vote_average.desc';
@@ -225,11 +230,11 @@ export async function GET(
           endpoint = '/tv/top_rated';
         }
       } else if (filter === 'upcoming') {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
         endpoint = '/discover/tv';
         params.sort_by = 'popularity.desc';
-        params['first_air_date.gte'] = todayStr;
-      } else if (filter === 'on_the_air' || filter === 'airing_today') {
+        params['first_air_date.gte'] = tomorrow;
+      } else if (filter === 'now_playing' || filter === 'on_the_air' || filter === 'airing_today') {
         if (genre) {
           endpoint = '/discover/tv';
           params.sort_by = 'popularity.desc';
@@ -315,13 +320,20 @@ export async function GET(
         page
       };
 
-      if (filter === 'top_rated') {
+      if (filter === '4k') {
+        params.sort_by = 'vote_average.desc';
+        params['vote_count.gte'] = 80;
+      } else if (filter === 'top_rated') {
         params.sort_by = 'vote_average.desc';
         params['vote_count.gte'] = 100;
-      } else if (filter === 'on_the_air') {
+      } else if (filter === 'now_playing' || filter === 'on_the_air') {
         params.sort_by = 'popularity.desc';
+        const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0];
+        params['air_date.gte'] = sixtyDaysAgo;
       } else if (filter === 'upcoming') {
-        params.sort_by = 'first_air_date.desc';
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        params.sort_by = 'popularity.desc';
+        params['first_air_date.gte'] = tomorrow;
       } else {
         params.sort_by = 'popularity.desc';
       }

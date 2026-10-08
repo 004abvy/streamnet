@@ -133,10 +133,10 @@ function AnimeContent() {
     const genreName = currentGenreObj && currentGenreObj.id ? currentGenreObj.name : '';
 
     let filterLabel = 'Popular';
-    if (filterParam === 'top_rated') filterLabel = 'Top Rated';
-    else if (filterParam === 'on_the_air') filterLabel = 'Currently Airing';
+    if (filterParam === '4k') filterLabel = '4K Ultra HD';
+    else if (filterParam === 'top_rated') filterLabel = 'Top Rated';
     else if (filterParam === 'upcoming') filterLabel = 'Upcoming';
-    else if (filterParam === '4k') filterLabel = '4K Ultra HD';
+    else if (filterParam === 'now_playing' || filterParam === 'on_the_air') filterLabel = 'Now Playing';
 
     if (genreName && filterParam && filterParam !== 'popular') {
       return {
@@ -148,14 +148,14 @@ function AnimeContent() {
         title: `${genreName} Anime`,
         subtitle: `Explore top ${genreName.toLowerCase()} anime series available now.`
       };
-    } else if (filterParam === 'top_rated') {
-      return { title: 'Top Rated Anime', subtitle: 'The highest-rated Japanese animation series of all time.' };
-    } else if (filterParam === 'on_the_air') {
-      return { title: 'Currently Airing Anime', subtitle: 'Catch up with the latest airing anime episodes this season.' };
-    } else if (filterParam === 'upcoming') {
-      return { title: 'Upcoming Anime', subtitle: 'Upcoming releases and new seasons coming soon.' };
     } else if (filterParam === '4k') {
       return { title: '4K Ultra HD Anime', subtitle: 'Experience anime with cinema-quality high definition visuals.' };
+    } else if (filterParam === 'top_rated') {
+      return { title: 'Top Rated Anime', subtitle: 'The highest-rated Japanese animation series of all time.' };
+    } else if (filterParam === 'upcoming') {
+      return { title: 'Upcoming Anime', subtitle: 'Upcoming releases and new seasons coming soon.' };
+    } else if (filterParam === 'now_playing' || filterParam === 'on_the_air') {
+      return { title: 'Now Playing Anime', subtitle: 'Currently airing anime series available to stream now.' };
     }
 
     return { title: 'Trending & Popular Anime', subtitle: 'Discover and stream the most popular anime series worldwide.' };
@@ -200,16 +200,16 @@ function AnimeContent() {
               4K Anime
             </button>
             <button
-              className={`${styles.filterBtn} ${filterParam === 'on_the_air' ? styles.activeFilterBtn : ''}`}
-              onClick={() => updateQueryParams('on_the_air', undefined)}
-            >
-              Now Airing
-            </button>
-            <button
               className={`${styles.filterBtn} ${filterParam === 'upcoming' ? styles.activeFilterBtn : ''}`}
               onClick={() => updateQueryParams('upcoming', undefined)}
             >
               Upcoming
+            </button>
+            <button
+              className={`${styles.filterBtn} ${filterParam === 'now_playing' || filterParam === 'on_the_air' ? styles.activeFilterBtn : ''}`}
+              onClick={() => updateQueryParams('now_playing', undefined)}
+            >
+              Now Playing
             </button>
           </div>
         </div>
