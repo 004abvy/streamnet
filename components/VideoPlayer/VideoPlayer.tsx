@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, Film, Globe, Sparkles, X } from 'lucide-react';
+import { Zap, Film, Globe, Sparkles, X, HelpCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import vpStyles from './VideoPlayer.module.css';
 import { SERVERS } from '../../utils/servers';
 import HlsPlayer from '../HlsPlayer';
@@ -52,6 +52,7 @@ export default function VideoPlayer({
   const [activeServer, setActiveServer] = useState<string>('auto-fast');
   const [autoFallbackNotice, setAutoFallbackNotice] = useState<string | null>(null);
   const [showVipModal, setShowVipModal] = useState<boolean>(false);
+  const [showWrongMovieModal, setShowWrongMovieModal] = useState<boolean>(false);
   const [vipInputCode, setVipInputCode] = useState<string>('');
   const [vipError, setVipError] = useState<string | null>(null);
 
@@ -523,6 +524,18 @@ export default function VideoPlayer({
             <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-black" />
             <span>VIP</span>
           </button>
+
+          {/* Wrong Movie / Issue Button */}
+          <div className="w-px h-3.5 bg-white/15 mx-0.5 shrink-0" />
+          <button
+            type="button"
+            onClick={() => setShowWrongMovieModal(true)}
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium text-neutral-400 hover:text-amber-300 hover:bg-amber-500/10 transition-all duration-200 cursor-pointer shrink-0"
+            title="Wrong movie or playback issue?"
+          >
+            <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400 group-hover:text-amber-300" />
+            <span className="hidden sm:inline">Wrong Movie?</span>
+          </button>
         </div>
       </div>
 
@@ -617,6 +630,96 @@ export default function VideoPlayer({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Wrong Movie / Stream Diagnostic Modal */}
+      {showWrongMovieModal && (
+        <div 
+          className="fixed inset-0 z-[999999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4"
+          onClick={() => setShowWrongMovieModal(false)}
+        >
+          <div 
+            className="w-full max-w-[420px] bg-neutral-900/95 border border-white/15 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center text-center relative backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close X Button */}
+            <button
+              type="button"
+              onClick={() => setShowWrongMovieModal(false)}
+              className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all cursor-pointer active:scale-95"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Glowing Icon Badge */}
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-base sm:text-lg font-black text-white mb-1 tracking-tight">
+              Playing the Wrong Movie or Trailer?
+            </h3>
+            <p className="text-xs text-neutral-300 mb-5 leading-relaxed px-1">
+              When movies are very new or currently in theaters (like <span className="text-amber-300 font-semibold">{title}</span>), some web scrapers may return older films with similar titles or promotional trailers.
+            </p>
+
+            <div className="w-full flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  changeServer('screenscape');
+                  setShowWrongMovieModal(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/25 text-white text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <Film className="w-4 h-4 text-amber-400" />
+                  <span>Try Server 2 (ScreenScape)</span>
+                </span>
+                <span className="text-[11px] text-neutral-400 group-hover:text-white">Switch →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  changeServer('rivestream');
+                  setShowWrongMovieModal(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/25 text-white text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-sky-400" />
+                  <span>Try Server 3 (RiveStream)</span>
+                </span>
+                <span className="text-[11px] text-neutral-400 group-hover:text-white">Switch →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  changeServer('auto-fast');
+                  setShowWrongMovieModal(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-amber-400" />
+                  <span>Cycle Direct Sources (Server 1)</span>
+                </span>
+                <span className="text-[11px] text-amber-400/80 group-hover:text-amber-300">Reload →</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowWrongMovieModal(false)}
+              className="mt-4 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
