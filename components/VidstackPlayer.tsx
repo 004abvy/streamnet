@@ -93,10 +93,10 @@ export default function VidstackPlayer({
   const formattedPoster = useMemo(() => {
     if (!poster || typeof poster !== 'string') return undefined;
     const trimmed = poster.trim();
-    if (!trimmed) return undefined;
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return undefined;
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-    if (trimmed.startsWith('/')) return `https://image.tmdb.org/t/p/original${trimmed}`;
-    return `https://image.tmdb.org/t/p/original/${trimmed}`;
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `https://image.tmdb.org/t/p/w1280${cleanPath}`;
   }, [poster]);
 
   useEffect(() => {

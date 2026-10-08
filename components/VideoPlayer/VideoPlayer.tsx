@@ -297,8 +297,14 @@ export default function VideoPlayer({
   };
 
   const backdropUrl = backdropPath
-    ? (backdropPath.startsWith('http') ? backdropPath : `https://image.tmdb.org/t/p/original${backdropPath}`)
+    ? (backdropPath.startsWith('http') ? backdropPath : `https://image.tmdb.org/t/p/w1280${backdropPath.startsWith('/') ? '' : '/'}${backdropPath}`)
     : null;
+
+  const posterUrl = posterPath
+    ? (posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w780${posterPath.startsWith('/') ? '' : '/'}${posterPath}`)
+    : null;
+
+  const resolvedPlayerPoster = backdropUrl || posterUrl;
 
   return (
     <div className={`relative w-full flex flex-col items-center gap-3 ${vpStyles.embedPlayerContainer}`}>
@@ -432,7 +438,7 @@ export default function VideoPlayer({
                 episode={episode}
                 imdbId={imdbId}
                 title={title}
-                poster={backdropPath || posterPath}
+                poster={resolvedPlayerPoster || undefined}
                 preferredLanguage={selectedLanguage}
                 expectedRuntime={expectedRuntime}
                 className="w-full h-full border-0"

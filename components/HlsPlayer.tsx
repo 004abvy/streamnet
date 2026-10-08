@@ -628,7 +628,7 @@ export default function HlsPlayer({
     const formattedLoadingPoster = poster
       ? poster.startsWith("http")
         ? poster
-        : `https://image.tmdb.org/t/p/original${poster.startsWith("/") ? "" : "/"}${poster}`
+        : `https://image.tmdb.org/t/p/w1280${poster.startsWith("/") ? "" : "/"}${poster}`
       : null;
 
     return (
@@ -640,6 +640,9 @@ export default function HlsPlayer({
             src={formattedLoadingPoster}
             alt=""
             className="absolute inset-0 w-full h-full object-cover object-center opacity-30 filter blur-sm pointer-events-none"
+            onError={(e) => {
+              (e.target as HTMLElement).style.display = 'none';
+            }}
           />
         )}
         <div className="relative z-10 w-10 h-10 border-4 border-[#89D7B7] border-t-transparent rounded-full animate-spin mb-3 shadow-[0_0_20px_rgba(137,215,183,0.3)]"></div>
