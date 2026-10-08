@@ -371,56 +371,154 @@ body {
 }
 
 /* ==========================================================================
-   VIDSTACK PLAYER MENU & SETTINGS POPUP STYLES (MOBILE & DESKTOP)
+   VIDSTACK PLAYER MENU & SETTINGS POPUP STYLES (MATCHES VIP SERVER POPUP)
    ========================================================================== */
-.vds-video-layout .vds-menu-items[data-root],
-[data-media-player] .vds-menu-items[data-root],
-.vds-menu-items[data-root]:not([data-placement]),
-.vds-menu-items[data-root] {
+.vds-video-layout .vds-menu-items,
+[data-media-player] .vds-menu-items,
+.vds-menu-items[data-root],
+media-menu-items,
+.vds-menu-items {
   position: absolute !important;
-  bottom: 52px !important;
-  right: 10px !important;
+  bottom: 54px !important;
+  right: 12px !important;
   left: auto !important;
   top: auto !important;
-  max-width: min(320px, calc(100% - 20px)) !important;
-  min-width: 200px !important;
-  max-height: min(75%, 260px) !important;
-  background-color: rgba(14, 14, 22, 0.95) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(14, 14, 20, 0.96) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1) !important;
-  margin: 0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.15) !important;
   padding: 6px !important;
   z-index: 99999 !important;
   transform-origin: bottom right !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  max-width: min(320px, calc(100vw - 24px)) !important;
+  min-width: min(240px, calc(100vw - 24px)) !important;
+  max-height: min(72vh, 320px) !important;
 }
 
-[data-media-player]:fullscreen .vds-menu-items[data-root],
-[data-media-player][data-fullscreen] .vds-menu-items[data-root] {
-  bottom: 60px !important;
-  right: 18px !important;
-  max-height: min(80vh, 340px) !important;
+/* Custom 4px Glass Scrollbar for Vidstack Menu */
+.vds-menu-items::-webkit-scrollbar,
+media-menu-items::-webkit-scrollbar {
+  width: 4px !important;
 }
-
-.vds-menu-item,
-.vds-radio {
+.vds-menu-items::-webkit-scrollbar-thumb,
+media-menu-items::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
   border-radius: 8px !important;
-  padding: 8px 12px !important;
-  font-size: 13px !important;
+}
+
+/* Vidstack Menu Rows */
+.vds-menu-item,
+.vds-radio,
+media-menu-item,
+media-radio {
+  border-radius: 8px !important;
   transition: all 0.15s ease !important;
+  padding: 8px 12px !important;
+  margin-bottom: 2px !important;
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  color: #f3f4f6 !important;
+  letter-spacing: -0.01em !important;
+  cursor: pointer !important;
 }
 
 .vds-menu-item:hover,
 .vds-radio:hover,
-.vds-radio[aria-checked='true'] {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+media-menu-item:hover,
+media-radio:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
 }
 
-.vds-radio[aria-checked='true'] {
+/* Right hint / current value text */
+.vds-menu-item-hint,
+[data-part="hint"],
+.vds-menu-item [data-part="hint"] {
+  font-weight: 400 !important;
+  font-size: 12px !important;
+  color: #9ca3af !important;
+  transition: color 0.15s ease !important;
+}
+
+.vds-menu-item:hover .vds-menu-item-hint,
+.vds-menu-item:hover [data-part="hint"] {
+  color: #fbbf24 !important; /* Soft Amber */
+}
+
+/* Active & Checked Radio State */
+.vds-radio[aria-checked='true'],
+media-radio[data-checked],
+.vds-radio[data-checked] {
+  background: rgba(245, 158, 11, 0.08) !important;
   color: #f59e0b !important;
   font-weight: 600 !important;
+}
+
+/* Checkmark and Icon colors */
+.vds-radio[aria-checked='true'] .vds-icon,
+.vds-radio[data-checked] .vds-icon,
+.vds-radio-check,
+[data-part="check"] {
+  color: #f59e0b !important;
+  margin-right: 6px !important;
+}
+
+/* Submenu Header & Back Button */
+.vds-menu-header,
+[data-part="header"] {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 4px 10px 8px 10px !important;
+  margin-bottom: 6px !important;
+  background: transparent !important;
+  color: #f59e0b !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.vds-menu-header button,
+.vds-menu-header .vds-icon {
+  color: #f59e0b !important;
+  margin-right: 6px !important;
+}
+
+/* Fullscreen Menu Positioning */
+[data-media-player]:fullscreen .vds-menu-items,
+[data-media-player][data-fullscreen] .vds-menu-items,
+:fullscreen .vds-menu-items {
+  bottom: 64px !important;
+  right: 20px !important;
+  max-height: min(80vh, 380px) !important;
+}
+
+/* Mobile Responsive Menu Overrides */
+@media (max-width: 640px) {
+  .vds-video-layout .vds-menu-items,
+  [data-media-player] .vds-menu-items,
+  .vds-menu-items {
+    bottom: 46px !important;
+    right: 8px !important;
+    max-height: min(70vh, 260px) !important;
+    max-width: calc(100% - 16px) !important;
+    min-width: 210px !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+  }
+
+  .vds-menu-item,
+  .vds-radio {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+  }
 }
 
 /* Full Coverage & Positioning for Vidstack Player Poster */
