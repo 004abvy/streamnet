@@ -218,7 +218,7 @@ export async function GET(
     if (path.length === 2 && path[0] === 'movies' && path[1] !== 'trending' && path[1] !== 'discover') {
       const id = path[1];
       const data = await fetchFromTMDB(`/movie/${id}`, {
-        append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids'
+        append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids,release_dates'
       });
       return NextResponse.json(data);
     }

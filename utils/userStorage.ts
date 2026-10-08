@@ -424,6 +424,60 @@ export function getResumeHref(item: any): string {
 }
 
 /**
+ * Resolves the primary/theatrical release date from TMDB metadata or release_dates array.
+ */
+export function getPrimaryReleaseDate(item: any): { date: Date; dateStr: string } | null {
+  if (!item) return null;
+
+  // 1. Check release_dates.results if available (prioritize US / global theatrical release date)
+  if (item.release_dates && Array.isArray(item.release_dates.results)) {
+    const usEntry =
+      item.release_dates.results.find((r: any) => r.iso_3166_1 === 'US') ||
+      item.release_dates.results.find((r: any) => r.iso_3166_1 === 'GB') ||
+      item.release_dates.results[0];
+
+    if (usEntry && Array.isArray(usEntry.release_dates) && usEntry.release_dates.length > 0) {
+      // Find theatrical (type 3 or 2) or default to the primary entry
+      const theatrical =
+        usEntry.release_dates.find((d: any) => d.type === 3 || d.type === 2) ||
+        usEntry.release_dates[0];
+
+      if (theatrical?.release_date) {
+        const raw = String(theatrical.release_date).split('T')[0];
+        const parts = raw.split('-');
+        if (parts.length === 3) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const d = parseInt(parts[2], 10);
+          const parsed = new Date(y, m, d);
+          if (!isNaN(parsed.getTime())) {
+            return { date: parsed, dateStr: raw };
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Fallback to item.release_date or item.first_air_date
+  const dateStr = item.release_date || item.first_air_date;
+  if (dateStr && typeof dateStr === 'string') {
+    const raw = String(dateStr).split('T')[0];
+    const parts = raw.split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      const parsed = new Date(y, m, d);
+      if (!isNaN(parsed.getTime())) {
+        return { date: parsed, dateStr: raw };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Checks if a movie or TV show is unreleased / upcoming.
  */
 export function isUpcomingMedia(item: any): boolean {
@@ -435,22 +489,13 @@ export function isUpcomingMedia(item: any): boolean {
     if (unreleasedStatuses.includes(item.status)) return true;
   }
 
-  // 2. Check release_date / first_air_date against current date
-  const dateStr = item.release_date || item.first_air_date;
-  if (dateStr && typeof dateStr === 'string') {
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const releaseDate = new Date(year, month, day);
-      if (!isNaN(releaseDate.getTime())) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (releaseDate.getTime() > today.getTime()) {
-          return true;
-        }
-      }
+  // 2. Check primary release date against current date
+  const rel = getPrimaryReleaseDate(item);
+  if (rel) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (rel.date.getTime() > today.getTime()) {
+      return true;
     }
   }
 
@@ -461,21 +506,11 @@ export function isUpcomingMedia(item: any): boolean {
  * Returns a human-friendly formatted release date string for upcoming items.
  */
 export function getFormattedReleaseDate(item: any): string {
-  const dateStr = item?.release_date || item?.first_air_date;
-  if (!dateStr) return 'Coming Soon';
-  try {
-    const parts = String(dateStr).split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const d = new Date(year, month, day);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      }
-    }
-    return String(dateStr);
-  } catch {
-    return String(dateStr);
+  const rel = getPrimaryReleaseDate(item);
+  if (rel) {
+    return rel.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
+  const fallback = item?.release_date || item?.first_air_date;
+  if (!fallback) return 'Coming Soon';
+  return String(fallback);
 }
