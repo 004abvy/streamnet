@@ -31,6 +31,8 @@ export default function Home() {
   const { user } = useAuth();
   const [trendingMovies, setTrendingMovies] = useState<HomeMediaItem[]>([]);
   const [trendingTv, setTrendingTv] = useState<HomeMediaItem[]>([]);
+  const [upcomingMovies, setUpcomingMovies] = useState<HomeMediaItem[]>([]);
+  const [upcomingTv, setUpcomingTv] = useState<HomeMediaItem[]>([]);
   const [continueWatching, setContinueWatching] = useState<HomeMediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -96,15 +98,16 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
     Promise.all([
       fetch(`/api/movies/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null),
-      fetch(`/api/tv/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
+      fetch(`/api/tv/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null),
+      fetch(`/api/movies/upcoming`, { signal: controller.signal }).then(res => res.ok ? res.json() : null),
+      fetch(`/api/tv/upcoming`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
     ])
-      .then(([moviesData, tvData]) => {
+      .then(([moviesData, tvData, upMoviesData, upTvData]) => {
         if (moviesData?.results) {
           const sorted = [...moviesData.results].sort((a, b) => {
             const aUp = isUpcomingMedia(a) ? 1 : 0;
@@ -120,6 +123,12 @@ export default function Home() {
             return aUp - bUp;
           });
           setTrendingTv(sorted);
+        }
+        if (upMoviesData?.results) {
+          setUpcomingMovies(upMoviesData.results);
+        }
+        if (upTvData?.results) {
+          setUpcomingTv(upTvData.results);
         }
       })
       .catch(err => {
@@ -197,9 +206,27 @@ export default function Home() {
           initial={{ opacity: 0, y: 30 }} 
           whileInView={{ opacity: 1, y: 0 }} 
           viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.35 }}
         >
           <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
+        >
+          <TrendingSection title="Upcoming Movies" items={upcomingMovies} viewAllLink="/movies?filter=upcoming" isLoading={loading} />
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }} 
+          viewport={{ once: true, margin: '-50px' }} 
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.45 }}
+        >
+          <TrendingSection title="Upcoming Series" items={upcomingTv} viewAllLink="/tv?filter=upcoming" isLoading={loading} />
         </motion.div>
       </div>
 

@@ -93,9 +93,29 @@ export async function GET(
       return NextResponse.json(data);
     }
 
+    // 2.1 /api/movies/upcoming
+    if (pathStr === 'movies/upcoming') {
+      const page = searchParams.get('page') || '1';
+      const data = await fetchFromTMDB('/movie/upcoming', { language: 'en-US', page, region: 'US' });
+      return NextResponse.json(data);
+    }
+
     // 3. /api/tv/trending
     if (pathStr === 'tv/trending') {
       const data = await fetchFromTMDB('/trending/tv/day', { language: 'en-US' });
+      return NextResponse.json(data);
+    }
+
+    // 3.01 /api/tv/upcoming
+    if (pathStr === 'tv/upcoming') {
+      const page = searchParams.get('page') || '1';
+      const today = new Date().toISOString().split('T')[0];
+      const data = await fetchFromTMDB('/discover/tv', {
+        language: 'en-US',
+        page,
+        sort_by: 'popularity.desc',
+        'first_air_date.gte': today
+      });
       return NextResponse.json(data);
     }
 
@@ -198,6 +218,11 @@ export async function GET(
         } else {
           endpoint = '/tv/top_rated';
         }
+      } else if (filter === 'upcoming') {
+        const todayStr = new Date().toISOString().split('T')[0];
+        endpoint = '/discover/tv';
+        params.sort_by = 'popularity.desc';
+        params['first_air_date.gte'] = todayStr;
       } else if (filter === 'on_the_air' || filter === 'airing_today') {
         if (genre) {
           endpoint = '/discover/tv';
@@ -215,7 +240,7 @@ export async function GET(
     }
 
     // 6. /api/movies/:id
-    if (path.length === 2 && path[0] === 'movies' && path[1] !== 'trending' && path[1] !== 'discover') {
+    if (path.length === 2 && path[0] === 'movies' && path[1] !== 'trending' && path[1] !== 'discover' && path[1] !== 'upcoming') {
       const id = path[1];
       const data = await fetchFromTMDB(`/movie/${id}`, {
         append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids,release_dates'
@@ -240,7 +265,7 @@ export async function GET(
     }
 
     // 8. /api/tv/:id
-    if (path.length === 2 && path[0] === 'tv' && path[1] !== 'trending' && path[1] !== 'discover') {
+    if (path.length === 2 && path[0] === 'tv' && path[1] !== 'trending' && path[1] !== 'discover' && path[1] !== 'upcoming') {
       const id = path[1];
       const data = await fetchFromTMDB(`/tv/${id}`, {
         append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids'
