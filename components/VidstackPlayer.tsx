@@ -90,6 +90,15 @@ export default function VidstackPlayer({
   const hasResumedRef = useRef<MediaSrc | null>(null);
   const resumeSeekAppliedRef = useRef<boolean>(false);
 
+  const formattedPoster = useMemo(() => {
+    if (!poster || typeof poster !== 'string') return undefined;
+    const trimmed = poster.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    if (trimmed.startsWith('/')) return `https://image.tmdb.org/t/p/original${trimmed}`;
+    return `https://image.tmdb.org/t/p/original/${trimmed}`;
+  }, [poster]);
+
   useEffect(() => {
     setActiveMediaSrc(src);
     resumeSeekAppliedRef.current = false;
@@ -502,7 +511,7 @@ export default function VidstackPlayer({
       <MediaPlayer
         ref={player}
         src={formattedMediaSrc}
-        poster={poster}
+        poster={formattedPoster}
         autoPlay={autoPlay}
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
         onError={(err: any) => {
@@ -593,7 +602,7 @@ export default function VidstackPlayer({
                 playerType: (playerType as any) || 'standard',
                 server,
                 audioType: preferredLanguage || audioType,
-                poster_path: poster,
+                poster_path: formattedPoster || poster,
               });
               onTimeProgress?.(currentTime, dur);
             }
@@ -602,11 +611,11 @@ export default function VidstackPlayer({
         crossOrigin="anonymous"
       >
         <MediaProvider>
-          {poster && (
+          {formattedPoster && (
             <Poster
-              className="vds-poster absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 data-visible:opacity-100"
-              src={poster}
-              alt={title || 'Video poster'}
+              className="vds-poster absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 data-visible:opacity-100 pointer-events-none"
+              src={formattedPoster}
+              alt=""
             />
           )}
           {uniqueTracks.map((track, idx) => {

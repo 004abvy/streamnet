@@ -422,3 +422,14 @@ body {
   color: #f59e0b !important;
   font-weight: 600 !important;
 }
+
+/* Hide broken image alt text artifacts inside Vidstack player poster */
+.vds-poster,
+.vds-poster img,
+.vds-poster * {
+  font-size: 0 !important;
+  color: transparent !important;
+  text-indent: -9999px !important;
+  user-select: none !important;
+  pointer-events: none !important;
+}
