@@ -133,10 +133,13 @@
   gap: 1.1rem;
   overflow-x: auto;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   padding: 18px 0 25px 0;
   margin-top: -18px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  contain: layout paint;
 }
 
 .carousel::-webkit-scrollbar {
@@ -151,11 +154,12 @@
   border-radius: 12px;
   border: 1px solid #222232;
   overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
   position: relative;
   aspect-ratio: 2 / 3;
   will-change: transform;
   transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .card > div {

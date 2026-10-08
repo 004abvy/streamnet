@@ -293,8 +293,11 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
       const video = containerRef.current?.querySelector('video');
       if (video) {
-        setIsVideoPlaying(!video.paused && !video.ended);
-        drawFrame();
+        const isPlaying = !video.paused && !video.ended;
+        setIsVideoPlaying(isPlaying);
+        if (isPlaying && video.readyState >= 2) {
+          drawFrame();
+        }
       }
     };
 

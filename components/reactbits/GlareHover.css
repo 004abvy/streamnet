@@ -7,6 +7,9 @@
     overflow: hidden;
     position: relative;
     display: block;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 .glare-hover::before {
@@ -25,8 +28,10 @@
         var(--gh-rgba) 50%,
         transparent 70%
     );
-    transform: translate(-100%, -100%) rotate(25deg);
-    transition: transform 0s, opacity 0s;
+    transform: translate3d(-100%, -100%, 0) rotate(25deg);
+    transition: transform var(--gh-duration) cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
 .glare-hover:hover {
@@ -35,6 +40,6 @@
 
 .glare-hover:hover::before {
     opacity: 1;
-    transform: translate(100%, 100%) rotate(25deg);
-    transition: transform var(--gh-duration) ease-in-out, opacity 0.2s ease-in-out;
+    transform: translate3d(100%, 100%, 0) rotate(25deg);
 }
+
