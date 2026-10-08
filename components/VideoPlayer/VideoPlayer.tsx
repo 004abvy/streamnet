@@ -29,6 +29,8 @@ interface VideoPlayerProps {
   voteAverage?: number;
   releaseDate?: string;
   backHref?: string;
+  /** Expected runtime in minutes from TMDB to validate stream authenticity */
+  expectedRuntime?: number;
 }
 
 export default function VideoPlayer({
@@ -44,6 +46,7 @@ export default function VideoPlayer({
   voteAverage,
   releaseDate,
   backHref,
+  expectedRuntime,
 }: VideoPlayerProps) {
   const router = useRouter();
   const [activeServer, setActiveServer] = useState<string>('auto-fast');
@@ -430,6 +433,7 @@ export default function VideoPlayer({
                 title={title}
                 poster={posterPath}
                 preferredLanguage={selectedLanguage}
+                expectedRuntime={expectedRuntime}
                 className="w-full h-full border-0"
                 onNextServer={() => changeServer('screenscape')}
                 onInvalidDuration={handleInvalidDuration}

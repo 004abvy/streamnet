@@ -21,6 +21,7 @@ interface HlsPlayerProps {
   imdbId?: string;
   className?: string;
   preferredLanguage?: string;
+  expectedRuntime?: number;
   onNextServer?: () => void;
   onInvalidDuration?: (duration: number) => void;
   onNoHindiDirectSource?: () => void;
@@ -48,11 +49,13 @@ export default function HlsPlayer({
   episode,
   className = "",
   preferredLanguage,
+  expectedRuntime,
   onNextServer,
   onInvalidDuration,
 }: HlsPlayerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [runtimeMismatchNotice, setRuntimeMismatchNotice] = useState<string | null>(null);
   const [subtitles, setSubtitles] = useState<SubtitleTrack[]>([]);
   const [streamData, setStreamData] = useState<{
     url: string;
@@ -654,10 +657,53 @@ export default function HlsPlayer({
     return labelA.localeCompare(labelB);
   });
 
+  const handleDurationCheck = (durationSec: number) => {
+    if (expectedRuntime && expectedRuntime >= 35 && durationSec > 0) {
+      const expectedSec = expectedRuntime * 60;
+      // If duration is under 15 minutes for a full movie or differs by > 35%
+      if (durationSec < 900 || Math.abs(durationSec - expectedSec) / expectedSec > 0.35) {
+        const streamMins = Math.round(durationSec / 60);
+        setRuntimeMismatchNotice(
+          `Stream Duration Mismatch (${streamMins}m vs official ${expectedRuntime}m). This stream may be an unverified placeholder or trailer.`
+        );
+      } else {
+        setRuntimeMismatchNotice(null);
+      }
+    }
+  };
+
   return (
     <div
       className={`relative w-full rounded-xl overflow-hidden shadow-2xl bg-black ${className || 'aspect-video'}`}
     >
+      {/* Stream Runtime Mismatch Alert */}
+      {runtimeMismatchNotice && (
+        <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 px-3.5 py-2 bg-neutral-900/90 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-medium backdrop-blur-xl shadow-xl animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="truncate">{runtimeMismatchNotice}</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                onNextServer?.();
+                setRuntimeMismatchNotice(null);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition cursor-pointer"
+            >
+              Switch Server
+            </button>
+            <button
+              onClick={() => setRuntimeMismatchNotice(null)}
+              className="p-1 text-neutral-400 hover:text-white rounded transition cursor-pointer"
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <VidstackPlayer
         title={title}
         poster={poster}
@@ -665,6 +711,7 @@ export default function HlsPlayer({
         tracks={vidstackTracks}
         className="w-full h-full text-white font-sans"
         autoPlay={true}
+        onDurationChange={handleDurationCheck}
         onInvalidDuration={(duration) => {
           console.warn(
             "[HlsPlayer] Stream error encountered. Advancing to next available stream source..."

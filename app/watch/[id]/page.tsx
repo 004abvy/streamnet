@@ -179,6 +179,7 @@ export default function WatchPage({
               imdbId={imdbId}
               voteAverage={movie?.vote_average}
               releaseDate={movie?.release_date}
+              expectedRuntime={movie?.runtime}
               backHref={`/movie/${id}`}
             />
 

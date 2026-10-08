@@ -130,6 +130,7 @@ export default function WatchTvPage() {
               imdbId={imdbId}
               voteAverage={show?.vote_average}
               releaseDate={show?.first_air_date}
+              expectedRuntime={show?.episode_run_time?.[0]}
               backHref={`/tv/${id}`}
             />
 
