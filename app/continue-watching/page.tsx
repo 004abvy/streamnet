@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { saveContinueWatching, getResumeHref } from '../../utils/userStorage';
+import { saveContinueWatching, getResumeHref, getMediaPosterUrl } from '../../utils/userStorage';
 import styles from './continueWatching.module.css';
 
 interface MediaItem {
@@ -13,6 +13,7 @@ interface MediaItem {
   name?: string;
   poster_path?: string;
   backdrop_path?: string;
+  poster?: string;
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
@@ -179,14 +180,20 @@ export default function ContinueWatchingPage() {
                     <Link href={watchHref} className={styles.cardLink}>
                       <div className={styles.posterWrapper}>
                         <img
-                          src={
-                            item.poster_path
-                              ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w780${item.poster_path}`)
-                              : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'
-                          }
+                          src={getMediaPosterUrl(item)}
                           alt={title}
                           className={styles.poster}
                           loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (item.backdrop_path && !target.src.includes(item.backdrop_path)) {
+                              target.src = item.backdrop_path.startsWith('http')
+                                ? item.backdrop_path
+                                : `https://image.tmdb.org/t/p/w780${item.backdrop_path}`;
+                            } else {
+                              target.src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+                            }
+                          }}
                         />
                         <div className={styles.posterOverlay} />
 

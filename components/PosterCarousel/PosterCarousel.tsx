@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { saveWatchlist, getResumeHref, isUpcomingMedia } from '../../utils/userStorage';
+import { saveWatchlist, getResumeHref, isUpcomingMedia, getMediaPosterUrl } from '../../utils/userStorage';
 import styles from './PosterCarousel.module.css';
 import GlareHover from '../reactbits/GlareHover';
 
@@ -10,8 +10,9 @@ interface Movie {
   id: number;
   title?: string;
   name?: string;
-  poster_path: string;
+  poster_path?: string;
   backdrop_path?: string;
+  poster?: string;
   vote_average: number;
   release_date?: string;
   first_air_date?: string;
@@ -240,10 +241,20 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                 playOnce={false}
               >
                 <img
-                  src={movie.poster_path ? (movie.poster_path.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/w780${movie.poster_path}`) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'}
+                  src={getMediaPosterUrl(movie)}
                   alt={displayTitle}
                   className={styles.poster}
                   loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (movie.backdrop_path && !target.src.includes(movie.backdrop_path)) {
+                      target.src = movie.backdrop_path.startsWith('http')
+                        ? movie.backdrop_path
+                        : `https://image.tmdb.org/t/p/w780${movie.backdrop_path}`;
+                    } else {
+                      target.src = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+                    }
+                  }}
                 />
                 <div className={styles.overlay}></div>
 

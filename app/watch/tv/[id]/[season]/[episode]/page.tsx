@@ -123,6 +123,7 @@ export default function WatchTvPage() {
               tmdbId={id}
               type="tv"
               title={show ? `${show.name || show.title}` : `Episode S${season} E${episode}`}
+              posterPath={show?.poster_path}
               backdropPath={show?.backdrop_path}
               season={season}
               episode={episode}

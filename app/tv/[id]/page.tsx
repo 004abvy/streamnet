@@ -165,6 +165,8 @@ export default function TVDetailsPage({
           animeTitle={displayTitle} 
           tmdbId={movie.id}
           type="tv"
+          posterPath={movie.poster_path}
+          backdropPath={movie.backdrop_path}
           onClose={() => setShowAnimePlayer(false)} 
         />
       )}

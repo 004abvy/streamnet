@@ -14,6 +14,7 @@ interface HlsPlayerProps {
   serverId: string;
   tmdbId: string;
   title?: string;
+  poster?: string;
   type: "movie" | "tv";
   season?: number;
   episode?: number;
@@ -41,6 +42,7 @@ export default function HlsPlayer({
   serverId,
   tmdbId,
   title: externalTitle,
+  poster,
   type,
   season,
   episode,
@@ -658,6 +660,7 @@ export default function HlsPlayer({
     >
       <VidstackPlayer
         title={title}
+        poster={poster}
         src={streamData.url}
         tracks={vidstackTracks}
         className="w-full h-full text-white font-sans"

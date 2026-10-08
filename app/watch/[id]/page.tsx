@@ -174,6 +174,7 @@ export default function WatchPage({
               tmdbId={id}
               type="movie"
               title={movie?.title || movie?.name}
+              posterPath={movie?.poster_path}
               backdropPath={movie?.backdrop_path}
               imdbId={imdbId}
               voteAverage={movie?.vote_average}

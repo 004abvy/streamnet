@@ -23,6 +23,7 @@ interface VideoPlayerProps {
   language?: string;
   // Optional metadata props
   title?: string;
+  posterPath?: string;
   backdropPath?: string;
   imdbId?: string;
   voteAverage?: number;
@@ -38,6 +39,7 @@ export default function VideoPlayer({
   language,
   imdbId,
   title,
+  posterPath,
   backdropPath,
   voteAverage,
   releaseDate,
@@ -104,6 +106,7 @@ export default function VideoPlayer({
       server: serverId,
       playerType: 'standard',
       audioType: selectedLanguage,
+      poster_path: posterPath,
       backdrop_path: backdropPath,
     });
   };
@@ -125,6 +128,7 @@ export default function VideoPlayer({
         server: 'screenscape',
         playerType: 'standard',
         audioType: 'hi',
+        poster_path: posterPath,
         backdrop_path: backdropPath,
       });
     }
@@ -145,6 +149,7 @@ export default function VideoPlayer({
         server: 'auto-fast',
         playerType: 'standard',
         audioType: 'en',
+        poster_path: posterPath,
         backdrop_path: backdropPath,
       });
     }
@@ -423,6 +428,7 @@ export default function VideoPlayer({
                 episode={episode}
                 imdbId={imdbId}
                 title={title}
+                poster={posterPath}
                 preferredLanguage={selectedLanguage}
                 className="w-full h-full border-0"
                 onNextServer={() => changeServer('screenscape')}

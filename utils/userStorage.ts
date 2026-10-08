@@ -200,6 +200,38 @@ export function clearWatchProgress(
 }
 
 /**
+ * Returns a reliable, high quality poster URL for any media item with fallbacks
+ */
+export function getMediaPosterUrl(item: any): string {
+  if (!item) return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+  
+  const rawPath =
+    item.poster_path ||
+    item.poster ||
+    item.backdrop_path ||
+    item.backdrop ||
+    item.animeCover ||
+    item.cover ||
+    item.image;
+
+  if (!rawPath || typeof rawPath !== 'string') {
+    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+  }
+
+  const trimmed = rawPath.trim();
+  if (!trimmed) {
+    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `https://image.tmdb.org/t/p/w780${cleanPath}`;
+}
+
+/**
  * Updates continue watching and exact progress for any movie, TV series, or anime
  */
 let lastProgressSync = 0;
@@ -236,6 +268,28 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
     const existingIndex = list.findIndex((m) => String(m.id) === idStr);
     const existing: Partial<ContinueWatchingItem> = existingIndex !== -1 ? list[existingIndex] : {};
 
+    // Remove any undefined or null keys so they don't overwrite valid existing metadata (like poster_path)
+    const cleanItem: Record<string, any> = {};
+    for (const [k, v] of Object.entries(item)) {
+      if (v !== undefined && v !== null && v !== '') {
+        cleanItem[k] = v;
+      }
+    }
+
+    const posterPath =
+      cleanItem.poster_path ||
+      existing.poster_path ||
+      cleanItem.poster ||
+      (existing as any).poster ||
+      cleanItem.backdrop_path ||
+      existing.backdrop_path ||
+      undefined;
+
+    const backdropPath = cleanItem.backdrop_path || existing.backdrop_path || undefined;
+    const title = cleanItem.title || existing.title || cleanItem.name || existing.name || undefined;
+    const name = cleanItem.name || existing.name || cleanItem.title || existing.title || undefined;
+    const mediaType = cleanItem.media_type || existing.media_type || 'movie';
+
     const progressPct =
       duration > 0
         ? Math.min(100, Math.max(1, Math.round((currentTime / duration) * 100)))
@@ -243,8 +297,13 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
 
     const mergedItem: ContinueWatchingItem = {
       ...existing,
-      ...item,
+      ...cleanItem,
       id: isNaN(Number(item.id)) ? item.id : Number(item.id),
+      title,
+      name,
+      poster_path: posterPath,
+      backdrop_path: backdropPath,
+      media_type: mediaType,
       season: season,
       episode: episode,
       last_season: season,

@@ -14,6 +14,8 @@ interface PlayeranimeProps {
   animeTitle: string;
   tmdbId?: string | number;
   type?: "tv" | "movie";
+  posterPath?: string;
+  backdropPath?: string;
   onClose: () => void;
 }
 
@@ -33,6 +35,8 @@ export default function Playeranime({
   animeTitle,
   tmdbId,
   type = "tv",
+  posterPath,
+  backdropPath,
   onClose,
 }: PlayeranimeProps) {
   const router = useRouter();
@@ -1350,7 +1354,7 @@ export default function Playeranime({
                       playerType="anime"
                       server={activeSource}
                       audioType={audioType}
-                      poster={animeCover || tmdbBackdrop || undefined}
+                      poster={posterPath || animeCover || backdropPath || tmdbBackdrop || undefined}
                       className="w-full h-full text-white font-sans"
                     />
                   </div>
