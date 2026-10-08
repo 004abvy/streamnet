@@ -344,8 +344,8 @@ export default function VideoPlayer({
             onClick={handleSelectHindiLanguage}
             className={`px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs md:text-sm font-bold transition-all cursor-pointer ${
               selectedLanguage === 'hi'
-                ? 'bg-[#e50914] text-white shadow-[0_2px_12px_rgba(229,9,20,0.5)]'
-                : 'text-red-300/80 hover:text-red-300'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-[0_2px_12px_rgba(139,92,246,0.5)]'
+                : 'text-violet-300/80 hover:text-violet-300'
             }`}
             title="Hindi Dubbed Audio"
           >
@@ -410,7 +410,7 @@ export default function VideoPlayer({
                   className="w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07]"
                 />
               ) : (
-                <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-red-600/20 via-rose-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
+                <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-violet-600/20 via-indigo-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
               )}
             </div>
           </div>
@@ -481,7 +481,7 @@ export default function VideoPlayer({
             }`}
             title="Server 1"
           >
-            <Zap className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isDirectMode ? 'text-[#e50914] fill-[#e50914]' : 'text-neutral-400'}`} strokeWidth={2.5} />
+            <Zap className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isDirectMode ? 'text-violet-400 fill-violet-400' : 'text-neutral-400'}`} strokeWidth={2.5} />
             <span>Server 1</span>
           </button>
 
@@ -518,7 +518,7 @@ export default function VideoPlayer({
           <button
             type="button"
             onClick={() => setShowVipModal(true)}
-            className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:shadow-[0_0_20px_rgba(229,9,20,0.6)] transition-all duration-200 cursor-pointer shrink-0"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_20px_rgba(139,92,246,0.6)] transition-all duration-200 cursor-pointer shrink-0"
             title="Unlock VIP Player"
           >
             <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
@@ -530,10 +530,10 @@ export default function VideoPlayer({
           <button
             type="button"
             onClick={() => setShowWrongMovieModal(true)}
-            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer shrink-0 group"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium text-neutral-400 hover:text-violet-300 hover:bg-violet-500/10 transition-all duration-200 cursor-pointer shrink-0 group"
             title="Wrong movie or playback issue?"
           >
-            <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400 group-hover:text-red-400" />
+            <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400 group-hover:text-violet-300" />
             <span className="hidden sm:inline">Wrong Movie?</span>
           </button>
         </div>
@@ -550,7 +550,7 @@ export default function VideoPlayer({
           }}
         >
           <div 
-            className="w-full max-w-[340px] sm:max-w-sm bg-neutral-900/95 border border-red-500/35 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-[0_0_50px_rgba(229,9,20,0.25)] flex flex-col items-center text-center relative backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-[340px] sm:max-w-sm bg-neutral-900/95 border border-violet-500/35 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-[0_0_50px_rgba(139,92,246,0.25)] flex flex-col items-center text-center relative backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close X Button */}
@@ -568,13 +568,13 @@ export default function VideoPlayer({
             </button>
 
             {/* Glowing Icon Badge */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-3 shadow-[0_0_15px_rgba(229,9,20,0.2)]">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
               <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
 
             <h3 className="text-base sm:text-lg font-black text-white mb-1 tracking-tight">Enter VIP Passkey</h3>
             <p className="text-xs text-neutral-400 mb-4 px-2">
-              Enter <span className="text-red-400 font-bold font-mono px-1.5 py-0.5 bg-red-500/10 rounded border border-red-500/20">123</span> to unlock dedicated 4K VIP Cinema servers.
+              Enter <span className="text-violet-300 font-bold font-mono px-1.5 py-0.5 bg-violet-500/15 rounded border border-violet-500/30">123</span> to unlock dedicated 4K VIP Cinema servers.
             </p>
 
             <form
@@ -602,7 +602,7 @@ export default function VideoPlayer({
                   setVipInputCode(e.target.value);
                   setVipError(null);
                 }}
-                className="w-full bg-black/80 border border-white/15 focus:border-red-500 rounded-xl px-4 py-2.5 sm:py-3 text-center text-white font-mono tracking-widest text-base sm:text-lg focus:outline-none transition-all shadow-inner placeholder:tracking-normal placeholder:text-neutral-500"
+                className="w-full bg-black/80 border border-white/15 focus:border-violet-400 rounded-xl px-4 py-2.5 sm:py-3 text-center text-white font-mono tracking-widest text-base sm:text-lg focus:outline-none transition-all shadow-inner placeholder:tracking-normal placeholder:text-neutral-500"
                 autoFocus
               />
 
@@ -624,7 +624,7 @@ export default function VideoPlayer({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs sm:text-sm font-black transition-all shadow-[0_0_15px_rgba(229,9,20,0.4)] hover:shadow-[0_0_20px_rgba(229,9,20,0.6)] cursor-pointer active:scale-95"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-black transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_20px_rgba(139,92,246,0.6)] cursor-pointer active:scale-95"
                 >
                   Unlock VIP
                 </button>
@@ -655,7 +655,7 @@ export default function VideoPlayer({
             </button>
 
             {/* Glowing Icon Badge */}
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-3 shadow-[0_0_20px_rgba(229,9,20,0.2)]">
+            <div className="w-12 h-12 rounded-full bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 mb-3 shadow-[0_0_20px_rgba(139,92,246,0.25)]">
               <AlertTriangle className="w-6 h-6" />
             </div>
 
@@ -663,7 +663,7 @@ export default function VideoPlayer({
               Playing the Wrong Movie or Trailer?
             </h3>
             <p className="text-xs text-neutral-300 mb-5 leading-relaxed px-1">
-              When movies are very new or currently in theaters (like <span className="text-red-400 font-semibold">{title}</span>), some web scrapers may return older films with similar titles or promotional trailers.
+              When movies are very new or currently in theaters (like <span className="text-violet-300 font-semibold">{title}</span>), some web scrapers may return older films with similar titles or promotional trailers.
             </p>
 
             <div className="w-full flex flex-col gap-2.5">
@@ -676,7 +676,7 @@ export default function VideoPlayer({
                 className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/25 text-white text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
               >
                 <span className="flex items-center gap-2">
-                  <Film className="w-4 h-4 text-red-400" />
+                  <Film className="w-4 h-4 text-violet-400" />
                   <span>Try Server 2 (ScreenScape)</span>
                 </span>
                 <span className="text-[11px] text-neutral-400 group-hover:text-white">Switch →</span>
@@ -703,13 +703,13 @@ export default function VideoPlayer({
                   changeServer('auto-fast');
                   setShowWrongMovieModal(false);
                 }}
-                className="w-full py-2.5 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
+                className="w-full py-2.5 px-4 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-300 text-xs sm:text-sm font-semibold flex items-center justify-between transition-all cursor-pointer group"
               >
                 <span className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-red-400" />
+                  <RefreshCw className="w-4 h-4 text-violet-400" />
                   <span>Cycle Direct Sources (Server 1)</span>
                 </span>
-                <span className="text-[11px] text-red-400/80 group-hover:text-red-300">Reload →</span>
+                <span className="text-[11px] text-violet-300/80 group-hover:text-violet-200">Reload →</span>
               </button>
             </div>
 

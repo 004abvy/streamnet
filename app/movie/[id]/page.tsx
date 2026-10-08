@@ -189,7 +189,7 @@ export default function MovieDetailsPage({
           <h1 className={styles.editorialTitle}>
             {displayTitle}
             {isUpcomingMedia(movie) ? (
-              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #e50914, #b81d24)', color: '#ffffff', fontWeight: 800, boxShadow: '0 0 12px rgba(229, 9, 20, 0.45)' }}>
+              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #428475, #1A312C)', border: '1px solid rgba(137, 215, 183, 0.5)', color: '#FFF4E1', fontWeight: 800, boxShadow: '0 0 12px rgba(137, 215, 183, 0.35)' }}>
                 UPCOMING
               </span>
             ) : (
@@ -208,10 +208,10 @@ export default function MovieDetailsPage({
                   type="button"
                   className={styles.playNowBtn}
                   style={{
-                    background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.2), rgba(184, 29, 36, 0.35))',
-                    border: '1px solid rgba(229, 9, 20, 0.6)',
-                    color: '#ff4d58',
-                    boxShadow: '0 0 16px rgba(229, 9, 20, 0.3)',
+                    background: 'linear-gradient(135deg, rgba(66, 132, 117, 0.25), rgba(26, 49, 44, 0.6))',
+                    border: '1px solid rgba(137, 215, 183, 0.6)',
+                    color: '#FFF4E1',
+                    boxShadow: '0 0 16px rgba(137, 215, 183, 0.25)',
                     cursor: trailer ? 'pointer' : 'default'
                   }}
                   onClick={() => {
@@ -243,7 +243,7 @@ export default function MovieDetailsPage({
                   <Link
                     href={vipPlayHref}
                     className={styles.playNowBtn}
-                    style={{ background: 'linear-gradient(135deg, #e50914, #990000)', color: '#ffffff', boxShadow: '0 0 20px rgba(229, 9, 20, 0.4)' }}
+                    style={{ background: 'linear-gradient(135deg, #89D7B7, #428475)', color: '#1A312C', fontWeight: 800, boxShadow: '0 0 20px rgba(137, 215, 183, 0.4)' }}
                     onClick={handlePlayNow}
                   >
                     VIP Server
@@ -269,9 +269,9 @@ export default function MovieDetailsPage({
               padding: '10px 14px',
               marginTop: '12px',
               borderRadius: '10px',
-              backgroundColor: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              color: '#fbbf24',
+              backgroundColor: 'rgba(26, 49, 44, 0.6)',
+              border: '1px solid rgba(137, 215, 183, 0.35)',
+              color: '#89D7B7',
               fontSize: '0.85rem'
             }}>
               <Calendar size={15} style={{ flexShrink: 0 }} />

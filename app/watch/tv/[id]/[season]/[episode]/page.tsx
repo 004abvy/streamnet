@@ -92,15 +92,15 @@ export default function WatchTvPage() {
               <div
                 className="absolute inset-0 pointer-events-none opacity-40"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, rgba(229, 9, 20, 0.15) 0%, transparent 65%)',
+                  background: 'radial-gradient(circle at 50% 50%, rgba(66, 132, 117, 0.3) 0%, transparent 65%)',
                   animation: 'sleekPulse 3s ease-in-out infinite',
                 }}
               />
 
               {/* Center Glowing Play Ring */}
               <div className="relative z-10 flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-white/5 border border-red-500/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(229,9,20,0.4)] animate-pulse">
-                  <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-red-500 ml-1" />
+                <div className="w-16 h-16 rounded-full bg-white/5 border border-[#89D7B7]/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(137,215,183,0.35)] animate-pulse">
+                  <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-[#89D7B7] ml-1" />
                 </div>
                 <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">
                   Preparing Episode Stream...

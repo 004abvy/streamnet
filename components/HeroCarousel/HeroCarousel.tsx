@@ -357,7 +357,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             className={styles.floatingCard}
             style={{ fontFamily: movieFonts[currentMovie.id] ? `"${movieFonts[currentMovie.id]}", sans-serif` : 'inherit' }}
           >
-            <div className={styles.mediaTypeTag} style={isUpcomingMedia(currentMovie) ? { background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.35), rgba(184, 29, 36, 0.55))', borderColor: 'rgba(229, 9, 20, 0.6)', color: '#ff4d58', boxShadow: '0 0 12px rgba(229, 9, 20, 0.3)' } : undefined}>
+            <div className={styles.mediaTypeTag} style={isUpcomingMedia(currentMovie) ? { background: 'linear-gradient(135deg, rgba(66, 132, 117, 0.4), rgba(26, 49, 44, 0.8))', borderColor: '#89D7B7', color: '#89D7B7', boxShadow: '0 0 12px rgba(137, 215, 183, 0.3)' } : undefined}>
               {isUpcomingMedia(currentMovie) ? 'UPCOMING' : isTvShow ? 'SHOW' : 'MOVIE'}
             </div>
 
@@ -382,14 +382,14 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                     href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
                     className={styles.watchBtn}
                     style={{ 
-                      backgroundColor: 'rgba(229, 9, 20, 0.2)', 
-                      color: '#ff4d58', 
-                      border: '1px solid rgba(229, 9, 20, 0.55)',
+                      backgroundColor: 'rgba(66, 132, 117, 0.25)', 
+                      color: '#FFF4E1', 
+                      border: '1px solid #89D7B7',
                       backdropFilter: 'blur(10px)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      boxShadow: '0 0 16px rgba(229, 9, 20, 0.25)'
+                      boxShadow: '0 0 16px rgba(137, 215, 183, 0.25)'
                     }}
                   >
                     <Calendar size={14} /> Upcoming • {getFormattedReleaseDate(currentMovie)}

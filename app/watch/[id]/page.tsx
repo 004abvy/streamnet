@@ -87,15 +87,15 @@ export default function WatchPage({
               <div
                 className="absolute inset-0 pointer-events-none opacity-40"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, rgba(229, 9, 20, 0.15) 0%, transparent 65%)',
+                  background: 'radial-gradient(circle at 50% 50%, rgba(66, 132, 117, 0.3) 0%, transparent 65%)',
                   animation: 'sleekPulse 3s ease-in-out infinite',
                 }}
               />
 
               {/* Center Glowing Play Ring */}
               <div className="relative z-10 flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-white/5 border border-red-500/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(229,9,20,0.4)] animate-pulse">
-                  <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-red-500 ml-1" />
+                <div className="w-16 h-16 rounded-full bg-white/5 border border-[#89D7B7]/40 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(137,215,183,0.35)] animate-pulse">
+                  <div className="w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent border-l-[14px] border-l-[#89D7B7] ml-1" />
                 </div>
                 <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">
                   Preparing Cinema Stream...
@@ -115,7 +115,7 @@ export default function WatchPage({
         ) : isUpcoming ? (
           /* Sleek Upcoming Release View */
           <div className="w-full flex flex-col gap-8">
-            <div className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900 border border-red-500/30 shadow-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8">
+            <div className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900 border border-[#89D7B7]/30 shadow-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8">
               {movie?.backdrop_path && (
                 <img
                   src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
@@ -124,7 +124,7 @@ export default function WatchPage({
                 />
               )}
               <div className="relative z-10 flex-1 flex flex-col gap-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-wider w-fit shadow-[0_0_12px_rgba(229,9,20,0.3)]">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#428475]/30 border border-[#89D7B7]/50 text-[#89D7B7] text-xs font-bold uppercase tracking-wider w-fit shadow-[0_0_12px_rgba(137,215,183,0.25)]">
                   <Calendar size={14} /> Upcoming Premiere
                 </div>
                 <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
@@ -133,7 +133,7 @@ export default function WatchPage({
                 <p className="text-neutral-300 text-sm md:text-base leading-relaxed line-clamp-3">
                   {movie?.overview || 'This title is scheduled for an upcoming release. Stream links will be unlocked automatically when it premieres.'}
                 </p>
-                <div className="text-red-300/90 text-sm font-semibold flex items-center gap-2">
+                <div className="text-[#89D7B7]/90 text-sm font-semibold flex items-center gap-2">
                   <span>Premiere Date:</span>
                   <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
                     {getFormattedReleaseDate(movie)}
@@ -142,7 +142,7 @@ export default function WatchPage({
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <Link
                     href={`/movie/${id}`}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-red-600/30"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#1A312C]/50"
                   >
                     <ArrowLeft size={16} /> View Movie Details
                   </Link>

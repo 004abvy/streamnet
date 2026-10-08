@@ -193,7 +193,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
 
           <div className={styles.posterInfo}>
             {isUpcoming ? (
-              <div className={styles.ratingBadge} style={{ background: 'linear-gradient(135deg, #e50914, #b81d24)', color: '#ffffff', fontWeight: 800, boxShadow: '0 0 10px rgba(229, 9, 20, 0.45)' }}>
+              <div className={styles.ratingBadge} style={{ background: 'linear-gradient(135deg, #428475, #1A312C)', color: '#FFF4E1', fontWeight: 800, border: '1px solid rgba(137, 215, 183, 0.4)', boxShadow: '0 0 10px rgba(137, 215, 183, 0.3)' }}>
                 SOON
               </div>
             ) : (
@@ -258,11 +258,12 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
                   href={detailsHref}
                   className={styles.playBtn}
                   style={{
-                    background: 'linear-gradient(135deg, #e50914, #b81d24)',
-                    color: '#ffffff',
+                    background: 'linear-gradient(135deg, #428475, #1A312C)',
+                    color: '#FFF4E1',
+                    border: '1px solid rgba(137, 215, 183, 0.5)',
                     fontWeight: 700,
                     gap: '5px',
-                    boxShadow: '0 0 15px rgba(229, 9, 20, 0.4)'
+                    boxShadow: '0 0 15px rgba(137, 215, 183, 0.3)'
                   }}
                 >
                   <Calendar size={13} />

@@ -182,11 +182,11 @@
 }
 
 .savedWishlist {
-  background: rgba(229, 9, 20, 0.2) !important;
-  border-color: #e50914 !important;
-  color: #ff4d58 !important;
+  background: rgba(66, 132, 117, 0.25) !important;
+  border-color: #89D7B7 !important;
+  color: #89D7B7 !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 15px rgba(229, 9, 20, 0.3) !important;
+  box-shadow: 0 0 15px rgba(137, 215, 183, 0.35) !important;
 }
 
 /* Bottom Left: Actors Section */
