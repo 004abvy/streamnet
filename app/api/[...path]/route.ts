@@ -96,7 +96,13 @@ export async function GET(
     // 2.1 /api/movies/upcoming
     if (pathStr === 'movies/upcoming') {
       const page = searchParams.get('page') || '1';
-      const data = await fetchFromTMDB('/movie/upcoming', { language: 'en-US', page, region: 'US' });
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const data = await fetchFromTMDB('/discover/movie', {
+        language: 'en-US',
+        page,
+        sort_by: 'popularity.desc',
+        'primary_release_date.gte': tomorrow
+      });
       return NextResponse.json(data);
     }
 
@@ -109,12 +115,12 @@ export async function GET(
     // 3.01 /api/tv/upcoming
     if (pathStr === 'tv/upcoming') {
       const page = searchParams.get('page') || '1';
-      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const data = await fetchFromTMDB('/discover/tv', {
         language: 'en-US',
         page,
         sort_by: 'popularity.desc',
-        'first_air_date.gte': today
+        'first_air_date.gte': tomorrow
       });
       return NextResponse.json(data);
     }

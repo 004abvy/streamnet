@@ -125,10 +125,12 @@ export default function Home() {
           setTrendingTv(sorted);
         }
         if (upMoviesData?.results) {
-          setUpcomingMovies(upMoviesData.results);
+          const onlyUpcoming = upMoviesData.results.filter((m: any) => isUpcomingMedia(m));
+          setUpcomingMovies(onlyUpcoming.length > 0 ? onlyUpcoming : upMoviesData.results);
         }
         if (upTvData?.results) {
-          setUpcomingTv(upTvData.results);
+          const onlyUpcoming = upTvData.results.filter((t: any) => isUpcomingMedia(t));
+          setUpcomingTv(onlyUpcoming.length > 0 ? onlyUpcoming : upTvData.results);
         }
       })
       .catch(err => {
