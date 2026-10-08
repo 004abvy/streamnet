@@ -911,14 +911,14 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           </div>
         )}
 
-        <div className="w-full max-w-[340px] sm:max-w-md bg-[#1A312C]/90 border border-[#89D7B7]/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(26,49,44,0.6)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#428475]/20 border border-[#89D7B7]/40 flex items-center justify-center text-[#89D7B7] mx-auto mb-3 sm:mb-4 shadow-[0_0_20px_rgba(137,215,183,0.3)]">
+        <div className="w-full max-w-[340px] sm:max-w-md bg-[#1F1C2C]/90 border border-[#928DAB]/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(31,28,44,0.6)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#928DAB]/20 border border-[#928DAB]/40 flex items-center justify-center text-[#d1cfe2] mx-auto mb-3 sm:mb-4 shadow-[0_0_20px_rgba(146,141,171,0.3)]">
             <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black mb-1.5 text-white tracking-tight">VIP Access Required</h1>
           <p className="text-neutral-400 mb-5 text-xs sm:text-sm">
-            Enter <span className="text-[#89D7B7] font-bold font-mono px-1.5 py-0.5 bg-[#428475]/25 rounded border border-[#89D7B7]/30">123</span> to access premium 4K VIP servers.
+            Enter <span className="text-white font-bold font-mono px-1.5 py-0.5 bg-[#928DAB]/25 rounded border border-[#928DAB]/30">123</span> to access premium 4K VIP servers.
           </p>
           <form onSubmit={handleAuth} className="flex flex-col gap-3 sm:gap-4">
             <input 
@@ -929,7 +929,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 setAuthCode(e.target.value);
                 setAuthError(null);
               }}
-              className="w-full bg-black/80 border border-white/20 rounded-xl px-4 py-2.5 sm:py-3 text-white outline-none focus:border-[#89D7B7] transition-colors text-center font-mono tracking-widest text-base sm:text-lg placeholder:tracking-normal placeholder:text-neutral-500 shadow-inner"
+              className="w-full bg-black/80 border border-white/20 rounded-xl px-4 py-2.5 sm:py-3 text-white outline-none focus:border-[#928DAB] transition-colors text-center font-mono tracking-widest text-base sm:text-lg placeholder:tracking-normal placeholder:text-neutral-500 shadow-inner"
               autoFocus
             />
 
@@ -939,7 +939,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
             <button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-[#89D7B7] to-[#428475] hover:brightness-110 text-[#1A312C] font-black py-2.5 sm:py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(137,215,183,0.4)] hover:shadow-[0_0_30px_rgba(137,215,183,0.6)] cursor-pointer text-xs sm:text-sm uppercase tracking-wider active:scale-95"
+              className="btn-grad w-full py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider active:scale-95"
             >
               Unlock Player
             </button>
@@ -973,16 +973,16 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             <div className="absolute inset-0 bg-neutral-950/85" />
           </div>
         )}
-        <div className="w-full max-w-4xl bg-[#1A312C]/90 border border-[#89D7B7]/30 rounded-3xl p-6 md:p-10 shadow-[0_0_50px_rgba(26,49,44,0.6)] backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
+        <div className="w-full max-w-4xl bg-[#1F1C2C]/90 border border-[#928DAB]/30 rounded-3xl p-6 md:p-10 shadow-[0_0_50px_rgba(31,28,44,0.6)] backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 flex flex-col gap-4 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#428475]/30 border border-[#89D7B7]/40 text-[#89D7B7] text-xs font-bold uppercase tracking-wider w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#1F1C2C] to-[#928DAB] border border-[#928DAB]/40 text-white text-xs font-bold uppercase tracking-wider w-fit">
               <Calendar size={14} /> VIP Premiere Notice
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white">{title}</h1>
             <p className="text-neutral-300 text-sm leading-relaxed line-clamp-3">
               {movie?.overview || 'This title is scheduled for an upcoming release. VIP 4K streams will become active automatically on release day.'}
             </p>
-            <div className="text-[#89D7B7]/90 text-sm font-semibold flex items-center gap-2">
+            <div className="text-[#d1cfe2] text-sm font-semibold flex items-center gap-2">
               <span>Expected Date:</span>
               <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
                 {getFormattedReleaseDate(movie)}
@@ -992,7 +992,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={() => router.push(type === 'tv' ? `/tv/${id}` : `/movie/${id}`)}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold text-sm transition-all shadow-lg shadow-[#1A312C]/50 cursor-pointer"
+                className="btn-grad px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
               >
                 Back to Details
               </button>
@@ -1176,11 +1176,11 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               />
             ) : (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
-                <p className="text-[#89D7B7] font-bold text-base">Stream Offline</p>
+                <p className="text-[#d1cfe2] font-bold text-base">Stream Offline</p>
                 <p className="text-xs text-neutral-400 max-w-md">{errorMessage || 'Stream could not be loaded.'}</p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold text-xs rounded-lg transition cursor-pointer mt-2 shadow-lg shadow-[#1A312C]/50"
+                  className="btn-grad px-4 py-2 font-bold text-xs rounded-lg transition"
                 >
                   Reload Stream
                 </button>

@@ -7,6 +7,7 @@ import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
 import Footer from '../../../components/Footer/Footer';
 import Playeranime from '../../../components/Playeranime';
 import { saveWatchlist, saveContinueWatching, getResumeHref, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
+import { getPosterGradient, getVibrantColor } from '../../../utils/colorHelper';
 import styles from './movieDetails.module.css';
 import { Play, Bookmark, Calendar, Film } from 'lucide-react';
 
@@ -22,6 +23,8 @@ export default function MovieDetailsPage({
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [showAnimePlayer, setShowAnimePlayer] = useState(false);
   const [savedResume, setSavedResume] = useState<any>(null);
+  const [posterColor, setPosterColor] = useState<string>('#eab308');
+  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #eab308)');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -70,6 +73,17 @@ export default function MovieDetailsPage({
       setIsSaved(Array.isArray(saved) && saved.some((item: any) => item.id === movie.id));
     } catch (e) {
       console.error(e);
+    }
+
+    const imgUrl = movie.poster_path
+      ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+      : movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w300${movie.backdrop_path}`
+        : null;
+
+    if (imgUrl) {
+      getVibrantColor(imgUrl).then(setPosterColor).catch(() => {});
+      getPosterGradient(imgUrl).then(setPosterGradient).catch(() => {});
     }
   }, [movie]);
 
@@ -189,7 +203,16 @@ export default function MovieDetailsPage({
           <h1 className={styles.editorialTitle}>
             {displayTitle}
             {isUpcomingMedia(movie) ? (
-              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #428475, #1A312C)', border: '1px solid rgba(137, 215, 183, 0.5)', color: '#FFF4E1', fontWeight: 800, boxShadow: '0 0 12px rgba(137, 215, 183, 0.35)' }}>
+              <span
+                className={styles.camBadge}
+                style={{
+                  backgroundImage: posterGradient,
+                  border: 'none',
+                  color: '#000000',
+                  fontWeight: 800,
+                  boxShadow: `0 0 14px ${posterColor}88`
+                }}
+              >
                 UPCOMING
               </span>
             ) : (
@@ -208,11 +231,15 @@ export default function MovieDetailsPage({
                   type="button"
                   className={styles.playNowBtn}
                   style={{
-                    background: 'linear-gradient(135deg, rgba(66, 132, 117, 0.25), rgba(26, 49, 44, 0.6))',
-                    border: '1px solid rgba(137, 215, 183, 0.6)',
-                    color: '#FFF4E1',
-                    boxShadow: '0 0 16px rgba(137, 215, 183, 0.25)',
-                    cursor: trailer ? 'pointer' : 'default'
+                    backgroundColor: posterColor,
+                    border: 'none',
+                    color: '#000000',
+                    fontWeight: 700,
+                    boxShadow: `0 0 20px ${posterColor}66`,
+                    cursor: trailer ? 'pointer' : 'default',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                   onClick={() => {
                     if (trailer) setShowTrailerModal(true);
@@ -242,8 +269,15 @@ export default function MovieDetailsPage({
                 {!isAnime && (
                   <Link
                     href={vipPlayHref}
-                    className={styles.playNowBtn}
-                    style={{ background: 'linear-gradient(135deg, #89D7B7, #428475)', color: '#1A312C', fontWeight: 800, boxShadow: '0 0 20px rgba(137, 215, 183, 0.4)' }}
+                    className={`${styles.playNowBtn} btn-grad`}
+                    style={{
+                      backgroundImage: 'linear-gradient(to right, #1F1C2C 0%, #928DAB 51%, #1F1C2C 100%)',
+                      backgroundSize: '200% auto',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      border: '1px solid rgba(146, 141, 171, 0.5)',
+                      boxShadow: '0 0 20px rgba(146, 141, 171, 0.45)'
+                    }}
                     onClick={handlePlayNow}
                   >
                     VIP Server
@@ -269,9 +303,9 @@ export default function MovieDetailsPage({
               padding: '10px 14px',
               marginTop: '12px',
               borderRadius: '10px',
-              backgroundColor: 'rgba(26, 49, 44, 0.6)',
-              border: '1px solid rgba(137, 215, 183, 0.35)',
-              color: '#89D7B7',
+              backgroundColor: 'rgba(31, 28, 44, 0.7)',
+              border: '1px solid rgba(146, 141, 171, 0.35)',
+              color: '#d1cfe2',
               fontSize: '0.85rem'
             }}>
               <Calendar size={15} style={{ flexShrink: 0 }} />

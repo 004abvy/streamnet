@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { saveWatchlist, saveContinueWatching, isUpcomingMedia, getFormattedReleaseDate } from '../../utils/userStorage';
-import { Calendar } from 'lucide-react';
+import { saveWatchlist, saveContinueWatching, isUpcomingMedia } from '../../utils/userStorage';
+import { getPosterGradient, getVibrantColor } from '../../utils/colorHelper';
 import styles from './TrendingSection.module.css';
 import GlareHover from '../reactbits/GlareHover';
 
@@ -29,6 +29,48 @@ interface TrendingSectionProps {
 
 export default function TrendingSection({ title, items, viewAllLink, isLoading }: TrendingSectionProps) {
   const ITEMS_PER_PAGE = 9;
+
+  const [itemColors, setItemColors] = useState<Record<number, string>>({});
+  const [itemGradients, setItemGradients] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    let isMounted = true;
+
+    const loadColors = async () => {
+      const vibrantMap: Record<number, string> = {};
+      const gradientMap: Record<number, string> = {};
+
+      const promises = items.map(async (item) => {
+        const imgUrl = item.poster_path
+          ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
+          : item.backdrop_path
+            ? `https://image.tmdb.org/t/p/w300${item.backdrop_path}`
+            : null;
+        if (!imgUrl) return;
+
+        try {
+          const [vibrant, grad] = await Promise.all([
+            getVibrantColor(imgUrl),
+            getPosterGradient(imgUrl),
+          ]);
+          vibrantMap[item.id] = vibrant;
+          gradientMap[item.id] = grad;
+        } catch {}
+      });
+
+      await Promise.all(promises);
+      if (isMounted) {
+        setItemColors(vibrantMap);
+        setItemGradients(gradientMap);
+      }
+    };
+
+    loadColors();
+    return () => {
+      isMounted = false;
+    };
+  }, [items]);
 
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -193,7 +235,16 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
 
           <div className={styles.posterInfo}>
             {isUpcoming ? (
-              <div className={styles.ratingBadge} style={{ background: 'linear-gradient(135deg, #428475, #1A312C)', color: '#FFF4E1', fontWeight: 800, border: '1px solid rgba(137, 215, 183, 0.4)', boxShadow: '0 0 10px rgba(137, 215, 183, 0.3)' }}>
+              <div
+                className={styles.ratingBadge}
+                style={{
+                  backgroundImage: itemGradients[item.id] || 'linear-gradient(135deg, #ffffff, #eab308)',
+                  color: '#000000',
+                  fontWeight: 800,
+                  border: 'none',
+                  boxShadow: `0 0 10px ${itemColors[item.id] ? itemColors[item.id] + '88' : 'rgba(234, 179, 8, 0.5)'}`
+                }}
+              >
                 SOON
               </div>
             ) : (
@@ -253,23 +304,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
             <h3 className={styles.heroTitle}>{displayTitle}</h3>
 
             <div className={styles.heroActions}>
-              {isUpcoming ? (
-                <Link
-                  href={detailsHref}
-                  className={styles.playBtn}
-                  style={{
-                    background: 'linear-gradient(135deg, #428475, #1A312C)',
-                    color: '#FFF4E1',
-                    border: '1px solid rgba(137, 215, 183, 0.5)',
-                    fontWeight: 700,
-                    gap: '5px',
-                    boxShadow: '0 0 15px rgba(137, 215, 183, 0.3)'
-                  }}
-                >
-                  <Calendar size={13} />
-                  Upcoming
-                </Link>
-              ) : (
+              {!isUpcoming && (
                 <Link
                   href={watchHref}
                   className={styles.playBtn}

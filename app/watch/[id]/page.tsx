@@ -6,6 +6,7 @@ import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
 import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
 import { saveContinueWatching, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
 import { getRelevantRecommendations } from '../../../utils/recommendations';
+import { getPosterGradient, getVibrantColor } from '../../../utils/colorHelper';
 import { Calendar, ArrowLeft, Play } from 'lucide-react';
 
 export default function WatchPage({
@@ -16,6 +17,8 @@ export default function WatchPage({
   const { id } = use(params);
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [posterColor, setPosterColor] = useState<string>('#eab308');
+  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #eab308)');
 
   useEffect(() => {
     if (!id) return;
@@ -29,6 +32,17 @@ export default function WatchPage({
       .then((data) => {
         if (data && !data.error) {
           setMovie(data);
+
+          const imgUrl = data.poster_path
+            ? `https://image.tmdb.org/t/p/w300${data.poster_path}`
+            : data.backdrop_path
+              ? `https://image.tmdb.org/t/p/w300${data.backdrop_path}`
+              : null;
+
+          if (imgUrl) {
+            getVibrantColor(imgUrl).then(setPosterColor).catch(() => {});
+            getPosterGradient(imgUrl).then(setPosterGradient).catch(() => {});
+          }
 
           // Add/update to continue watching ONLY if already released
           if (!isUpcomingMedia(data)) {
@@ -124,7 +138,13 @@ export default function WatchPage({
                 />
               )}
               <div className="relative z-10 flex-1 flex flex-col gap-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#428475]/30 border border-[#89D7B7]/50 text-[#89D7B7] text-xs font-bold uppercase tracking-wider w-fit shadow-[0_0_12px_rgba(137,215,183,0.25)]">
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-black text-xs font-bold uppercase tracking-wider w-fit"
+                  style={{
+                    backgroundImage: posterGradient,
+                    boxShadow: `0 0 12px ${posterColor}88`
+                  }}
+                >
                   <Calendar size={14} /> Upcoming Premiere
                 </div>
                 <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
@@ -133,7 +153,7 @@ export default function WatchPage({
                 <p className="text-neutral-300 text-sm md:text-base leading-relaxed line-clamp-3">
                   {movie?.overview || 'This title is scheduled for an upcoming release. Stream links will be unlocked automatically when it premieres.'}
                 </p>
-                <div className="text-[#89D7B7]/90 text-sm font-semibold flex items-center gap-2">
+                <div className="text-[#d1cfe2] text-sm font-semibold flex items-center gap-2">
                   <span>Premiere Date:</span>
                   <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
                     {getFormattedReleaseDate(movie)}
@@ -142,7 +162,11 @@ export default function WatchPage({
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <Link
                     href={`/movie/${id}`}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#1A312C]/50"
+                    className="px-5 py-2.5 rounded-xl font-bold text-sm text-black transition-all flex items-center gap-2"
+                    style={{
+                      backgroundColor: posterColor,
+                      boxShadow: `0 0 16px ${posterColor}66`
+                    }}
                   >
                     <ArrowLeft size={16} /> View Movie Details
                   </Link>

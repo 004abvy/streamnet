@@ -306,27 +306,31 @@
 
 .submitBtn {
   margin-top: 0.5rem;
-  background: linear-gradient(135deg, #89D7B7 0%, #428475 100%);
-  color: #1A312C;
-  border: none;
+  background-image: linear-gradient(to right, #1F1C2C 0%, #928DAB 51%, #1F1C2C 100%);
+  background-size: 200% auto;
+  color: #ffffff;
+  border: 1px solid rgba(146, 141, 171, 0.35);
   border-radius: 0.85rem;
   padding: 0.9rem;
   font-size: 1rem;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.5s ease;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 50px;
-  box-shadow: 0 6px 20px rgba(137, 215, 183, 0.25);
+  box-shadow: 0 0 20px rgba(146, 141, 171, 0.25);
+  outline: none;
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #9ae2c5 0%, #4e9a89 100%);
+  background-position: right center;
+  color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(137, 215, 183, 0.4);
+  box-shadow: 0 0 28px rgba(146, 141, 171, 0.5);
+  border-color: rgba(146, 141, 171, 0.65);
 }
 
 .submitBtn:active:not(:disabled) {

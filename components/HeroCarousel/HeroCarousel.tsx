@@ -357,7 +357,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             className={styles.floatingCard}
             style={{ fontFamily: movieFonts[currentMovie.id] ? `"${movieFonts[currentMovie.id]}", sans-serif` : 'inherit' }}
           >
-            <div className={styles.mediaTypeTag} style={isUpcomingMedia(currentMovie) ? { background: 'linear-gradient(135deg, rgba(66, 132, 117, 0.4), rgba(26, 49, 44, 0.8))', borderColor: '#89D7B7', color: '#89D7B7', boxShadow: '0 0 12px rgba(137, 215, 183, 0.3)' } : undefined}>
+            <div className={styles.mediaTypeTag} style={isUpcomingMedia(currentMovie) ? { backgroundImage: movieColors[currentMovie.id] || 'linear-gradient(135deg, #ffffff, #e0e0e0)', color: '#000000', fontWeight: 800, border: 'none', boxShadow: `0 0 14px ${movieButtonColors[currentMovie.id] ? movieButtonColors[currentMovie.id] + '88' : 'rgba(255, 255, 255, 0.4)'}` } : undefined}>
               {isUpcomingMedia(currentMovie) ? 'UPCOMING' : isTvShow ? 'SHOW' : 'MOVIE'}
             </div>
 
@@ -382,14 +382,13 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                     href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
                     className={styles.watchBtn}
                     style={{ 
-                      backgroundColor: 'rgba(66, 132, 117, 0.25)', 
-                      color: '#FFF4E1', 
-                      border: '1px solid #89D7B7',
-                      backdropFilter: 'blur(10px)',
+                      backgroundColor: movieButtonColors[currentMovie.id] || '#eab308',
+                      color: '#000000', 
+                      border: 'none',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      boxShadow: '0 0 16px rgba(137, 215, 183, 0.25)'
+                      boxShadow: `0 0 16px ${movieButtonColors[currentMovie.id] ? movieButtonColors[currentMovie.id] + '66' : 'rgba(234, 179, 8, 0.4)'}`
                     }}
                   >
                     <Calendar size={14} /> Upcoming • {getFormattedReleaseDate(currentMovie)}

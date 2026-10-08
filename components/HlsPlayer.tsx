@@ -637,7 +637,7 @@ export default function HlsPlayer({
         {onNextServer && (
           <button
             onClick={onNextServer}
-            className="px-5 py-2.5 bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold rounded-lg text-sm transition cursor-pointer shadow-lg shadow-[#1A312C]/40"
+            className="btn-grad px-5 py-2.5 text-white font-bold rounded-lg text-sm transition cursor-pointer !m-0 !inline-block"
           >
             Switch Server
           </button>
@@ -678,9 +678,9 @@ export default function HlsPlayer({
     >
       {/* Stream Runtime Mismatch Alert */}
       {runtimeMismatchNotice && (
-        <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 px-3.5 py-2 bg-[#1A312C]/95 border border-[#89D7B7]/40 rounded-xl text-[#FFF4E1] text-xs font-medium backdrop-blur-xl shadow-xl animate-in fade-in duration-200">
+        <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 px-3.5 py-2 bg-[#1F1C2C]/95 border border-[#928DAB]/40 rounded-xl text-white text-xs font-medium backdrop-blur-xl shadow-xl animate-in fade-in duration-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-[#89D7B7] animate-pulse shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-[#928DAB] animate-pulse shrink-0" />
             <span className="truncate">{runtimeMismatchNotice}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -689,7 +689,7 @@ export default function HlsPlayer({
                 onNextServer?.();
                 setRuntimeMismatchNotice(null);
               }}
-              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#428475] to-[#1A312C] hover:brightness-110 border border-[#89D7B7]/40 text-[#FFF4E1] font-bold text-[11px] transition cursor-pointer shadow-md shadow-[#1A312C]/50"
+              className="btn-grad !px-2.5 !py-1 !m-0 !inline-block rounded-lg text-white font-bold text-[11px] transition cursor-pointer"
             >
               Switch Server
             </button>
