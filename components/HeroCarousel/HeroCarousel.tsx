@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { saveContinueWatching } from '../../utils/userStorage';
+import { saveContinueWatching, getResumeHref, isUpcomingMedia, getFormattedReleaseDate } from '../../utils/userStorage';
 import { getFontsList, getFontForMovie } from '../../utils/fontHelper';
 import { getPosterGradient, getVibrantColor } from '../../utils/colorHelper';
 import styles from './HeroCarousel.module.css';
@@ -13,7 +13,9 @@ import {
   User,
   Play,
   Bookmark,
-  Share2
+  Share2,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 interface Movie {
@@ -21,11 +23,16 @@ interface Movie {
   title?: string;
   name?: string;
   backdrop_path: string;
+  poster_path?: string;
   overview: string;
   vote_average: number;
   release_date?: string;
   first_air_date?: string;
   media_type?: string;
+  genres?: any[];
+  genre_ids?: number[];
+  original_language?: string;
+  origin_country?: string[];
 }
 
 interface HeroCarouselProps {
@@ -328,8 +335,8 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             className={styles.floatingCard}
             style={{ fontFamily: movieFonts[currentMovie.id] ? `"${movieFonts[currentMovie.id]}", sans-serif` : 'inherit' }}
           >
-            <div className={styles.mediaTypeTag}>
-              {isTvShow ? 'SHOW' : 'MOVIE'}
+            <div className={styles.mediaTypeTag} style={isUpcomingMedia(currentMovie) ? { background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.5))', borderColor: 'rgba(245, 158, 11, 0.5)', color: '#fbbf24' } : undefined}>
+              {isUpcomingMedia(currentMovie) ? 'UPCOMING' : isTvShow ? 'SHOW' : 'MOVIE'}
             </div>
 
             <div className={styles.cardMainContent}>
@@ -348,29 +355,61 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
               </h2>
               
               <div className={styles.cardActions}>
-                <Link
-                  href={
-                    (currentMovie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || currentMovie?.genre_ids?.includes(16)) && (currentMovie?.original_language === 'ja' || currentMovie?.origin_country?.includes('JP'))
-                      ? (isTvShow ? `/tv/${currentMovie.id}?playAnime=true` : `/movie/${currentMovie.id}?playAnime=true`)
-                      : (isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`)
-                  }
-                  className={styles.watchBtn}
-                  style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#eab308', color: '#000000', border: 'none' }}
-                  onClick={() => {
-                    try {
-                      const stored = localStorage.getItem('continueWatching');
-                      let list = stored ? JSON.parse(stored) : [];
-                      list = list.filter((m: any) => m.id !== currentMovie.id);
-                      list.unshift(currentMovie);
-                      if (list.length > 20) list.pop();
-                      saveContinueWatching(list);
-                    } catch (e) {
-                      console.error('Failed to save to continue watching', e);
-                    }
-                  }}
-                >
-                  <Play size={14} fill="currentColor" /> Watch
-                </Link>
+                {isUpcomingMedia(currentMovie) ? (
+                  <Link
+                    href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
+                    className={styles.watchBtn}
+                    style={{ 
+                      backgroundColor: 'rgba(245, 158, 11, 0.18)', 
+                      color: '#fbbf24', 
+                      border: '1px solid rgba(245, 158, 11, 0.45)',
+                      backdropFilter: 'blur(10px)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Calendar size={14} /> Upcoming • {getFormattedReleaseDate(currentMovie)}
+                  </Link>
+                ) : (
+                  <Link
+                    href={(() => {
+                      if (!currentMovie) return '/';
+                      try {
+                        const stored = localStorage.getItem('continueWatching');
+                        if (stored) {
+                          const list = JSON.parse(stored);
+                          const match = Array.isArray(list) && list.find((m: any) => String(m.id) === String(currentMovie.id));
+                          if (match) return getResumeHref(match);
+                        }
+                      } catch {}
+                      const isAnime = (currentMovie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || currentMovie?.genre_ids?.includes(16)) && (currentMovie?.original_language === 'ja' || currentMovie?.origin_country?.includes('JP'));
+                      if (isAnime) return isTvShow ? `/tv/${currentMovie.id}?playAnime=true` : `/movie/${currentMovie.id}?playAnime=true`;
+                      return isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`;
+                    })()}
+                    className={styles.watchBtn}
+                    style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#eab308', color: '#000000', border: 'none' }}
+                    onClick={() => {
+                      try {
+                        const stored = localStorage.getItem('continueWatching');
+                        let list = stored ? JSON.parse(stored) : [];
+                        const existing = list.find((m: any) => String(m.id) === String(currentMovie.id));
+                        list = list.filter((m: any) => String(m.id) !== String(currentMovie.id));
+                        list.unshift({
+                          ...currentMovie,
+                          ...existing,
+                          media_type: isTvShow ? 'tv' : 'movie',
+                        });
+                        if (list.length > 20) list.pop();
+                        saveContinueWatching(list);
+                      } catch (e) {
+                        console.error('Failed to save to continue watching', e);
+                      }
+                    }}
+                  >
+                    <Play size={14} fill="currentColor" /> Watch
+                  </Link>
+                )}
 
                 <Link
                   href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}

@@ -7,6 +7,7 @@ import VidstackPlayer, { VidstackTrack } from "./VidstackPlayer";
 import { installAdblockProtection } from "../utils/adblockFramework";
 import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
 import { getKnownAnimeArcs } from "../utils/animeArcs";
+import { getSavedProgress, updateWatchProgress } from "../utils/userStorage";
 import styles from "./SeasonEpisodeSelector/SeasonEpisodeSelector.module.css";
 
 interface PlayeranimeProps {
@@ -77,6 +78,44 @@ export default function Playeranime({
   type AnimeSource = "anivexa" | "hianime" | "aniwatch";
   const [activeSource, setActiveSource] = useState<AnimeSource>("anivexa");
   const [activeHianimeServer, setActiveHianimeServer] = useState<string>("hd-1");
+
+  // Read saved anime layer preferences & target episode from URL or continueWatching
+  const targetEpisodeIdRef = useRef<string | null>(null);
+  const targetEpisodeNumRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramEpId = urlParams.get("epId");
+      const paramEp = urlParams.get("ep") || urlParams.get("episode");
+
+      if (paramEpId) targetEpisodeIdRef.current = paramEpId;
+      if (paramEp) targetEpisodeNumRef.current = parseInt(paramEp, 10);
+
+      const stored = localStorage.getItem("continueWatching");
+      if (stored) {
+        const list = JSON.parse(stored);
+        const match = Array.isArray(list) && list.find((m: any) =>
+          (tmdbId && String(m.id) === String(tmdbId)) ||
+          (m.title && m.title.toLowerCase() === animeTitle.toLowerCase())
+        );
+
+        if (match) {
+          if (!paramEpId && match.episodeId) targetEpisodeIdRef.current = match.episodeId;
+          if (!paramEp && (match.episode || match.last_episode)) {
+            targetEpisodeNumRef.current = match.episode || match.last_episode;
+          }
+          if (match.audioType === "dub" || match.audioType === "sub") {
+            setAudioType(match.audioType);
+          }
+          if (match.animeSource && (match.animeSource === "anivexa" || match.animeSource === "hianime" || match.animeSource === "aniwatch")) {
+            setActiveSource(match.animeSource);
+          }
+        }
+      }
+    } catch {}
+  }, [tmdbId, animeTitle]);
 
   // Helper to fetch with timeout
   const fetchWithTimeout = async (
@@ -191,10 +230,23 @@ export default function Playeranime({
     if (foundEpisodes.length > 0 && chosenProvider) {
       setEpisodes(foundEpisodes);
       setSelectedProvider(chosenProvider);
-      setSelectedEpisodeId(foundEpisodes[0].id);
+
+      // Match target episode if user was resuming a specific episode
+      let initialEp = null;
+      if (targetEpisodeIdRef.current) {
+        initialEp = foundEpisodes.find((e) => e.id === targetEpisodeIdRef.current);
+      }
+      if (!initialEp && targetEpisodeNumRef.current) {
+        initialEp = foundEpisodes.find((e) => Number(e.number) === targetEpisodeNumRef.current);
+      }
+      if (!initialEp) {
+        initialEp = foundEpisodes[0];
+      }
+
+      setSelectedEpisodeId(initialEp.id);
       setSelectedGroupId("");
       setSelectedSubBatch("all");
-      prevEpisodeIdRef.current = foundEpisodes[0].id;
+      prevEpisodeIdRef.current = initialEp.id;
       setError(null);
     } else {
       setEpisodes([]);
@@ -710,7 +762,7 @@ export default function Playeranime({
 
         // 0. Extract stream and native subtitles from anime provider (Anivexa / Server 1)
         let streamData: any = null;
-        if (!selectedEpisodeId.startsWith("season-") && !selectedEpisodeId.startsWith("tmdb-")) {
+        if (selectedEpisodeId && !selectedEpisodeId.startsWith("season-") && !selectedEpisodeId.startsWith("tmdb-")) {
           // Attempt 1: Fetch currently selected episode
           try {
             const res = await fetch(
@@ -1291,6 +1343,14 @@ export default function Playeranime({
                           : `${animeTitle} - ${selectedEpisode?.title || `Episode ${selectedEpisode?.number || 1}`}`
                       }
                       tmdbId={tmdbId ? String(tmdbId) : (anilistId ? `anime_${anilistId}` : undefined)}
+                      mediaType={type}
+                      season={activeGroup?.seasonNumber || 1}
+                      episode={selectedEpisode?.number || 1}
+                      episodeId={selectedEpisodeId || undefined}
+                      playerType="anime"
+                      server={activeSource}
+                      audioType={audioType}
+                      poster={animeCover || tmdbBackdrop || undefined}
                       className="w-full h-full text-white font-sans"
                     />
                   </div>

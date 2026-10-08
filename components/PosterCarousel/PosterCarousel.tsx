@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { saveWatchlist } from '../../utils/userStorage';
+import { saveWatchlist, getResumeHref, isUpcomingMedia } from '../../utils/userStorage';
 import styles from './PosterCarousel.module.css';
 import GlareHover from '../reactbits/GlareHover';
 
@@ -11,6 +11,7 @@ interface Movie {
   title?: string;
   name?: string;
   poster_path: string;
+  backdrop_path?: string;
   vote_average: number;
   release_date?: string;
   first_air_date?: string;
@@ -19,6 +20,17 @@ interface Movie {
   episode?: number;
   last_season?: number;
   last_episode?: number;
+  episodeId?: string;
+  playerType?: 'standard' | 'vip' | 'anime';
+  server?: string;
+  audioType?: string;
+  currentTime?: number;
+  duration?: number;
+  progress?: number;
+  genres?: any[];
+  genre_ids?: number[];
+  original_language?: string;
+  origin_country?: string[];
 }
 
 interface PosterCarouselProps {
@@ -201,16 +213,16 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
           const season = movie.last_season || movie.season || 1;
           const episode = movie.last_episode || movie.episode || 1;
 
-          const isAnime = (movie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || movie?.genre_ids?.includes(16)) && (movie?.original_language === 'ja' || movie?.origin_country?.includes('JP'));
+          const isAnime =
+            movie.media_type === 'anime' ||
+            movie.playerType === 'anime' ||
+            ((movie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') || movie?.genre_ids?.includes(16)) &&
+              (movie?.original_language === 'ja' || movie?.origin_country?.includes('JP')));
 
-          let playerHref = isTV ? `/watch/tv/${movie.id}/${season}/${episode}` : `/watch/${movie.id}`;
           const detailsHref = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
-          
-          if (isAnime) {
-             playerHref = `${detailsHref}?playAnime=true`;
-          }
+          const linkHref = isContinue ? getResumeHref(movie) : detailsHref;
 
-          const linkHref = isContinue ? playerHref : detailsHref;
+          const progressPercent = movie.progress || (movie.currentTime && movie.duration ? Math.round((movie.currentTime / movie.duration) * 100) : 0);
           
           return (
             <Link href={linkHref} key={movie.id} className={styles.card}>
@@ -228,7 +240,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                 playOnce={false}
               >
                 <img
-                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'}
+                  src={movie.poster_path ? (movie.poster_path.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/w780${movie.poster_path}`) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'}
                   alt={displayTitle}
                   className={styles.poster}
                   loading="lazy"
@@ -242,6 +254,15 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                         <polygon points="6 3 20 12 6 21 6 3" />
                       </svg>
                     </div>
+                  </div>
+                )}
+
+                {isContinue && progressPercent > 0 && (
+                  <div className={styles.progressBarWrapper}>
+                    <div
+                      className={styles.progressBarFill}
+                      style={{ width: `${Math.min(100, Math.max(4, progressPercent))}%` }}
+                    />
                   </div>
                 )}
 
@@ -275,12 +296,21 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                 </button>
 
                 <div className={styles.info}>
-                  {movie.vote_average > 0 && (
+                  {!isContinue && isUpcomingMedia(movie) ? (
+                    <div className={styles.rating} style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))', color: '#000', fontWeight: 800 }}>
+                      SOON
+                    </div>
+                  ) : movie.vote_average > 0 ? (
                     <div className={styles.rating}>{rating}</div>
-                  )}
+                  ) : null}
                   <h3 className={styles.movieTitle}>{displayTitle}</h3>
                   {isContinue && isTV ? (
-                    <p className={styles.year}>S{season} E{episode}</p>
+                    <p className={styles.year}>
+                      S{season} E{episode}
+                      {movie.playerType === 'vip' ? ' • VIP' : isAnime ? ' • Anime' : ''}
+                    </p>
+                  ) : isContinue && !isTV && movie.playerType === 'vip' ? (
+                    <p className={styles.year}>VIP Cinema</p>
                   ) : year ? (
                     <p className={styles.year}>{year}</p>
                   ) : null}

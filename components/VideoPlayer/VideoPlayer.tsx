@@ -8,6 +8,7 @@ import { SERVERS } from '../../utils/servers';
 import HlsPlayer from '../HlsPlayer';
 import RivePlayer from '../RivePlayer';
 import { clearMediaSession, suppressMediaSession } from '../../utils/mediaSessionManager';
+import { updateWatchProgress } from '../../utils/userStorage';
 
 interface VideoPlayerProps {
   /** TMDB ID of the movie or TV show */
@@ -57,12 +58,26 @@ export default function VideoPlayer({
 
   const storageKey = `streamnet_server_${tmdbId}`;
 
-  // Restore server choice for this movie from localStorage on refresh/mount
+  // Restore server & language choice for this movie/show from localStorage / continueWatching on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedServer = localStorage.getItem(storageKey);
       if (savedServer && SERVERS.some(s => s.id === savedServer && s.enabled !== false)) {
         setActiveServer(savedServer);
+      } else {
+        try {
+          const stored = localStorage.getItem('continueWatching');
+          if (stored) {
+            const list = JSON.parse(stored);
+            const match = Array.isArray(list) && list.find((m: any) => String(m.id) === String(tmdbId));
+            if (match?.server && SERVERS.some(s => s.id === match.server && s.enabled !== false)) {
+              setActiveServer(match.server);
+            }
+            if (match?.audioType) {
+              setSelectedLanguage(match.audioType);
+            }
+          }
+        } catch {}
       }
     }
   }, [tmdbId, storageKey]);
@@ -80,6 +95,17 @@ export default function VideoPlayer({
     if (typeof window !== 'undefined') {
       localStorage.setItem(storageKey, serverId);
     }
+    updateWatchProgress({
+      id: tmdbId,
+      title: title || (type === 'tv' ? `Episode S${season} E${episode}` : 'Movie Stream'),
+      media_type: type,
+      season,
+      episode,
+      server: serverId,
+      playerType: 'standard',
+      audioType: selectedLanguage,
+      backdrop_path: backdropPath,
+    });
   };
 
   const [selectedLanguage, setSelectedLanguage] = useState<string>(language || 'en');
@@ -89,6 +115,18 @@ export default function VideoPlayer({
     if (activeServer !== 'screenscape') {
       changeServer('screenscape');
       setAutoFallbackNotice('Switched to Server 2 Hindi Dubbed player.');
+    } else {
+      updateWatchProgress({
+        id: tmdbId,
+        title: title || (type === 'tv' ? `Episode S${season} E${episode}` : 'Movie Stream'),
+        media_type: type,
+        season,
+        episode,
+        server: 'screenscape',
+        playerType: 'standard',
+        audioType: 'hi',
+        backdrop_path: backdropPath,
+      });
     }
   };
 
@@ -97,6 +135,18 @@ export default function VideoPlayer({
     if (activeServer !== 'auto-fast') {
       changeServer('auto-fast');
       setAutoFallbackNotice(null);
+    } else {
+      updateWatchProgress({
+        id: tmdbId,
+        title: title || (type === 'tv' ? `Episode S${season} E${episode}` : 'Movie Stream'),
+        media_type: type,
+        season,
+        episode,
+        server: 'auto-fast',
+        playerType: 'standard',
+        audioType: 'en',
+        backdrop_path: backdropPath,
+      });
     }
   };
 

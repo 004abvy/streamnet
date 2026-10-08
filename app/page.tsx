@@ -10,7 +10,7 @@ import GenreExplorerSection from '../components/GenreExplorerSection/GenreExplor
 import Footer from '../components/Footer/Footer';
 import SlingButton from '../components/reactbits/SlingButton';
 import { useAuth } from '../context/AuthContext';
-import { saveContinueWatching } from '../utils/userStorage';
+import { saveContinueWatching, isUpcomingMedia } from '../utils/userStorage';
 import { motion } from 'framer-motion';
 import styles from './page.module.css';
 
@@ -104,8 +104,22 @@ export default function Home() {
       fetch(`/api/tv/trending`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
     ])
       .then(([moviesData, tvData]) => {
-        if (moviesData?.results) setTrendingMovies(moviesData.results);
-        if (tvData?.results) setTrendingTv(tvData.results);
+        if (moviesData?.results) {
+          const sorted = [...moviesData.results].sort((a, b) => {
+            const aUp = isUpcomingMedia(a) ? 1 : 0;
+            const bUp = isUpcomingMedia(b) ? 1 : 0;
+            return aUp - bUp;
+          });
+          setTrendingMovies(sorted);
+        }
+        if (tvData?.results) {
+          const sorted = [...tvData.results].sort((a, b) => {
+            const aUp = isUpcomingMedia(a) ? 1 : 0;
+            const bUp = isUpcomingMedia(b) ? 1 : 0;
+            return aUp - bUp;
+          });
+          setTrendingTv(sorted);
+        }
       })
       .catch(err => {
         if (err?.name !== 'AbortError') {

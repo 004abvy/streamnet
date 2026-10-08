@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { saveWatchlist } from '../../utils/userStorage';
+import { saveWatchlist, isUpcomingMedia } from '../../utils/userStorage';
 import styles from './PosterGrid.module.css';
 import GlareHover from '../reactbits/GlareHover';
 
@@ -133,9 +133,13 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
                 </button>
 
                 <div className={styles.info}>
-                  {(movie.vote_average ?? 0) > 0 && (
+                  {isUpcomingMedia(movie) ? (
+                    <div className={styles.rating} style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))', color: '#000', fontWeight: 800 }}>
+                      SOON
+                    </div>
+                  ) : (movie.vote_average ?? 0) > 0 ? (
                     <div className={styles.rating}>{rating}</div>
-                  )}
+                  ) : null}
                   <h3 className={styles.movieTitle}>{displayTitle}</h3>
                   {year && <p className={styles.year}>{year}</p>}
                 </div>

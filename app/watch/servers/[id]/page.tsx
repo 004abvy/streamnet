@@ -22,7 +22,8 @@ import ArtPlayerComponent, { ArtPlayerSubtitle } from '../../../../components/Ar
 import VidstackPlayer, { VidstackTrack } from '../../../../components/VidstackPlayer';
 import SeasonEpisodeSelector from '../../../../components/SeasonEpisodeSelector/SeasonEpisodeSelector';
 import { RIVE_SERVERS, buildRiveServerUrl } from '../../../../utils/riveServers';
-import { MonitorPlay } from 'lucide-react';
+import { getSavedProgress, updateWatchProgress, isUpcomingMedia, getFormattedReleaseDate } from '../../../../utils/userStorage';
+import { MonitorPlay, Calendar } from 'lucide-react';
 
 export interface UnifiedAudioTrack {
   id: string;
@@ -333,7 +334,14 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           }
         });
     }
-  }, [id, type, season]);
+
+    // Restore exact playback timestamp from saved history
+    const savedTime = getSavedProgress(id, type, season, episode);
+    if (savedTime > 1) {
+      setPlaybackTimestamp(savedTime);
+      playbackTimeRef.current = savedTime;
+    }
+  }, [id, type, season, episode]);
 
   // 🚀 Netflix-Style Background Aggregator: Scans all direct scrapers in background
   useEffect(() => {
@@ -945,6 +953,64 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     );
   }
 
+  if (movie && isUpcomingMedia(movie)) {
+    const trailer = movie?.videos?.results?.find(
+      (v: any) => v.site === "YouTube" && v.type === "Trailer"
+    ) || movie?.videos?.results?.find((v: any) => v.site === "YouTube");
+
+    return (
+      <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+        {mounted && backdropUrl && (
+          <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+            <img
+              src={backdropUrl}
+              alt=""
+              className="w-full h-full object-cover blur-[90px] opacity-25 scale-110"
+            />
+            <div className="absolute inset-0 bg-neutral-950/85" />
+          </div>
+        )}
+        <div className="w-full max-w-4xl bg-neutral-900/90 border border-amber-500/30 rounded-3xl p-6 md:p-10 shadow-[0_0_50px_rgba(245,158,11,0.2)] backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
+          <div className="flex-1 flex flex-col gap-4 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold uppercase tracking-wider w-fit">
+              <Calendar size={14} /> VIP Premiere Notice
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white">{title}</h1>
+            <p className="text-neutral-300 text-sm leading-relaxed line-clamp-3">
+              {movie?.overview || 'This title is scheduled for an upcoming release. VIP 4K streams will become active automatically on release day.'}
+            </p>
+            <div className="text-amber-300/90 text-sm font-semibold flex items-center gap-2">
+              <span>Expected Date:</span>
+              <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
+                {getFormattedReleaseDate(movie)}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => router.push(type === 'tv' ? `/tv/${id}` : `/movie/${id}`)}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                Back to Details
+              </button>
+            </div>
+          </div>
+          {trailer && (
+            <div className="w-full md:w-[380px] aspect-video rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-black flex-shrink-0">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}`}
+                title="Trailer"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          )}
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
       {/* Cinematic Ambient Background Backdrop */}
@@ -1079,6 +1145,19 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   art.on('video:timeupdate', () => {
                     if (art.video && art.video.currentTime > 0) {
                       playbackTimeRef.current = art.video.currentTime;
+                      updateWatchProgress({
+                        id,
+                        title: title || movie?.name || movie?.title || 'VIP Cinema Stream',
+                        media_type: type,
+                        season,
+                        episode,
+                        currentTime: art.video.currentTime,
+                        duration: art.video.duration || 0,
+                        playerType: 'vip',
+                        audioType: activeAudioLabel,
+                        poster_path: movie?.poster_path,
+                        backdrop_path: movie?.backdrop_path,
+                      });
                     }
                   });
                 }}

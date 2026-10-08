@@ -169,7 +169,7 @@ export default function Sidebar() {
                 className={itemClass}
                 title={item.label}
               >
-                <Icon size={22} color={getIconColor(item.link, item.isAi)} />
+                <Icon size={22} color={getIconColor(item.link, (item as any).isAi)} />
                 <span className={styles.tooltip}>{item.label}</span>
               </Link>
             );

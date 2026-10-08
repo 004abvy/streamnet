@@ -9,6 +9,8 @@ import { Clock, RotateCcw, X } from 'lucide-react';
 import '@vidstack/react/player/styles/default/theme.css';
 import '@vidstack/react/player/styles/default/layouts/video.css';
 
+import { getSavedProgress, clearWatchProgress, updateWatchProgress } from '../utils/userStorage';
+
 export interface VidstackTrack {
   src: string;
   label?: string;
@@ -48,6 +50,14 @@ export interface VidstackPlayerProps {
   serverName?: string;
   preferredLanguage?: string;
   tmdbId?: string;
+  mediaType?: 'movie' | 'tv' | 'anime' | string;
+  season?: number;
+  episode?: number;
+  episodeId?: string;
+  playerType?: 'standard' | 'vip' | 'anime';
+  server?: string;
+  audioType?: string;
+  onTimeProgress?: (currentTime: number, duration: number) => void;
 }
 
 export default function VidstackPlayer({
@@ -66,14 +76,24 @@ export default function VidstackPlayer({
   serverName,
   preferredLanguage,
   tmdbId,
+  mediaType = 'movie',
+  season,
+  episode,
+  episodeId,
+  playerType = 'standard',
+  server,
+  audioType,
+  onTimeProgress,
 }: VidstackPlayerProps) {
   const player = useRef<MediaPlayerInstance>(null);
   const [activeMediaSrc, setActiveMediaSrc] = useState<MediaSrc>(src);
   const hasResumedRef = useRef<MediaSrc | null>(null);
+  const resumeSeekAppliedRef = useRef<boolean>(false);
 
   useEffect(() => {
     setActiveMediaSrc(src);
-  }, [src]);
+    resumeSeekAppliedRef.current = false;
+  }, [src, episodeId, season, episode]);
 
   // Suppress MediaSession API metadata to prevent iOS Dynamic Island & Lockscreen/Widget persistence
   useEffect(() => {
@@ -391,6 +411,20 @@ export default function VidstackPlayer({
     };
   }, [uniqueTracks, tmdbId]);
 
+  // Restore saved progress directly on media element
+  const applyResumeSeek = () => {
+    if (!tmdbId || !player.current || resumeSeekAppliedRef.current) return;
+    const targetProgress = getSavedProgress(tmdbId, mediaType, season, episode, episodeId);
+    if (targetProgress > 1) {
+      const dur = player.current.duration;
+      if (!dur || targetProgress < dur - 10) {
+        console.log(`[Vidstack] Resuming ${tmdbId} at ${targetProgress}s`);
+        player.current.currentTime = targetProgress;
+        resumeSeekAppliedRef.current = true;
+      }
+    }
+  };
+
   // Force English/Preferred audio & subtitles whenever tracks change, unless there is a saved preference
   useEffect(() => {
     if (!player.current) return;
@@ -398,15 +432,7 @@ export default function VidstackPlayer({
     return player.current.subscribe(({ audioTracks, textTracks, canPlay }) => {
       // Restore saved progress once per source change when player is ready
       if (tmdbId && hasResumedRef.current !== src && player.current && canPlay) {
-        const savedProgress = localStorage.getItem(`streamnet_progress_${tmdbId}`);
-        if (savedProgress) {
-          const time = parseFloat(savedProgress);
-          // Resume if we have saved time
-          if (time > 1) {
-            console.log(`[Vidstack] Resuming ${tmdbId} at ${time}s`);
-            player.current.currentTime = time;
-          }
-        }
+        applyResumeSeek();
         hasResumedRef.current = src;
       }
 
@@ -468,7 +494,7 @@ export default function VidstackPlayer({
         }
       }
     });
-  }, [src, preferredLanguage, tmdbId]);
+  }, [src, preferredLanguage, tmdbId, mediaType, season, episode, episodeId]);
 
   return (
     <div className={`relative w-full rounded-xl overflow-hidden shadow-2xl bg-black ${className || 'aspect-video'}`}>
@@ -492,12 +518,13 @@ export default function VidstackPlayer({
         onLoadedMetadata={() => {
           if (player.current && typeof player.current.duration === 'number' && player.current.duration > 0) {
             onDurationChange?.(player.current.duration);
+            applyResumeSeek();
           }
         }}
         onEnded={() => {
           clearMediaSession();
           if (tmdbId) {
-            localStorage.removeItem(`streamnet_progress_${tmdbId}`);
+            clearWatchProgress(tmdbId, mediaType, season, episode, episodeId);
           }
           onEnded?.();
         }}
@@ -509,15 +536,7 @@ export default function VidstackPlayer({
           }
 
           // Direct seek on ready for HLS stability
-          if (tmdbId && hasResumedRef.current !== src) {
-            const savedProgress = localStorage.getItem(`streamnet_progress_${tmdbId}`);
-            if (savedProgress) {
-              const time = parseFloat(savedProgress);
-              if (time > 1) {
-                player.current.currentTime = time;
-              }
-            }
-          }
+          applyResumeSeek();
         }}
         className="w-full h-full text-white font-sans"
         playsInline
@@ -557,12 +576,26 @@ export default function VidstackPlayer({
         }}
         onTimeUpdate={(detail) => {
           const currentTime = detail.currentTime;
+          const dur = player.current?.duration || 0;
           if (tmdbId && typeof currentTime === 'number' && currentTime > 0) {
-            // Save every 1 second for precision
             const lastSaved = parseFloat(localStorage.getItem(`streamnet_progress_${tmdbId}_last_save`) || '0');
-            if (Math.abs(currentTime - lastSaved) >= 1) {
-              localStorage.setItem(`streamnet_progress_${tmdbId}`, currentTime.toString());
+            if (Math.abs(currentTime - lastSaved) >= 1.5) {
               localStorage.setItem(`streamnet_progress_${tmdbId}_last_save`, currentTime.toString());
+              updateWatchProgress({
+                id: tmdbId,
+                title,
+                media_type: mediaType || 'movie',
+                season,
+                episode,
+                episodeId,
+                currentTime,
+                duration: dur,
+                playerType: (playerType as any) || 'standard',
+                server,
+                audioType: preferredLanguage || audioType,
+                poster_path: poster,
+              });
+              onTimeProgress?.(currentTime, dur);
             }
           }
         }}

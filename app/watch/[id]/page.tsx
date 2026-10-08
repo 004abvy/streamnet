@@ -1,10 +1,12 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
+import Link from 'next/link';
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer';
 import PosterCarousel from '../../../components/PosterCarousel/PosterCarousel';
-import { saveContinueWatching } from '../../../utils/userStorage';
+import { saveContinueWatching, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
 import { getRelevantRecommendations } from '../../../utils/recommendations';
+import { Calendar, ArrowLeft, Play } from 'lucide-react';
 
 export default function WatchPage({
   params,
@@ -28,24 +30,26 @@ export default function WatchPage({
         if (data && !data.error) {
           setMovie(data);
 
-          // Add/update to continue watching
-          try {
-            const stored = localStorage.getItem('continueWatching');
-            const list = stored ? JSON.parse(stored) : [];
-            const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
-            const itemToSave = {
-              id: data.id || Number(id),
-              title: data.title || data.name,
-              name: data.name || data.title,
-              poster_path: data.poster_path,
-              backdrop_path: data.backdrop_path,
-              vote_average: data.vote_average,
-              release_date: data.release_date || data.first_air_date,
-              media_type: 'movie'
-            };
-            saveContinueWatching([itemToSave, ...filtered]);
-          } catch (e) {
-            console.warn(e);
+          // Add/update to continue watching ONLY if already released
+          if (!isUpcomingMedia(data)) {
+            try {
+              const stored = localStorage.getItem('continueWatching');
+              const list = stored ? JSON.parse(stored) : [];
+              const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
+              const itemToSave = {
+                id: data.id || Number(id),
+                title: data.title || data.name,
+                name: data.name || data.title,
+                poster_path: data.poster_path,
+                backdrop_path: data.backdrop_path,
+                vote_average: data.vote_average,
+                release_date: data.release_date || data.first_air_date,
+                media_type: 'movie'
+              };
+              saveContinueWatching([itemToSave, ...filtered]);
+            } catch (e) {
+              console.warn(e);
+            }
           }
         }
         setLoading(false);
@@ -58,6 +62,11 @@ export default function WatchPage({
 
   const imdbId = movie?.external_ids?.imdb_id || movie?.imdb_id;
   const similarMovies = getRelevantRecommendations(movie, 14);
+
+  const isUpcoming = movie && isUpcomingMedia(movie);
+  const trailer = movie?.videos?.results?.find(
+    (v: any) => v.site === "YouTube" && v.type === "Trailer"
+  ) || movie?.videos?.results?.find((v: any) => v.site === "YouTube");
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden">
@@ -102,6 +111,62 @@ export default function WatchPage({
                 <div className="h-5 w-16 rounded-md bg-neutral-800/60" />
               </div>
             </div>
+          </div>
+        ) : isUpcoming ? (
+          /* Sleek Upcoming Release View */
+          <div className="w-full flex flex-col gap-8">
+            <div className="relative w-full rounded-2xl md:rounded-3xl overflow-hidden bg-neutral-900 border border-amber-500/30 shadow-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8">
+              {movie?.backdrop_path && (
+                <img
+                  src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+                  alt={movie?.title || 'Backdrop'}
+                  className="absolute inset-0 w-full h-full object-cover opacity-20 filter blur-sm pointer-events-none"
+                />
+              )}
+              <div className="relative z-10 flex-1 flex flex-col gap-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold uppercase tracking-wider w-fit">
+                  <Calendar size={14} /> Upcoming Premiere
+                </div>
+                <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+                  {movie?.title || movie?.name}
+                </h1>
+                <p className="text-neutral-300 text-sm md:text-base leading-relaxed line-clamp-3">
+                  {movie?.overview || 'This title is scheduled for an upcoming release. Stream links will be unlocked automatically when it premieres.'}
+                </p>
+                <div className="text-amber-300/90 text-sm font-semibold flex items-center gap-2">
+                  <span>Premiere Date:</span>
+                  <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
+                    {getFormattedReleaseDate(movie)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <Link
+                    href={`/movie/${id}`}
+                    className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                  >
+                    <ArrowLeft size={16} /> View Movie Details
+                  </Link>
+                </div>
+              </div>
+
+              {trailer && (
+                <div className="relative z-10 w-full md:w-[440px] aspect-video rounded-xl overflow-hidden border border-white/15 shadow-xl bg-black flex-shrink-0">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${trailer.key}`}
+                    title="Trailer"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+              )}
+            </div>
+
+            {similarMovies.length > 0 && (
+              <div className="w-full mt-6">
+                <PosterCarousel title="You May Also Like" movies={similarMovies} />
+              </div>
+            )}
           </div>
         ) : (
           <>

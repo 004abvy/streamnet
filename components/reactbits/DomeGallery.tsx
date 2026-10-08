@@ -99,7 +99,7 @@ function buildItems(pool: ImageItem[], seg: number): ItemDef[] {
 
   const totalSlots = coords.length;
   if (pool.length === 0) {
-    return coords.map(c => ({ ...c, src: '', alt: '' }));
+    return coords.map((c, i) => ({ ...c, src: '', alt: '', originalIndex: i }));
   }
   if (pool.length > totalSlots) {
     console.warn(
@@ -132,7 +132,8 @@ function buildItems(pool: ImageItem[], seg: number): ItemDef[] {
   return coords.map((c, i) => ({
     ...c,
     src: usedImages[i].src,
-    alt: usedImages[i].alt
+    alt: usedImages[i].alt,
+    originalIndex: i
   }));
 }
 

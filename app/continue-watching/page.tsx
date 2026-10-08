@@ -4,11 +4,11 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { saveContinueWatching } from '../../utils/userStorage';
+import { saveContinueWatching, getResumeHref } from '../../utils/userStorage';
 import styles from './continueWatching.module.css';
 
 interface MediaItem {
-  id: number;
+  id: number | string;
   title?: string;
   name?: string;
   poster_path?: string;
@@ -21,6 +21,17 @@ interface MediaItem {
   episode?: number;
   last_season?: number;
   last_episode?: number;
+  episodeId?: string;
+  playerType?: 'standard' | 'vip' | 'anime';
+  server?: string;
+  audioType?: string;
+  currentTime?: number;
+  duration?: number;
+  progress?: number;
+  genres?: any[];
+  genre_ids?: number[];
+  original_language?: string;
+  origin_country?: string[];
 }
 
 export default function ContinueWatchingPage() {
@@ -160,7 +171,8 @@ export default function ContinueWatchingPage() {
                 const isTV = item.media_type === 'tv' || Boolean(item.name && !item.title);
                 const season = item.last_season || item.season || 1;
                 const episode = item.last_episode || item.episode || 1;
-                const watchHref = isTV ? `/watch/tv/${item.id}/${season}/${episode}` : `/watch/${item.id}`;
+                const watchHref = getResumeHref(item);
+                const progressPercent = item.progress || (item.currentTime && item.duration ? Math.round((item.currentTime / item.duration) * 100) : 0);
 
                 return (
                   <article className={styles.card} key={item.id}>
@@ -169,7 +181,7 @@ export default function ContinueWatchingPage() {
                         <img
                           src={
                             item.poster_path
-                              ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+                              ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w780${item.poster_path}`)
                               : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'
                           }
                           alt={title}
@@ -187,11 +199,21 @@ export default function ContinueWatchingPage() {
                           </div>
                         </div>
 
+                        {/* Progress Bar */}
+                        {progressPercent > 0 && (
+                          <div className={styles.progressBarWrapper}>
+                            <div
+                              className={styles.progressBarFill}
+                              style={{ width: `${Math.min(100, Math.max(4, progressPercent))}%` }}
+                            />
+                          </div>
+                        )}
+
                         {/* Remove Button */}
                         <button
                           type="button"
                           className={styles.removeBtn}
-                          onClick={(e) => removeItem(item.id, e)}
+                          onClick={(e) => removeItem(item.id as number, e)}
                           title="Remove from history"
                           aria-label={`Remove ${title}`}
                         >
@@ -205,9 +227,15 @@ export default function ContinueWatchingPage() {
                         <h3 className={styles.itemTitle}>{title}</h3>
                         <div className={styles.itemMeta}>
                           {isTV ? (
-                            <span>Season {season} • Ep {episode}</span>
+                            <span>
+                              Season {season} • Ep {episode}
+                              {item.playerType === 'vip' ? ' • VIP' : item.playerType === 'anime' ? ' • Anime' : ''}
+                            </span>
                           ) : (
-                            <span>{year ? `${year} • ` : ''}Movie</span>
+                            <span>
+                              {year ? `${year} • ` : ''}
+                              {item.playerType === 'vip' ? 'VIP Movie' : 'Movie'}
+                            </span>
                           )}
                         </div>
                       </div>

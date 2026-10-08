@@ -6,9 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DetailsTabs from '../../../components/DetailsTabs/DetailsTabs';
 import Footer from '../../../components/Footer/Footer';
 import Playeranime from '../../../components/Playeranime';
-import { saveWatchlist, saveContinueWatching } from '../../../utils/userStorage';
+import { saveWatchlist, saveContinueWatching, getResumeHref, updateWatchProgress, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
 import styles from '../../movie/[id]/movieDetails.module.css';
-import { Play, Bookmark } from 'lucide-react';
+import { Play, Bookmark, Calendar } from 'lucide-react';
 
 export default function TVDetailsPage({
   params,
@@ -21,6 +21,7 @@ export default function TVDetailsPage({
   const [isSaved, setIsSaved] = useState(false);
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [showAnimePlayer, setShowAnimePlayer] = useState(false);
+  const [savedResume, setSavedResume] = useState<any>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,6 +30,18 @@ export default function TVDetailsPage({
       setShowAnimePlayer(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const stored = localStorage.getItem('continueWatching');
+      if (stored) {
+        const list = JSON.parse(stored);
+        const match = Array.isArray(list) && list.find((m: any) => String(m.id) === String(id));
+        if (match) setSavedResume(match);
+      }
+    } catch {}
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -80,13 +93,24 @@ export default function TVDetailsPage({
 
   const isAnime = movie?.genres?.some((g: any) => g.id === 16 || g.name === 'Animation') && (movie?.original_language === 'ja' || movie?.origin_country?.includes('JP'));
 
+  const resumeSeason = savedResume?.season || savedResume?.last_season || 1;
+  const resumeEpisode = savedResume?.episode || savedResume?.last_episode || 1;
+
   const handlePlayNow = (e: any) => {
     if (!movie) return;
     try {
       const stored = localStorage.getItem('continueWatching');
       let list = stored ? JSON.parse(stored) : [];
       list = list.filter((m: any) => m.id !== movie.id);
-      list.unshift({ ...movie, media_type: 'tv' });
+      list.unshift({
+        ...movie,
+        ...savedResume,
+        media_type: 'tv',
+        season: resumeSeason,
+        episode: resumeEpisode,
+        last_season: resumeSeason,
+        last_episode: resumeEpisode,
+      });
       if (list.length > 20) list.pop();
       saveContinueWatching(list);
     } catch (e) {
@@ -128,6 +152,12 @@ export default function TVDetailsPage({
     (v: any) => v.site === "YouTube" && v.type === "Trailer"
   ) || movie.videos?.results?.find((v: any) => v.site === "YouTube");
 
+  const standardPlayHref = savedResume
+    ? getResumeHref({ ...movie, ...savedResume, playerType: 'standard', media_type: 'tv' })
+    : `/watch/tv/${movie.id}/${resumeSeason}/${resumeEpisode}`;
+
+  const vipPlayHref = `/watch/servers/${movie.id}?type=tv&season=${resumeSeason}&episode=${resumeEpisode}`;
+
   return (
     <main className={styles.container}>
       {showAnimePlayer && (
@@ -152,18 +182,66 @@ export default function TVDetailsPage({
       <div className={styles.editorialGrid}>
         {/* Left Column: Title, Synopsis, Play & Wishlist Buttons, Actors */}
         <div className={styles.leftCol}>
-          <h1 className={styles.editorialTitle}>{displayTitle}</h1>
+          <h1 className={styles.editorialTitle}>
+            {displayTitle}
+            {isUpcomingMedia(movie) && (
+              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#000', fontWeight: 800 }}>
+                UPCOMING
+              </span>
+            )}
+          </h1>
           <p className={styles.editorialOverview}>{movie.overview}</p>
 
           {/* Action Buttons: Play Now & Wishlist */}
           <div className={styles.editorialActions}>
-            <Link
-              href={`/watch/tv/${movie.id}/1/1`}
-              className={styles.playNowBtn}
-              onClick={handlePlayNow}
-            >
-              <Play size={18} fill="currentColor" /> Play Now
-            </Link>
+            {isUpcomingMedia(movie) ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.playNowBtn}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.35))',
+                    border: '1px solid rgba(245, 158, 11, 0.6)',
+                    color: '#fbbf24',
+                    cursor: trailer ? 'pointer' : 'default'
+                  }}
+                  onClick={() => {
+                    if (trailer) setShowTrailerModal(true);
+                  }}
+                >
+                  <Calendar size={18} /> Premiering {getFormattedReleaseDate(movie)}
+                </button>
+                {trailer && (
+                  <button
+                    type="button"
+                    className={styles.playNowBtn}
+                    onClick={() => setShowTrailerModal(true)}
+                  >
+                    <Play size={18} fill="currentColor" /> Watch Trailer
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <Link
+                  href={standardPlayHref}
+                  className={styles.playNowBtn}
+                  onClick={handlePlayNow}
+                >
+                  <Play size={18} fill="currentColor" /> {savedResume ? `Resume S${resumeSeason} E${resumeEpisode}` : 'Play Now'}
+                </Link>
+                {!isAnime && (
+                  <Link
+                    href={vipPlayHref}
+                    className={styles.playNowBtn}
+                    style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
+                    onClick={handlePlayNow}
+                  >
+                    VIP Server
+                  </Link>
+                )}
+              </>
+            )}
             <button
               type="button"
               className={`${styles.wishlistBtn} ${isSaved ? styles.savedWishlist : ''}`}
@@ -172,17 +250,25 @@ export default function TVDetailsPage({
               <Bookmark size={18} fill={isSaved ? 'currentColor' : 'none'} />
               {isSaved ? 'In Wishlist ✓' : 'Wishlist'}
             </button>
-            {!isAnime && (
-              <Link
-                href={`/watch/servers/${movie.id}?type=tv&season=1&episode=1`}
-                className={styles.playNowBtn}
-                style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
-                onClick={handlePlayNow}
-              >
-                VIP Server
-              </Link>
-            )}
           </div>
+
+          {isUpcomingMedia(movie) && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 14px',
+              marginTop: '12px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              color: '#fbbf24',
+              fontSize: '0.85rem'
+            }}>
+              <Calendar size={15} style={{ flexShrink: 0 }} />
+              <span>This series is upcoming and has not premiered yet. Streaming links will activate upon official broadcast.</span>
+            </div>
+          )}
 
           {/* Bottom Left: Top Cast / Actors */}
           {topCast.length > 0 && (

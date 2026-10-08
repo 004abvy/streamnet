@@ -669,6 +669,10 @@ export default function HlsPlayer({
           handleInvalidDuration(duration);
         }}
         tmdbId={tmdbId}
+        mediaType={type}
+        season={season}
+        episode={episode}
+        server={serverId}
         preferredLanguage={preferredLanguage}
       />
     </div>

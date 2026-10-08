@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { saveWatchlist, saveContinueWatching } from '../../utils/userStorage';
+import { saveWatchlist, saveContinueWatching, isUpcomingMedia, getFormattedReleaseDate } from '../../utils/userStorage';
+import { Calendar } from 'lucide-react';
 import styles from './TrendingSection.module.css';
 import GlareHover from '../reactbits/GlareHover';
 
@@ -154,6 +155,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
       ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
       : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
+    const isUpcoming = isUpcomingMedia(item);
 
     return (
       <Link href={href} key={item.id} className={styles.posterCard}>
@@ -190,7 +192,13 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
           </button>
 
           <div className={styles.posterInfo}>
-            <div className={styles.ratingBadge}>{rating}</div>
+            {isUpcoming ? (
+              <div className={styles.ratingBadge} style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))', color: '#000', fontWeight: 800 }}>
+                SOON
+              </div>
+            ) : (
+              <div className={styles.ratingBadge}>{rating}</div>
+            )}
             <h3 className={styles.posterTitle}>{displayTitle}</h3>
             {year && <p className={styles.posterYear}>{year}</p>}
           </div>
@@ -210,7 +218,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
         ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
         : 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
-    const overview = item.overview || 'Explore details, cast, trailers, and streaming options for this trending title.';
+    const isUpcoming = isUpcomingMedia(item);
 
     return (
       <div key={item.id} className={styles.heroCard}>
@@ -245,16 +253,32 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
             <h3 className={styles.heroTitle}>{displayTitle}</h3>
 
             <div className={styles.heroActions}>
-              <Link
-                href={watchHref}
-                className={styles.playBtn}
-                onClick={(e) => handlePlayNow(e, item, isTv)}
-              >
-                <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                Play
-              </Link>
+              {isUpcoming ? (
+                <Link
+                  href={detailsHref}
+                  className={styles.playBtn}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9))',
+                    color: '#000000',
+                    fontWeight: 700,
+                    gap: '5px'
+                  }}
+                >
+                  <Calendar size={13} />
+                  Upcoming
+                </Link>
+              ) : (
+                <Link
+                  href={watchHref}
+                  className={styles.playBtn}
+                  onClick={(e) => handlePlayNow(e, item, isTv)}
+                >
+                  <svg className={styles.playIcon} viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  Play
+                </Link>
+              )}
 
               <Link href={detailsHref} className={styles.detailsBtn}>
                 About
