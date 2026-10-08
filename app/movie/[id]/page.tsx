@@ -189,7 +189,7 @@ export default function MovieDetailsPage({
           <h1 className={styles.editorialTitle}>
             {displayTitle}
             {isUpcomingMedia(movie) ? (
-              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#000', fontWeight: 800 }}>
+              <span className={styles.camBadge} style={{ background: 'linear-gradient(135deg, #e50914, #b81d24)', color: '#ffffff', fontWeight: 800, boxShadow: '0 0 12px rgba(229, 9, 20, 0.45)' }}>
                 UPCOMING
               </span>
             ) : (
@@ -208,9 +208,10 @@ export default function MovieDetailsPage({
                   type="button"
                   className={styles.playNowBtn}
                   style={{
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.35))',
-                    border: '1px solid rgba(245, 158, 11, 0.6)',
-                    color: '#fbbf24',
+                    background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.2), rgba(184, 29, 36, 0.35))',
+                    border: '1px solid rgba(229, 9, 20, 0.6)',
+                    color: '#ff4d58',
+                    boxShadow: '0 0 16px rgba(229, 9, 20, 0.3)',
                     cursor: trailer ? 'pointer' : 'default'
                   }}
                   onClick={() => {
@@ -242,7 +243,7 @@ export default function MovieDetailsPage({
                   <Link
                     href={vipPlayHref}
                     className={styles.playNowBtn}
-                    style={{ background: 'linear-gradient(45deg, #FFD700, #FFA500)' }}
+                    style={{ background: 'linear-gradient(135deg, #e50914, #990000)', color: '#ffffff', boxShadow: '0 0 20px rgba(229, 9, 20, 0.4)' }}
                     onClick={handlePlayNow}
                   >
                     VIP Server

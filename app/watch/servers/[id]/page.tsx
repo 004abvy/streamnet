@@ -906,27 +906,25 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             />
             <div className="absolute inset-0 bg-neutral-950/85" />
           </div>
-        )}
-
-        <div className="w-full max-w-[340px] sm:max-w-md bg-neutral-900/90 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(245,158,11,0.2)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-3 sm:mb-4 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+        )}        <div className="w-full max-w-[340px] sm:max-w-md bg-neutral-900/90 border border-red-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-[0_0_50px_rgba(229,9,20,0.2)] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mx-auto mb-3 sm:mb-4 shadow-[0_0_20px_rgba(229,9,20,0.25)]">
             <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black mb-1.5 text-white tracking-tight">VIP Access Required</h1>
           <p className="text-neutral-400 mb-5 text-xs sm:text-sm">
-            Enter <span className="text-amber-400 font-bold font-mono px-1.5 py-0.5 bg-amber-500/10 rounded border border-amber-500/20">123</span> to access premium 4K VIP servers.
+            Enter <span className="text-red-400 font-bold font-mono px-1.5 py-0.5 bg-red-500/10 rounded border border-red-500/20">123</span> to access premium 4K VIP servers.
           </p>
           <form onSubmit={handleAuth} className="flex flex-col gap-3 sm:gap-4">
             <input 
-              type="text"
+              type="text" 
               placeholder="Enter 123"
               value={authCode}
               onChange={(e) => {
                 setAuthCode(e.target.value);
                 setAuthError(null);
               }}
-              className="w-full bg-black/80 border border-white/20 rounded-xl px-4 py-2.5 sm:py-3 text-white outline-none focus:border-amber-400 transition-colors text-center font-mono tracking-widest text-base sm:text-lg placeholder:tracking-normal placeholder:text-neutral-500 shadow-inner"
+              className="w-full bg-black/80 border border-white/20 rounded-xl px-4 py-2.5 sm:py-3 text-white outline-none focus:border-red-500 transition-colors text-center font-mono tracking-widest text-base sm:text-lg placeholder:tracking-normal placeholder:text-neutral-500 shadow-inner"
               autoFocus
             />
 
@@ -936,7 +934,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
             <button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-black font-black py-2.5 sm:py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] cursor-pointer text-xs sm:text-sm uppercase tracking-wider active:scale-95"
+              className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black py-2.5 sm:py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(229,9,20,0.4)] hover:shadow-[0_0_30px_rgba(229,9,20,0.6)] cursor-pointer text-xs sm:text-sm uppercase tracking-wider active:scale-95"
             >
               Unlock Player
             </button>
@@ -970,16 +968,16 @@ function DirectPlayerHubContent({ id }: { id: string }) {
             <div className="absolute inset-0 bg-neutral-950/85" />
           </div>
         )}
-        <div className="w-full max-w-4xl bg-neutral-900/90 border border-amber-500/30 rounded-3xl p-6 md:p-10 shadow-[0_0_50px_rgba(245,158,11,0.2)] backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
+        <div className="w-full max-w-4xl bg-neutral-900/90 border border-red-500/30 rounded-3xl p-6 md:p-10 shadow-[0_0_50px_rgba(229,9,20,0.2)] backdrop-blur-xl flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 flex flex-col gap-4 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold uppercase tracking-wider w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold uppercase tracking-wider w-fit">
               <Calendar size={14} /> VIP Premiere Notice
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white">{title}</h1>
             <p className="text-neutral-300 text-sm leading-relaxed line-clamp-3">
               {movie?.overview || 'This title is scheduled for an upcoming release. VIP 4K streams will become active automatically on release day.'}
             </p>
-            <div className="text-amber-300/90 text-sm font-semibold flex items-center gap-2">
+            <div className="text-red-300/90 text-sm font-semibold flex items-center gap-2">
               <span>Expected Date:</span>
               <span className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
                 {getFormattedReleaseDate(movie)}
@@ -989,7 +987,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               <button
                 type="button"
                 onClick={() => router.push(type === 'tv' ? `/tv/${id}` : `/movie/${id}`)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-all shadow-lg shadow-red-600/30 cursor-pointer"
               >
                 Back to Details
               </button>
@@ -1012,7 +1010,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden selection:bg-amber-500 selection:text-black">
+    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center px-3 sm:px-6 md:px-8 pt-20 md:pt-24 pb-16 relative overflow-x-hidden selection:bg-[#e50914] selection:text-white">
       {/* Cinematic Ambient Background Backdrop */}
       {mounted && backdropUrl && (
         <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
@@ -1039,7 +1037,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
 
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-red-600/20 text-red-400 border border-red-500/30 text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-2 h-2 sm:w-2.5 sm:h-2.5" /> VIP Cinema
               </span>
               {releaseYear && (
@@ -1056,7 +1054,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         <div className="flex items-center gap-2 shrink-0">
           {scanStatusNotice && (
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-white/[0.06] border border-white/10 text-[10px] sm:text-[11px] font-medium text-neutral-300 animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#e50914]" />
               <span>{scanStatusNotice}</span>
             </div>
           )}
@@ -1097,7 +1095,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   className="w-full h-full object-cover blur-[32px] sm:blur-[48px] md:blur-[64px] saturate-[160%] brightness-[1.1] transform scale-[1.04] sm:scale-[1.07]"
                 />
               ) : (
-                <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-amber-500/20 via-sky-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
+                <div className="w-full h-full rounded-2xl md:rounded-3xl bg-gradient-to-tr from-red-600/20 via-rose-500/20 to-purple-600/20 blur-[40px] sm:blur-[55px] transform scale-[1.04]" />
               )}
             </div>
           </div>
@@ -1111,7 +1109,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
           <div className={`w-full ${getAspectRatioStyle()} transition-all duration-300 relative`}>
             {fetchingStream ? (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-black gap-3">
-                <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm font-semibold text-neutral-300">
                   Loading {activeAudioLabel}...
                 </p>
@@ -1173,11 +1171,11 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               />
             ) : (
               <div className="w-full aspect-video flex flex-col items-center justify-center bg-neutral-900/90 p-6 text-center gap-3">
-                <p className="text-amber-400 font-bold text-base">Stream Offline</p>
+                <p className="text-red-400 font-bold text-base">Stream Offline</p>
                 <p className="text-xs text-neutral-400 max-w-md">{errorMessage || 'Stream could not be loaded.'}</p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs rounded-lg transition cursor-pointer mt-2"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg transition cursor-pointer mt-2 shadow-lg shadow-red-600/30"
                 >
                   Reload Stream
                 </button>
@@ -1218,7 +1216,7 @@ export default function DirectPlayerHubPage({
     <Suspense
       fallback={
         <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-sm font-semibold text-neutral-300">Loading VIP Cinema Player...</p>
         </main>
       }

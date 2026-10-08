@@ -615,7 +615,7 @@ export default function HlsPlayer({
       <div
         className={`w-full aspect-video rounded-xl flex flex-col items-center justify-center bg-neutral-900 border border-white/10 ${className}`}
       >
-        <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-3"></div>
         <p className="text-sm font-medium text-neutral-300">
           Loading Please wait
         </p>
@@ -637,7 +637,7 @@ export default function HlsPlayer({
         {onNextServer && (
           <button
             onClick={onNextServer}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg text-sm transition cursor-pointer"
+            className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition cursor-pointer shadow-lg shadow-red-600/20"
           >
             Switch Server
           </button>
@@ -678,9 +678,9 @@ export default function HlsPlayer({
     >
       {/* Stream Runtime Mismatch Alert */}
       {runtimeMismatchNotice && (
-        <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 px-3.5 py-2 bg-neutral-900/90 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-medium backdrop-blur-xl shadow-xl animate-in fade-in duration-200">
+        <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 px-3.5 py-2 bg-neutral-900/90 border border-red-500/40 rounded-xl text-red-200 text-xs font-medium backdrop-blur-xl shadow-xl animate-in fade-in duration-200">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
             <span className="truncate">{runtimeMismatchNotice}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -689,7 +689,7 @@ export default function HlsPlayer({
                 onNextServer?.();
                 setRuntimeMismatchNotice(null);
               }}
-              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] transition cursor-pointer shadow-md shadow-red-600/30"
             >
               Switch Server
             </button>
