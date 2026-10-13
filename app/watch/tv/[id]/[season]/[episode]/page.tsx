@@ -36,22 +36,34 @@ export default function WatchTvPage() {
 
           // Add/update TV continue watching with season and episode
           try {
+            const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+            const urlServer = urlParams?.get('server');
             const stored = localStorage.getItem('continueWatching');
             const list = stored ? JSON.parse(stored) : [];
+            const existing = list.find((i: any) => String(i.id) === String(data.id || id));
             const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
+
+            const isSameEpisode = existing &&
+              (existing.season === season || existing.last_season === season) &&
+              (existing.episode === episode || existing.last_episode === episode);
+
             const itemToSave = {
+              ...existing,
               id: data.id || Number(id),
-              title: data.name || data.title,
-              name: data.name || data.title,
-              poster_path: data.poster_path,
-              backdrop_path: data.backdrop_path,
-              vote_average: data.vote_average,
-              first_air_date: data.first_air_date || data.release_date,
+              title: data.name || data.title || existing?.title,
+              name: data.name || data.title || existing?.name,
+              poster_path: data.poster_path || existing?.poster_path,
+              backdrop_path: data.backdrop_path || existing?.backdrop_path,
+              vote_average: data.vote_average ?? existing?.vote_average,
+              first_air_date: data.first_air_date || data.release_date || existing?.first_air_date,
               media_type: 'tv',
               last_season: season,
               last_episode: episode,
               season: season,
-              episode: episode
+              episode: episode,
+              server: urlServer || existing?.server || 'auto-fast',
+              currentTime: isSameEpisode ? (existing?.currentTime || 0) : 0,
+              progress: isSameEpisode ? (existing?.progress || 0) : 0,
             };
             saveContinueWatching([itemToSave, ...filtered]);
           } catch (e) {
@@ -70,7 +82,9 @@ export default function WatchTvPage() {
   const similarShows = getRelevantRecommendations(show, 14);
 
   const handleEpisodeChange = (newSeason: number, newEpisode: number) => {
-    router.push(`/watch/tv/${id}/${newSeason}/${newEpisode}`);
+    const currentServer = typeof window !== 'undefined' ? (localStorage.getItem(`streamnet_server_${id}`) || new URLSearchParams(window.location.search).get('server')) : null;
+    const sQuery = currentServer ? `?server=${encodeURIComponent(currentServer)}` : '';
+    router.push(`/watch/tv/${id}/${newSeason}/${newEpisode}${sQuery}`);
   };
 
   return (

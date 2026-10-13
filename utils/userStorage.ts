@@ -132,6 +132,11 @@ export function getSavedProgress(
 ): number {
   if (typeof window === 'undefined' || !id) return 0;
   try {
+    const cleanId = String(id).trim();
+    const isTv = type === 'tv';
+    const isAnime = type === 'anime' || cleanId.startsWith('anime_');
+    const isEpisodic = isTv || isAnime || Boolean(season || episode || episodeId);
+
     const primaryKey = getProgressKey(id, type, season, episode, episodeId);
     const saved = localStorage.getItem(primaryKey);
     if (saved) {
@@ -139,9 +144,10 @@ export function getSavedProgress(
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
 
-    // Fallback: If TV episode, also check generic tmdb progress key
-    if (type === 'tv') {
-      const fallbackKey = `streamnet_progress_${id}`;
+    // Generic key streamnet_progress_${cleanId} is strictly for standalone movies only!
+    // NEVER fall back to movie-level keys for TV or Anime episodes!
+    if (!isEpisodic) {
+      const fallbackKey = `streamnet_progress_${cleanId}`;
       const fallbackSaved = localStorage.getItem(fallbackKey);
       if (fallbackSaved) {
         const parsed = parseFloat(fallbackSaved);
@@ -149,23 +155,22 @@ export function getSavedProgress(
       }
     }
 
-    // Fallback: Check continueWatching list
+    // Fallback: Check continueWatching list ONLY if the season and episode match EXACTLY!
     const continueStored = localStorage.getItem('continueWatching');
     if (continueStored) {
       const list = JSON.parse(continueStored);
       if (Array.isArray(list)) {
-        const cleanId = String(id);
         const match = list.find((item: any) => {
           if (String(item.id) !== cleanId) return false;
-          if (type === 'tv' && (season || episode)) {
+          if (isEpisodic) {
+            if (episodeId && item.episodeId) {
+              return item.episodeId === episodeId;
+            }
             const itemSeason = item.season || item.last_season || 1;
             const itemEpisode = item.episode || item.last_episode || 1;
             return itemSeason === (season || 1) && itemEpisode === (episode || 1);
           }
-          if (episodeId && item.episodeId) {
-            return item.episodeId === episodeId;
-          }
-          return true;
+          return true; // For standalone movies only
         });
         if (match && typeof match.currentTime === 'number' && match.currentTime > 0) {
           return match.currentTime;
@@ -193,7 +198,7 @@ export function clearWatchProgress(
     const key = getProgressKey(id, type, season, episode, episodeId);
     localStorage.removeItem(key);
     localStorage.removeItem(`${key}_last_save`);
-    if (!season && !episode) {
+    if (!season && !episode && !episodeId && type !== 'tv' && type !== 'anime') {
       localStorage.removeItem(`streamnet_progress_${id}`);
     }
   } catch {}
@@ -302,10 +307,16 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
   // 1. Save exact progress key in localStorage
   if (currentTime > 0) {
     const key = getProgressKey(item.id, item.media_type, season, episode, item.episodeId);
+    const isTv = item.media_type === 'tv';
+    const isAnime = item.media_type === 'anime' || item.playerType === 'anime' || idStr.startsWith('anime_');
+    const isEpisodic = isTv || isAnime || Boolean(item.episodeId || (season && season > 1) || (episode && episode > 1));
     try {
       localStorage.setItem(key, currentTime.toString());
       localStorage.setItem(`${key}_last_save`, currentTime.toString());
-      localStorage.setItem(`streamnet_progress_${idStr}`, currentTime.toString());
+      // ONLY save to streamnet_progress_${idStr} for standalone movies, NEVER for TV or Anime episodes
+      if (!isEpisodic) {
+        localStorage.setItem(`streamnet_progress_${idStr}`, currentTime.toString());
+      }
     } catch {}
   }
 
@@ -348,6 +359,9 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
         ? Math.min(100, Math.max(1, Math.round((currentTime / duration) * 100)))
         : existing.progress || 0;
 
+    const savedServer = cleanItem.server || existing.server || undefined;
+    const savedAnimeSource = cleanItem.animeSource || existing.animeSource || (cleanItem.playerType === 'anime' ? savedServer : undefined);
+
     const mergedItem: ContinueWatchingItem = {
       ...existing,
       ...cleanItem,
@@ -361,6 +375,8 @@ export function updateWatchProgress(item: Partial<ContinueWatchingItem>): void {
       episode: episode,
       last_season: season,
       last_episode: episode,
+      server: savedServer,
+      animeSource: savedAnimeSource,
       currentTime: currentTime > 0 ? currentTime : existing.currentTime || 0,
       duration: duration > 0 ? duration : existing.duration || 0,
       progress: progressPct,
@@ -394,9 +410,10 @@ export function getResumeHref(item: any): string {
 
   // VIP Player layer
   if (item.playerType === 'vip') {
+    const sQuery = item.server ? `&server=${encodeURIComponent(item.server)}` : '';
     return isTV
-      ? `/watch/servers/${item.id}?type=tv&season=${season}&episode=${episode}`
-      : `/watch/servers/${item.id}`;
+      ? `/watch/servers/${item.id}?type=tv&season=${season}&episode=${episode}${sQuery}`
+      : `/watch/servers/${item.id}${item.server ? `?server=${encodeURIComponent(item.server)}` : ''}`;
   }
 
   // Anime Player layer
@@ -411,16 +428,22 @@ export function getResumeHref(item: any): string {
     if (item.episodeId) {
       params.set('epId', item.episodeId);
     }
+    const animeSource = item.animeSource || item.server;
+    if (animeSource) {
+      params.set('source', animeSource);
+    }
     return `${base}?${params.toString()}`;
   }
 
   // Standard TV Show
   if (isTV) {
-    return `/watch/tv/${item.id}/${season}/${episode}`;
+    const sQuery = item.server ? `?server=${encodeURIComponent(item.server)}` : '';
+    return `/watch/tv/${item.id}/${season}/${episode}${sQuery}`;
   }
 
   // Standard Movie
-  return `/watch/${item.id}`;
+  const sQuery = item.server ? `?server=${encodeURIComponent(item.server)}` : '';
+  return `/watch/${item.id}${sQuery}`;
 }
 
 /**

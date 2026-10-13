@@ -343,6 +343,9 @@ function DirectPlayerHubContent({ id }: { id: string }) {
     if (savedTime > 1) {
       setPlaybackTimestamp(savedTime);
       playbackTimeRef.current = savedTime;
+    } else {
+      setPlaybackTimestamp(0);
+      playbackTimeRef.current = 0;
     }
   }, [id, type, season, episode]);
 
@@ -1121,6 +1124,7 @@ function DirectPlayerHubContent({ id }: { id: string }) {
               </div>
             ) : currentStreamUrl ? (
               <ArtPlayerComponent
+                key={`${id}_s${season || 1}_e${episode || 1}_${currentStreamUrl}`}
                 url={currentStreamUrl}
                 poster={backdropUrl || ''}
                 subtitles={artPlayerSubtitles}

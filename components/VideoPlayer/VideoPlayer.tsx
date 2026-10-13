@@ -64,9 +64,17 @@ export default function VideoPlayer({
 
   const storageKey = `streamnet_server_${tmdbId}`;
 
-  // Restore server & language choice for this movie/show from localStorage / continueWatching on mount
+  // Restore server & language choice for this movie/show from URL param / localStorage / continueWatching on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlServer = urlParams.get('server');
+      if (urlServer && SERVERS.some(s => s.id === urlServer && s.enabled !== false)) {
+        setActiveServer(urlServer);
+        localStorage.setItem(storageKey, urlServer);
+        return;
+      }
+
       const savedServer = localStorage.getItem(storageKey);
       if (savedServer && SERVERS.some(s => s.id === savedServer && s.enabled !== false)) {
         setActiveServer(savedServer);
@@ -78,6 +86,7 @@ export default function VideoPlayer({
             const match = Array.isArray(list) && list.find((m: any) => String(m.id) === String(tmdbId));
             if (match?.server && SERVERS.some(s => s.id === match.server && s.enabled !== false)) {
               setActiveServer(match.server);
+              localStorage.setItem(storageKey, match.server);
             }
             if (match?.audioType) {
               setSelectedLanguage(match.audioType);
@@ -430,7 +439,7 @@ export default function VideoPlayer({
           {isDirectMode ? (
             <div className="w-full h-[64vw] max-h-[420px] min-h-[250px] sm:h-[56vw] sm:max-h-[520px] md:h-[650px] md:max-h-[80vh] md:min-h-[540px] lg:h-[720px] xl:h-[780px]">
               <HlsPlayer
-                key={activeServer}
+                key={`${activeServer}_s${season || 1}_e${episode || 1}`}
                 serverId={activeServer}
                 tmdbId={tmdbId}
                 type={type}
@@ -448,6 +457,7 @@ export default function VideoPlayer({
             </div>
           ) : activeServer === 'rivestream' ? (
             <RivePlayer
+              key={`rive_s${season || 1}_e${episode || 1}`}
               tmdbId={tmdbId}
               type={type}
               season={season}

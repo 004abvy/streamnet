@@ -47,18 +47,23 @@ export default function WatchPage({
           // Add/update to continue watching ONLY if already released
           if (!isUpcomingMedia(data)) {
             try {
+              const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+              const urlServer = urlParams?.get('server');
               const stored = localStorage.getItem('continueWatching');
               const list = stored ? JSON.parse(stored) : [];
+              const existing = list.find((i: any) => String(i.id) === String(data.id || id));
               const filtered = list.filter((i: any) => String(i.id) !== String(data.id || id));
               const itemToSave = {
+                ...existing,
                 id: data.id || Number(id),
-                title: data.title || data.name,
-                name: data.name || data.title,
-                poster_path: data.poster_path,
-                backdrop_path: data.backdrop_path,
-                vote_average: data.vote_average,
-                release_date: data.release_date || data.first_air_date,
-                media_type: 'movie'
+                title: data.title || data.name || existing?.title,
+                name: data.name || data.title || existing?.name,
+                poster_path: data.poster_path || existing?.poster_path,
+                backdrop_path: data.backdrop_path || existing?.backdrop_path,
+                vote_average: data.vote_average ?? existing?.vote_average,
+                release_date: data.release_date || data.first_air_date || existing?.release_date,
+                media_type: 'movie',
+                server: urlServer || existing?.server || 'auto-fast',
               };
               saveContinueWatching([itemToSave, ...filtered]);
             } catch (e) {

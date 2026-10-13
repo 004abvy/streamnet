@@ -9,7 +9,7 @@ import { Clock, RotateCcw, X } from 'lucide-react';
 import '@vidstack/react/player/styles/default/theme.css';
 import '@vidstack/react/player/styles/default/layouts/video.css';
 
-import { getSavedProgress, clearWatchProgress, updateWatchProgress } from '../utils/userStorage';
+import { getSavedProgress, clearWatchProgress, updateWatchProgress, getProgressKey } from '../utils/userStorage';
 
 export interface VidstackTrack {
   src: string;
@@ -102,6 +102,12 @@ export default function VidstackPlayer({
   useEffect(() => {
     setActiveMediaSrc(src);
     resumeSeekAppliedRef.current = false;
+    hasResumedRef.current = null;
+    if (player.current) {
+      try {
+        player.current.currentTime = 0;
+      } catch {}
+    }
   }, [src, episodeId, season, episode]);
 
   // Suppress MediaSession API metadata to prevent iOS Dynamic Island & Lockscreen/Widget persistence
@@ -431,6 +437,12 @@ export default function VidstackPlayer({
         player.current.currentTime = targetProgress;
         resumeSeekAppliedRef.current = true;
       }
+    } else {
+      // Brand new episode or starting from beginning: strictly seek to 0:00
+      try {
+        player.current.currentTime = 0;
+      } catch {}
+      resumeSeekAppliedRef.current = true;
     }
   };
 
@@ -594,9 +606,10 @@ export default function VidstackPlayer({
           const currentTime = detail.currentTime;
           const dur = player.current?.duration || 0;
           if (tmdbId && typeof currentTime === 'number' && currentTime > 0) {
-            const lastSaved = parseFloat(localStorage.getItem(`streamnet_progress_${tmdbId}_last_save`) || '0');
+            const progressSaveKey = getProgressKey(tmdbId, mediaType, season, episode, episodeId);
+            const lastSaved = parseFloat(localStorage.getItem(`${progressSaveKey}_last_save`) || '0');
             if (Math.abs(currentTime - lastSaved) >= 1.5) {
-              localStorage.setItem(`streamnet_progress_${tmdbId}_last_save`, currentTime.toString());
+              localStorage.setItem(`${progressSaveKey}_last_save`, currentTime.toString());
               updateWatchProgress({
                 id: tmdbId,
                 title,

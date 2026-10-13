@@ -93,9 +93,18 @@ export default function Playeranime({
       const urlParams = new URLSearchParams(window.location.search);
       const paramEpId = urlParams.get("epId");
       const paramEp = urlParams.get("ep") || urlParams.get("episode");
+      const paramSource = urlParams.get("source");
 
       if (paramEpId) targetEpisodeIdRef.current = paramEpId;
       if (paramEp) targetEpisodeNumRef.current = parseInt(paramEp, 10);
+      if (paramSource && (paramSource === "anivexa" || paramSource === "hianime" || paramSource === "aniwatch")) {
+        setActiveSource(paramSource as AnimeSource);
+      } else if (tmdbId) {
+        const savedSource = localStorage.getItem(`streamnet_anime_source_${tmdbId}`);
+        if (savedSource && (savedSource === "anivexa" || savedSource === "hianime" || savedSource === "aniwatch")) {
+          setActiveSource(savedSource as AnimeSource);
+        }
+      }
 
       const stored = localStorage.getItem("continueWatching");
       if (stored) {
@@ -113,13 +122,36 @@ export default function Playeranime({
           if (match.audioType === "dub" || match.audioType === "sub") {
             setAudioType(match.audioType);
           }
-          if (match.animeSource && (match.animeSource === "anivexa" || match.animeSource === "hianime" || match.animeSource === "aniwatch")) {
-            setActiveSource(match.animeSource);
+          const matchedSource = match.animeSource || match.server;
+          if (!paramSource && matchedSource && (matchedSource === "anivexa" || matchedSource === "hianime" || matchedSource === "aniwatch")) {
+            setActiveSource(matchedSource as AnimeSource);
           }
         }
       }
     } catch {}
   }, [tmdbId, animeTitle]);
+
+  const handleSelectAnimeSource = (source: AnimeSource) => {
+    setActiveSource(source);
+    if (tmdbId) {
+      try {
+        localStorage.setItem(`streamnet_anime_source_${tmdbId}`, source);
+        updateWatchProgress({
+          id: tmdbId,
+          title: animeTitle,
+          media_type: type,
+          season: activeGroup?.seasonNumber || 1,
+          episode: selectedEpisode?.number || 1,
+          episodeId: selectedEpisodeId || undefined,
+          server: source,
+          animeSource: source,
+          playerType: 'anime',
+          audioType,
+          poster_path: posterPath || animeCover || backdropPath,
+        });
+      } catch {}
+    }
+  };
 
   // Helper to fetch with timeout
   const fetchWithTimeout = async (
@@ -1214,7 +1246,7 @@ export default function Playeranime({
               <div className="flex items-center bg-white/[0.06] p-1 rounded-full border border-white/10 gap-1">
                 <button
                   type="button"
-                  onClick={() => setActiveSource("anivexa")}
+                  onClick={() => handleSelectAnimeSource("anivexa")}
                   className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "anivexa"
                       ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
@@ -1226,7 +1258,7 @@ export default function Playeranime({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveSource("hianime")}
+                  onClick={() => handleSelectAnimeSource("hianime")}
                   className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "hianime"
                       ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
@@ -1238,7 +1270,7 @@ export default function Playeranime({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveSource("aniwatch")}
+                  onClick={() => handleSelectAnimeSource("aniwatch")}
                   className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeSource === "aniwatch"
                       ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
@@ -1335,11 +1367,23 @@ export default function Playeranime({
                 ) : (
                   <div key={`vidstack-container-${streamUrl}`} className="relative w-full h-full">
                     <VidstackPlayer
+                      key={`anime_${activeSource}_s${activeGroup?.seasonNumber || 1}_e${selectedEpisode?.number || 1}_${selectedEpisodeId || 'ep'}`}
                       src={streamUrl}
                       tracks={vidstackTracks}
                       autoPlay={true}
                       onDurationChange={(dur) => {
                         if (dur > 0) setStreamDuration(dur);
+                      }}
+                      onEnded={() => {
+                        if (type !== 'movie' && activeGroup?.episodes) {
+                          const currentIndex = activeGroup.episodes.findIndex((e: any) => e.id === selectedEpisodeId);
+                          if (currentIndex !== -1 && currentIndex + 1 < activeGroup.episodes.length) {
+                            const nextEp = activeGroup.episodes[currentIndex + 1];
+                            if (nextEp) {
+                              setSelectedEpisodeId(nextEp.id);
+                            }
+                          }
+                        }
                       }}
                       title={
                         type === "movie"
