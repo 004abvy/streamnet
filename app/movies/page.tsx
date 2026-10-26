@@ -308,7 +308,7 @@ function MoviesContent() {
           <button
             onClick={() => updateQueryParams('popular', '', 1)}
             style={{
-              background: '#f59e0b',
+              background: '#ffffff',
               color: '#000',
               border: 'none',
               padding: '0.6rem 1.2rem',

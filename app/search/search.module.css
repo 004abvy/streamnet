@@ -52,8 +52,8 @@
 }
 
 .searchInput:focus {
-  border-color: rgba(245, 158, 11, 0.6);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 12px 35px rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 12px 35px rgba(0, 0, 0, 0.6);
 }
 
 .yearInput {
@@ -74,20 +74,20 @@
 }
 
 .yearInput:focus {
-  border-color: rgba(245, 158, 11, 0.6);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 12px 35px rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 12px 35px rgba(0, 0, 0, 0.6);
 }
 
 .searchSubmitBtn {
   padding: 0.75rem 1.6rem;
   border-radius: 9999px;
   border: none;
-  background: #f59e0b;
+  background: #ffffff;
   color: #000;
   font-weight: 700;
   cursor: pointer;
   font-size: 0.92rem;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
   transition: all 0.25s ease;
   white-space: nowrap;
   flex-shrink: 0;
@@ -97,9 +97,9 @@
 }
 
 .searchSubmitBtn:hover {
-  background: #d97706;
+  background: #e2e8f0;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
 }
 
 .searchSubmitBtn:active {
@@ -178,8 +178,8 @@
 }
 
 .suggestionBadge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
@@ -187,7 +187,7 @@
 }
 
 .suggestionRating {
-  color: #f59e0b;
+  color: #ffffff;
   font-weight: 700;
 }
 

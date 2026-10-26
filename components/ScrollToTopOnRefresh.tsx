@@ -18,16 +18,6 @@ export default function ScrollToTopOnRefresh() {
 
     resetScroll();
 
-    // Fire resetScroll at multiple intervals during load to override browser scroll restoration
-    const timers = [
-      setTimeout(resetScroll, 0),
-      setTimeout(resetScroll, 50),
-      setTimeout(resetScroll, 150),
-      setTimeout(resetScroll, 300),
-      setTimeout(resetScroll, 500),
-      setTimeout(resetScroll, 1000),
-    ];
-
     const handleBeforeUnload = () => {
       resetScroll();
     };
@@ -37,7 +27,6 @@ export default function ScrollToTopOnRefresh() {
     window.addEventListener('load', resetScroll);
 
     return () => {
-      timers.forEach((t) => clearTimeout(t));
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handleBeforeUnload);
       window.removeEventListener('load', resetScroll);

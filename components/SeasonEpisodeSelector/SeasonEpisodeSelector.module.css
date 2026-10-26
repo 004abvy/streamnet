@@ -64,14 +64,14 @@
 .seasonSelectBtn:hover,
 .seasonSelectBtn:focus {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.1);
 }
 
 .episodeCountSpan {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.15rem 0.55rem;
   border-radius: 9999px;
   font-size: 0.75rem;
@@ -125,7 +125,7 @@
 }
 
 .dropdownMenuList::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b;
+  background: #ffffff;
 }
 
 .dropdownMenuItem {
@@ -148,14 +148,14 @@
 }
 
 .dropdownMenuItemActive {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-weight: 600;
 }
 
 .dropdownMenuItemActive:hover {
-  background: rgba(245, 158, 11, 0.22);
-  color: #fbbf24;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
 .dropdownEpisodeCount {
@@ -226,10 +226,10 @@
 
 .subBatchPillActive {
   color: #000000;
-  background: #f59e0b;
-  border-color: #f59e0b;
+  background: #ffffff;
+  border-color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
 
 /* Episode Skeletons */
@@ -347,9 +347,9 @@
 }
 
 .searchBox:focus-within {
-  border-color: rgba(245, 158, 11, 0.55);
+  border-color: rgba(255, 255, 255, 0.45);
   background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 .searchIcon {
@@ -429,7 +429,7 @@
 }
 
 .episodeGrid::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b;
+  background: #ffffff;
 }
 
 .episodeCard {
@@ -447,7 +447,7 @@
 }
 
 .episodeCard:hover {
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: rgba(255, 255, 255, 0.35);
   background: rgba(30, 30, 42, 0.85);
   transform: translateY(-1px);
 }
@@ -458,9 +458,9 @@
 }
 
 .activeEpisodeCard {
-  border: 1.5px solid #f59e0b;
-  background: rgba(245, 158, 11, 0.08);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+  border: 1.5px solid #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.12);
 }
 
 .thumbnailWrapper {
@@ -510,7 +510,7 @@
   position: absolute;
   bottom: 0.45rem;
   right: 0.45rem;
-  background: #f59e0b;
+  background: #ffffff;
   color: #000000;
   font-weight: 800;
   font-size: 0.62rem;
@@ -529,7 +529,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f59e0b;
+  color: #ffffff;
   background: rgba(0, 0, 0, 0.45);
   opacity: 0;
   transform: scale(0.85);
@@ -561,7 +561,7 @@
 }
 
 .activeEpisodeCard .episodeTitle {
-  color: #f59e0b;
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -584,7 +584,7 @@
 }
 
 .episodeCard:hover .downloadIcon {
-  color: #f59e0b;
+  color: #ffffff;
   transform: scale(1.1);
 }
 
@@ -678,7 +678,7 @@
 }
 
 .tabsBar::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b;
+  background: #ffffff;
 }
 
 .tabButton {
@@ -705,17 +705,17 @@
 }
 
 .tabButtonActive {
-  background: #f59e0b !important;
+  background: #ffffff !important;
   color: #000000 !important;
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+  border-color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
   font-weight: 700;
 }
 
 .tabButtonActive:hover {
-  background: #fbbf24 !important;
+  background: #e2e8f0 !important;
   color: #000000 !important;
-  border-color: #fbbf24 !important;
+  border-color: #e2e8f0 !important;
 }
 
 .tabBadge {
@@ -774,10 +774,10 @@
 }
 
 .subBatchPillActive {
-  background: rgba(245, 158, 11, 0.18) !important;
-  color: #f59e0b !important;
-  border-color: rgba(245, 158, 11, 0.5) !important;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
   font-weight: 700;
 }
 

@@ -40,16 +40,26 @@ interface HeroCarouselProps {
   isLoading?: boolean;
 }
 
+const heroStylesCache: {
+  fonts: Record<number, string>;
+  colors: Record<number, string>;
+  buttonColors: Record<number, string>;
+} = {
+  fonts: {},
+  colors: {},
+  buttonColors: {},
+};
+
 export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [movieFonts, setMovieFonts] = useState<Record<number, string>>({});
-  const [movieColors, setMovieColors] = useState<Record<number, string>>({});
-  const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>({});
-  const [isStylesLoading, setIsStylesLoading] = useState(true);
+  const [movieFonts, setMovieFonts] = useState<Record<number, string>>(() => heroStylesCache.fonts);
+  const [movieColors, setMovieColors] = useState<Record<number, string>>(() => heroStylesCache.colors);
+  const [movieButtonColors, setMovieButtonColors] = useState<Record<number, string>>(() => heroStylesCache.buttonColors);
+  const [isStylesLoading, setIsStylesLoading] = useState(() => Object.keys(heroStylesCache.fonts).length === 0);
 
   const profileMenuTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -102,12 +112,15 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
   useEffect(() => {
     let isMounted = true;
     if (!visibleMovies.length) {
-      // If there are no movies yet, keep styles loading true so it shows the skeleton
-      setIsStylesLoading(true);
+      if (Object.keys(heroStylesCache.fonts).length === 0) {
+        setIsStylesLoading(true);
+      }
       return;
     }
     
-    setIsStylesLoading(true);
+    if (Object.keys(heroStylesCache.fonts).length === 0) {
+      setIsStylesLoading(true);
+    }
 
     async function loadFonts() {
       try {
@@ -126,7 +139,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
             : Promise.resolve('linear-gradient(135deg, #ffffff, #e0e0e0)');
           const buttonColorPromise = movie.poster_path
             ? getVibrantColor(`https://image.tmdb.org/t/p/w300${movie.poster_path}`)
-            : Promise.resolve('#eab308');
+            : Promise.resolve('#ffffff');
 
           const [font, color, buttonColor] = await Promise.all([fontPromise, colorPromise, buttonColorPromise]);
           
@@ -143,9 +156,13 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
         }
 
         if (!isMounted) return;
-        setMovieFonts(fontMapping);
-        setMovieColors(colorMapping);
-        setMovieButtonColors(buttonColorMapping);
+        heroStylesCache.fonts = { ...heroStylesCache.fonts, ...fontMapping };
+        heroStylesCache.colors = { ...heroStylesCache.colors, ...colorMapping };
+        heroStylesCache.buttonColors = { ...heroStylesCache.buttonColors, ...buttonColorMapping };
+
+        setMovieFonts({ ...heroStylesCache.fonts });
+        setMovieColors({ ...heroStylesCache.colors });
+        setMovieButtonColors({ ...heroStylesCache.buttonColors });
 
         // Preload fonts by injecting link tags
         fontFamilies.forEach(fontFamily => {
@@ -382,13 +399,13 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                     href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
                     className={styles.watchBtn}
                     style={{ 
-                      backgroundColor: movieButtonColors[currentMovie.id] || '#eab308',
+                      backgroundColor: movieButtonColors[currentMovie.id] || '#ffffff',
                       color: '#000000', 
                       border: 'none',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      boxShadow: `0 0 16px ${movieButtonColors[currentMovie.id] ? movieButtonColors[currentMovie.id] + '66' : 'rgba(234, 179, 8, 0.4)'}`
+                      boxShadow: `0 0 16px ${movieButtonColors[currentMovie.id] ? movieButtonColors[currentMovie.id] + '66' : 'rgba(255, 255, 255, 0.4)'}`
                     }}
                   >
                     <Calendar size={14} /> Upcoming • {getFormattedReleaseDate(currentMovie)}
@@ -410,7 +427,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                       return isTvShow ? `/watch/tv/${currentMovie.id}/1/1` : `/watch/${currentMovie.id}`;
                     })()}
                     className={styles.watchBtn}
-                    style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#eab308', color: '#000000', border: 'none' }}
+                    style={{ backgroundColor: movieButtonColors[currentMovie.id] || '#ffffff', color: '#000000', border: 'none' }}
                     onClick={() => {
                       try {
                         const stored = localStorage.getItem('continueWatching');
@@ -436,7 +453,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                 <Link
                   href={isTvShow ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`}
                   className={styles.detailsBtn}
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: `1px solid ${movieButtonColors[currentMovie.id] || '#eab308'}`, color: '#ffffff' }}
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: `1px solid ${movieButtonColors[currentMovie.id] || '#ffffff'}`, color: '#ffffff' }}
                 >
                   Details
                 </Link>
@@ -446,7 +463,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                   title={saved ? 'Remove Bookmark' : 'Add Bookmark'}
                   onClick={() => setSaved(!saved)}
                 >
-                  <Bookmark size={16} fill={saved ? '#eab308' : 'none'} color={saved ? '#eab308' : '#a1a1aa'} />
+                  <Bookmark size={16} fill={saved ? '#ffffff' : 'none'} color={saved ? '#ffffff' : '#a1a1aa'} />
                 </button>
 
                 <button

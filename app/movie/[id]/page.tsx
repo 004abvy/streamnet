@@ -23,8 +23,8 @@ export default function MovieDetailsPage({
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [showAnimePlayer, setShowAnimePlayer] = useState(false);
   const [savedResume, setSavedResume] = useState<any>(null);
-  const [posterColor, setPosterColor] = useState<string>('#eab308');
-  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #eab308)');
+  const [posterColor, setPosterColor] = useState<string>('#ffffff');
+  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #94a3b8)');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -183,7 +183,12 @@ export default function MovieDetailsPage({
           type="movie"
           posterPath={movie.poster_path}
           backdropPath={movie.backdrop_path}
-          onClose={() => setShowAnimePlayer(false)} 
+          onClose={() => {
+            setShowAnimePlayer(false);
+            if (typeof window !== 'undefined' && window.location.search.includes('playAnime=true')) {
+              router.replace(`/movie/${id}`);
+            }
+          }} 
         />
       )}
       {/* Full-Bleed Background Backdrop */}

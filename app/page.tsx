@@ -27,14 +27,18 @@ interface HomeMediaItem {
   media_type?: string;
 }
 
-export default function Home() {
-  const { user } = useAuth();
-  const [trendingMovies, setTrendingMovies] = useState<HomeMediaItem[]>([]);
-  const [trendingTv, setTrendingTv] = useState<HomeMediaItem[]>([]);
-  const [upcomingMovies, setUpcomingMovies] = useState<HomeMediaItem[]>([]);
-  const [upcomingTv, setUpcomingTv] = useState<HomeMediaItem[]>([]);
-  const [continueWatching, setContinueWatching] = useState<HomeMediaItem[]>([]);
-  const [loading, setLoading] = useState(true);
+let hasAnimatedIntro = false;
+
+interface HomeDataCache {
+  trendingMovies: HomeMediaItem[];
+  trendingTv: HomeMediaItem[];
+  upcomingMovies: HomeMediaItem[];
+  upcomingTv: HomeMediaItem[];
+}
+
+let memoryHomeCache: HomeDataCache | null = null;
+
+function ScrollToTopButton() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -54,13 +58,75 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  if (!mounted || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <button
+      type="button"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className={styles.scrollTopBtn}
+      aria-label="Scroll to top"
+      title="Scroll to top"
+      style={{
+        opacity: showScrollTop ? 1 : 0,
+        pointerEvents: showScrollTop ? 'auto' : 'none',
+        transform: showScrollTop ? 'translateY(0)' : 'translateY(16px)',
+      }}
+    >
+      <ArrowUp size={18} strokeWidth={2.5} />
+    </button>,
+    document.body
+  );
+}
+
+export default function Home() {
+  const { user } = useAuth();
+  const [trendingMovies, setTrendingMovies] = useState<HomeMediaItem[]>([]);
+  const [trendingTv, setTrendingTv] = useState<HomeMediaItem[]>([]);
+  const [upcomingMovies, setUpcomingMovies] = useState<HomeMediaItem[]>([]);
+  const [upcomingTv, setUpcomingTv] = useState<HomeMediaItem[]>([]);
+  const [continueWatching, setContinueWatching] = useState<HomeMediaItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [hasAnimated, setHasAnimated] = useState<boolean>(false);
+
   useEffect(() => {
-    // Force scroll to top on page refresh
-    if (typeof window !== 'undefined') {
-      window.history.scrollRestoration = 'manual';
-      window.scrollTo(0, 0);
+    // Hydrate cached data immediately on client mount without causing SSR mismatch
+    if (memoryHomeCache?.trendingMovies?.length) {
+      setTrendingMovies(memoryHomeCache.trendingMovies);
+      setTrendingTv(memoryHomeCache.trendingTv || []);
+      setUpcomingMovies(memoryHomeCache.upcomingMovies || []);
+      setUpcomingTv(memoryHomeCache.upcomingTv || []);
+      setLoading(false);
+    } else {
+      try {
+        const stored = sessionStorage.getItem('home_data_cache');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.trendingMovies?.length) {
+            memoryHomeCache = parsed;
+            setTrendingMovies(parsed.trendingMovies);
+            setTrendingTv(parsed.trendingTv || []);
+            setUpcomingMovies(parsed.upcomingMovies || []);
+            setUpcomingTv(parsed.upcomingTv || []);
+            setLoading(false);
+          }
+        }
+      } catch {}
     }
 
+    if (hasAnimatedIntro) {
+      setHasAnimated(true);
+    } else {
+      try {
+        if (sessionStorage.getItem('home_has_animated') === 'true') {
+          hasAnimatedIntro = true;
+          setHasAnimated(true);
+        }
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
     const loadContinueWatching = () => {
       try {
         const stored = localStorage.getItem('continueWatching');
@@ -117,30 +183,48 @@ export default function Home() {
       fetch(`/api/tv/upcoming`, { signal: controller.signal }).then(res => res.ok ? res.json() : null)
     ])
       .then(([moviesData, tvData, upMoviesData, upTvData]) => {
+        let sortedMovies = memoryHomeCache?.trendingMovies || [];
+        let sortedTv = memoryHomeCache?.trendingTv || [];
+        let sortedUpMovies = memoryHomeCache?.upcomingMovies || [];
+        let sortedUpTv = memoryHomeCache?.upcomingTv || [];
+
         if (moviesData?.results) {
-          const sorted = [...moviesData.results].sort((a, b) => {
+          sortedMovies = [...moviesData.results].sort((a, b) => {
             const aUp = isUpcomingMedia(a) ? 1 : 0;
             const bUp = isUpcomingMedia(b) ? 1 : 0;
             return aUp - bUp;
           });
-          setTrendingMovies(sorted);
+          setTrendingMovies(sortedMovies);
         }
         if (tvData?.results) {
-          const sorted = [...tvData.results].sort((a, b) => {
+          sortedTv = [...tvData.results].sort((a, b) => {
             const aUp = isUpcomingMedia(a) ? 1 : 0;
             const bUp = isUpcomingMedia(b) ? 1 : 0;
             return aUp - bUp;
           });
-          setTrendingTv(sorted);
+          setTrendingTv(sortedTv);
         }
         if (upMoviesData?.results) {
           const onlyUpcoming = upMoviesData.results.filter((m: any) => isUpcomingMedia(m));
-          setUpcomingMovies(onlyUpcoming.length > 0 ? onlyUpcoming : upMoviesData.results);
+          sortedUpMovies = onlyUpcoming.length > 0 ? onlyUpcoming : upMoviesData.results;
+          setUpcomingMovies(sortedUpMovies);
         }
         if (upTvData?.results) {
           const onlyUpcoming = upTvData.results.filter((t: any) => isUpcomingMedia(t));
-          setUpcomingTv(onlyUpcoming.length > 0 ? onlyUpcoming : upTvData.results);
+          sortedUpTv = onlyUpcoming.length > 0 ? onlyUpcoming : upTvData.results;
+          setUpcomingTv(sortedUpTv);
         }
+
+        memoryHomeCache = {
+          trendingMovies: sortedMovies,
+          trendingTv: sortedTv,
+          upcomingMovies: sortedUpMovies,
+          upcomingTv: sortedUpTv,
+        };
+
+        try {
+          sessionStorage.setItem('home_data_cache', JSON.stringify(memoryHomeCache));
+        } catch {}
       })
       .catch(err => {
         if (err?.name !== 'AbortError') {
@@ -158,109 +242,57 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo(0, 0);
-    }
-  }, [loading]);
+  const contentSections = (
+    <>
+      <ProvidersSection />
+
+      {continueWatching.length > 0 && !loading && (
+        <PosterCarousel
+          title="Continue Watching"
+          movies={continueWatching}
+          viewAllLink="/continue-watching"
+          onClear={handleClearContinueWatching}
+          onRemoveItem={handleRemoveContinueWatchingItem}
+        />
+      )}
+
+      <GenreExplorerSection />
+      <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" isLoading={loading} />
+      <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
+      <TrendingSection title="Upcoming Movies" items={upcomingMovies} viewAllLink="/movies?filter=upcoming" isLoading={loading} />
+      <TrendingSection title="Upcoming Series" items={upcomingTv} viewAllLink="/tv?filter=upcoming" isLoading={loading} />
+    </>
+  );
 
   return (
     <main className={styles.main}>
       <HeroCarousel movies={trendingMovies} isLoading={loading} />
 
-      <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+      {hasAnimated ? (
+        <div style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}>
+          {contentSections}
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          onAnimationComplete={() => {
+            hasAnimatedIntro = true;
+            try {
+              sessionStorage.setItem('home_has_animated', 'true');
+            } catch {}
+            setHasAnimated(true);
+          }}
+          style={{ marginTop: '2rem', position: 'relative', zIndex: 10 }}
         >
-          <ProvidersSection />
+          {contentSections}
         </motion.div>
-
-        {continueWatching.length > 0 && !loading && (
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }} 
-            whileInView={{ opacity: 1, y: 0 }} 
-            viewport={{ once: true, margin: '-50px' }} 
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
-          >
-            <PosterCarousel
-              title="Continue Watching"
-              movies={continueWatching}
-              viewAllLink="/continue-watching"
-              onClear={handleClearContinueWatching}
-              onRemoveItem={handleRemoveContinueWatchingItem}
-            />
-          </motion.div>
-        )}
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-        >
-          <GenreExplorerSection />
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
-        >
-          <TrendingSection title="Trending Movies" items={trendingMovies} viewAllLink="/movies" isLoading={loading} />
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.35 }}
-        >
-          <TrendingSection title="Trending Series" items={trendingTv} viewAllLink="/tv" isLoading={loading} />
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
-        >
-          <TrendingSection title="Upcoming Movies" items={upcomingMovies} viewAllLink="/movies?filter=upcoming" isLoading={loading} />
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          whileInView={{ opacity: 1, y: 0 }} 
-          viewport={{ once: true, margin: '-50px' }} 
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.45 }}
-        >
-          <TrendingSection title="Upcoming Series" items={upcomingTv} viewAllLink="/tv?filter=upcoming" isLoading={loading} />
-        </motion.div>
-      </div>
+      )}
 
       <Footer />
       
-      {/* Sleek Floating Scroll to Top Button */}
-      {mounted && typeof document !== 'undefined' && createPortal(
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className={styles.scrollTopBtn}
-          aria-label="Scroll to top"
-          title="Scroll to top"
-          style={{
-            opacity: showScrollTop ? 1 : 0,
-            pointerEvents: showScrollTop ? 'auto' : 'none',
-            transform: showScrollTop ? 'translateY(0)' : 'translateY(16px)',
-          }}
-        >
-          <ArrowUp size={18} strokeWidth={2.5} />
-        </button>,
-        document.body
-      )}
+      <ScrollToTopButton />
     </main>
   );
 }

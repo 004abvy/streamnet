@@ -92,10 +92,12 @@ const INITIAL_GENRES: Genre[] = [
   }
 ];
 
+let cachedGenres: Genre[] | null = null;
+
 export default function GenreExplorerSection() {
   const [contentType, setContentType] = useState<'movie' | 'tv'>('movie');
-  const [genres, setGenres] = useState<Genre[]>(INITIAL_GENRES);
-  const [isLoading, setIsLoading] = useState(true);
+  const [genres, setGenres] = useState<Genre[]>(() => cachedGenres || INITIAL_GENRES);
+  const [isLoading, setIsLoading] = useState(() => !cachedGenres);
 
   useEffect(() => {
     let isMounted = true;
@@ -151,6 +153,7 @@ export default function GenreExplorerSection() {
         }
 
         if (isMounted) {
+          cachedGenres = updatedGenres;
           setGenres(updatedGenres);
           setIsLoading(false);
         }

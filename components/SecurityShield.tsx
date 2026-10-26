@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { JavaScriptInjector } from "../utils/javascriptInjector";
 
 export default function SecurityShield() {
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    JavaScriptInjector.init();
 
     // 1. Block Keyboard Shortcuts for source inspection while allowing normal input
     const handleKeyDown = (e: KeyboardEvent) => {

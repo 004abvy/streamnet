@@ -419,11 +419,12 @@ export async function GET(
       const season = parts[3] || '1';
       const episode = parts[4] || '1';
       
+      const omssBase = process.env.OMSS_URL || 'http://localhost:5050';
       let upstreamUrl = '';
       if (mediaType === 'movie') {
-        upstreamUrl = `http://localhost:4000/v1/movies/${tmdbId}`;
+        upstreamUrl = `${omssBase}/v1/movies/${tmdbId}`;
       } else {
-        upstreamUrl = `http://localhost:4000/v1/tv/${tmdbId}/seasons/${season}/episodes/${episode}`;
+        upstreamUrl = `${omssBase}/v1/tv/${tmdbId}/seasons/${season}/episodes/${episode}`;
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';

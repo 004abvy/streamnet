@@ -244,7 +244,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                   src={getMediaPosterUrl(movie)}
                   alt={displayTitle}
                   className={styles.poster}
-                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (movie.backdrop_path && !target.src.includes(movie.backdrop_path)) {
@@ -308,7 +308,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
 
                 <div className={styles.info}>
                   {!isContinue && isUpcomingMedia(movie) ? (
-                    <div className={styles.rating} style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))', color: '#000', fontWeight: 800 }}>
+                    <div className={styles.rating} style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(203, 213, 225, 0.95))', color: '#000000', fontWeight: 800 }}>
                       SOON
                     </div>
                   ) : movie.vote_average > 0 ? (

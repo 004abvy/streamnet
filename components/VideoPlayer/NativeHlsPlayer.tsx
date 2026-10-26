@@ -233,7 +233,7 @@ export default function NativeHlsPlayer({
             className={styles.playerOption}
             onClick={() => setIsZoomed((prev) => !prev)}
             style={{
-              background: isZoomed ? '#f59e0b' : '#161622',
+              background: isZoomed ? '#ffffff' : '#161622',
               color: isZoomed ? '#000' : '#fff',
               padding: '0.25rem 0.55rem',
               borderRadius: '4px',

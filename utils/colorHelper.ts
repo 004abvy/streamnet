@@ -53,7 +53,7 @@ export async function getVibrantColor(imageUrl: string): Promise<string> {
       canvas.height = 1;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        resolve('#eab308');
+        resolve('#ffffff');
         return;
       }
       ctx.drawImage(img, 0, 0, 1, 1);
@@ -75,7 +75,7 @@ export async function getVibrantColor(imageUrl: string): Promise<string> {
       resolve(`rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`);
     };
     img.onerror = () => {
-      resolve('#eab308');
+      resolve('#ffffff');
     };
     img.src = imageUrl;
   });
@@ -92,11 +92,11 @@ export async function getPosterGradient(imageUrl: string): Promise<string> {
       canvas.height = 2;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        resolve('linear-gradient(135deg, #ffffff, #eab308)');
+        resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
         return;
       }
       ctx.drawImage(img, 0, 0, 2, 2);
-      const data = ctx.getImageData(0, 0, 2, 2).data;
+      const data = ctx.getImageData(0, 2, 2, 2).data;
 
       const boostVibrancy = (i: number) => {
         let r = data[i];
@@ -123,7 +123,7 @@ export async function getPosterGradient(imageUrl: string): Promise<string> {
       // Vibrant 4-stop gradient
       resolve(`linear-gradient(135deg, ${tl} 0%, ${tr} 33%, ${bl} 66%, ${br} 100%)`);
     };
-    img.onerror = () => resolve('linear-gradient(135deg, #ffffff, #eab308)');
+    img.onerror = () => resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
     img.src = imageUrl;
   });
 }

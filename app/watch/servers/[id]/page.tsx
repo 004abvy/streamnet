@@ -511,6 +511,18 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                 setActiveSubtitle(defaultSub.label);
               }
             }
+
+            // Auto-failover: If the initial stream is not verified in workingAudio, auto-switch to a verified working stream
+            const currentAlive = cleaned.some((t: any) => t.url === currentStreamUrl);
+            if (!currentAlive && cleaned.length > 0) {
+              const bestWorking = cleaned[0];
+              console.log('[watch] Initial stream failed verification (502/dead), auto-switching to working track:', bestWorking.label);
+              setCurrentStreamUrl(bestWorking.url);
+              setActiveAudioLabel(bestWorking.label);
+              if (artRef.current?.notice) {
+                artRef.current.notice.show = `Switched to working stream: ${bestWorking.label}`;
+              }
+            }
           }
           setScanStatusNotice(null);
         } else {
@@ -844,16 +856,17 @@ function DirectPlayerHubContent({ id }: { id: string }) {
         html: "Audio Language",
         width: 230,
         tooltip: activeAudioLabel || "Audio",
-        selector: unifiedAudioTracks.map(track => {
+        selector: unifiedAudioTracks.map((track, idx) => {
           const isSelected =
             activeAudioLabel === track.label ||
             activeAudioLabel?.toLowerCase() === track.label.toLowerCase();
 
           return {
+            name: `audio-opt-${track.id || idx}`,
             default: isSelected,
             html: `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:8px">
               <span style="font-weight:500; font-size:13px">${track.label}</span>
-              <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.08); color:#f59e0b">${track.badge}</span>
+              <span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.08); color:#ffffff">${track.badge}</span>
             </div>`,
             value: track.id,
             track: track,
@@ -1141,9 +1154,21 @@ function DirectPlayerHubContent({ id }: { id: string }) {
                   if (artRef.current?.video && (artRef.current.video.currentTime > 0 || artRef.current.video.readyState >= 1 || artRef.current.video.seeking)) {
                     return; // Video/audio is actively playing or seeking, ignore transient error
                   }
-                  // Do not automatically cycle streams on transient startup errors
+
+                  // Auto-failover: find an alternative track from unifiedAudioTracks that isn't the failing one
+                  const alternative = unifiedAudioTracks.find((t: any) => t.url !== currentStreamUrl);
+                  if (alternative) {
+                    console.log('[watch] Auto-switching away from failing stream to alternative:', alternative.label);
+                    setCurrentStreamUrl(alternative.url);
+                    setActiveAudioLabel(alternative.label);
+                    if (artRef.current?.notice) {
+                      artRef.current.notice.show = `Stream error (502). Switched to ${alternative.label}`;
+                    }
+                    return;
+                  }
+
                   if (artRef.current?.notice) {
-                    artRef.current.notice.show = 'Stream buffering issue. Please choose an audio track or server.';
+                    artRef.current.notice.show = 'Stream unavailable (502). Please select another audio track or server.';
                   }
                 }}
                 customSettings={customPlayerSettings}

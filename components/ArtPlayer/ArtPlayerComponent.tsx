@@ -85,8 +85,8 @@ export default function ArtPlayerComponent({
         audioContextRef.current = ctx;
         gainNodeRef.current = gain;
       }
-      if (audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume();
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume().catch(() => {});
       }
       if (gainNodeRef.current) {
         gainNodeRef.current.gain.value = gainValue;
@@ -147,7 +147,7 @@ export default function ArtPlayerComponent({
       subtitleOffset: false,
       miniProgressBar: true,
       playsInline: true,
-      theme: "#f59e0b",
+      theme: "#ffffff",
       airplay: true,
       layers: [
         {
@@ -226,6 +226,7 @@ export default function ArtPlayerComponent({
 
             let hasRestoredSeek = false;
             let mediaErrorRecoveries = 0;
+            let networkErrorRecoveries = 0;
             const applyInitialSeek = () => {
               if (hasRestoredSeek || !initialTime || initialTime <= 0) return;
               hasRestoredSeek = true;
@@ -356,11 +357,22 @@ export default function ArtPlayerComponent({
               if (data.fatal) {
                 switch (data.type) {
                   case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.warn(
-                      "[ArtPlayer HLS] Fatal network error, attempting recovery:",
-                      data,
-                    );
-                    hls.startLoad();
+                    if (networkErrorRecoveries < 2) {
+                      networkErrorRecoveries++;
+                      console.warn(
+                        `[ArtPlayer HLS] Fatal network error, attempting recovery (attempt ${networkErrorRecoveries}/2):`,
+                        data,
+                      );
+                      hls.startLoad();
+                    } else {
+                      console.warn(
+                        "[ArtPlayer HLS] Fatal network error persists after 2 retries, stopping reload loop.",
+                      );
+                      hls.stopLoad();
+                      artInstance.notice.show =
+                        "Stream unavailable (502). Switching to alternate stream...";
+                      artInstance.emit("error", data);
+                    }
                     break;
                   case Hls.ErrorTypes.MEDIA_ERROR:
                     if (mediaErrorRecoveries < 2) {
@@ -808,18 +820,22 @@ export default function ArtPlayerComponent({
 
   // Synchronize customSettings (e.g. Multi-Audio Language menu: Hindi, English, Japanese, etc.)
   useEffect(() => {
-    if (artInstanceRef.current?.setting && customSettings.length > 0) {
-      try {
-        customSettings.forEach((setting) => {
-          if (typeof artInstanceRef.current?.setting?.update === "function") {
-            artInstanceRef.current.setting.update(setting);
-          } else if (typeof artInstanceRef.current?.setting?.add === "function") {
-            artInstanceRef.current.setting.add(setting);
+    const art = artInstanceRef.current;
+    if (art?.setting && customSettings.length > 0) {
+      customSettings.forEach((setting, idx) => {
+        try {
+          const settingName = setting.name || `custom-setting-${idx}`;
+          const safeSetting = { ...setting, name: settingName };
+          const existing = art.setting.find(settingName);
+          if (existing) {
+            art.setting.update(safeSetting);
+          } else {
+            art.setting.add(safeSetting);
           }
-        });
-      } catch (e) {
-        console.warn("[ArtPlayer] Could not update customSettings:", e);
-      }
+        } catch {
+          // Gracefully ignore duplicate collisions or transient setting errors
+        }
+      });
     }
   }, [customSettings]);
 

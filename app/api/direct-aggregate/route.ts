@@ -33,6 +33,28 @@ export interface PrecheckedServer {
   availableLanguages: string[];
 }
 
+function isThumbnailTrack(url?: string, label?: string, kind?: string): boolean {
+  const u = String(url || '').toLowerCase();
+  const l = String(label || '').toLowerCase();
+  const k = String(kind || '').toLowerCase();
+  return (
+    k === 'thumbnails' ||
+    k === 'thumbnail' ||
+    k === 'metadata' ||
+    k === 'chapters' ||
+    u.includes('thumbnail') ||
+    u.includes('sprite') ||
+    u.includes('#xywh') ||
+    u.includes('/thumbnails/') ||
+    u.endsWith('.webp') ||
+    u.endsWith('.jpg') ||
+    u.endsWith('.jpeg') ||
+    u.endsWith('.png') ||
+    l.includes('thumbnail') ||
+    l.includes('sprite')
+  );
+}
+
 function normalizeSubtitle(rawLabel: string, rawLang: string = ''): { key: string; label: string; langCode: string } {
   const clean = rawLabel.trim();
   const lower = clean.toLowerCase();
@@ -604,7 +626,7 @@ export async function GET(request: NextRequest) {
         for (const c of captions) {
           const rawLabel = (c.label || c.language || '').trim();
           const file = c.file;
-          if (!file || !rawLabel) continue;
+          if (!file || !rawLabel || isThumbnailTrack(file, rawLabel, c.kind)) continue;
 
           const norm = normalizeSubtitle(rawLabel, c.language);
           if (!subtitleMap.has(norm.key)) {
@@ -702,7 +724,7 @@ export async function GET(request: NextRequest) {
         // Add subtitles from direct resolvers
         if (stream.subtitles && Array.isArray(stream.subtitles)) {
           for (const s of stream.subtitles) {
-            if (!s.url) continue;
+            if (!s.url || isThumbnailTrack(s.url, s.label, (s as any).kind)) continue;
             const rawLabel = (s.label || s.language || 'English').trim();
             const norm = normalizeSubtitle(rawLabel, s.language);
             // Direct4K subtitles override Rivestream captions (better sync)
@@ -753,7 +775,7 @@ export async function GET(request: NextRequest) {
         if (item.subtitles && Array.isArray(item.subtitles)) {
           for (const s of item.subtitles) {
             const subUrl = s.url || s.file || s.src;
-            if (!subUrl) continue;
+            if (!subUrl || isThumbnailTrack(subUrl, s.label || s.name, (s as any).kind)) continue;
             const rawLabel = (s.label || s.name || s.lang || s.language || 'English').trim();
             const norm = normalizeSubtitle(rawLabel, s.lang || s.language || s.srclang || 'en');
             const isEng = norm.langCode === 'en' || norm.label.toLowerCase().includes('eng');
@@ -781,20 +803,42 @@ export async function GET(request: NextRequest) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500);
         
-        // Use the original URL for health check to avoid routing through our own proxy
-        const targetUrl = new URL(track.url).searchParams.get('url') || track.url;
+        // Extract real target URL and headers
+        let targetUrl = new URL(track.url).searchParams.get('url') || track.url;
+        let probeHeaders: Record<string, string> = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+          ...(track.headers || {}),
+        };
+
+        if (targetUrl.includes('valhallastream.com') && (targetUrl.includes('?url=') || targetUrl.includes('&url='))) {
+          try {
+            const p = new URL(targetUrl);
+            const innerU = p.searchParams.get('url');
+            const innerH = p.searchParams.get('headers');
+            if (innerU) {
+              targetUrl = innerU;
+              if (innerH) {
+                try {
+                  Object.assign(probeHeaders, JSON.parse(innerH));
+                } catch {}
+              }
+            }
+          } catch {}
+        }
         
         const startTime = Date.now();
         const res = await fetch(targetUrl, {
-          method: 'HEAD',
+          method: 'GET',
           signal: controller.signal,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          }
+            ...probeHeaders,
+            'Range': 'bytes=0-500',
+          },
         });
         clearTimeout(timeoutId);
         
-        if (res.ok || res.status === 403 || res.status === 401) {
+        // Only mark truly alive if status is 200 or 206 (never accept 502, 500, 404, or 403)
+        if (res.ok) {
           console.log(`  [✅ Alive] ${track.id} (${Date.now() - startTime}ms)`);
           validTracks.push(track);
         } else {

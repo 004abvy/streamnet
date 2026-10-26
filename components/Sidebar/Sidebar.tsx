@@ -121,9 +121,13 @@ export default function Sidebar() {
   };
 
   const getIconColor = (link?: string, isAi?: boolean) => {
-    if (isAi) return '#eab308';
+    if (isAi) return '#ffffff';
     return isPathActive(link) ? '#ffffff' : 'rgba(255, 255, 255, 0.75)';
   };
+
+  if (pathname?.startsWith('/watch')) {
+    return null;
+  }
 
   return (
     <>

@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"npm run backend\" \"npm run anime-api\"",
+    "dev": "concurrently -n next,backend,anime -c green,cyan,magenta \"next dev\" \"npm run backend\" \"npm run anime:all\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "backend": "cd aPi-embeds-m3u8s/core && npm run dev",
-    "anime-api": "cd Anivexa-API && npm start"
+    "anime:anivexa": "cd Anivexa-API && node server.js",
+    "anime:aniwatch": "cd Aniwatch-Api-main/src && node inde.js",
+    "anime:hianime": "cd hianime-api-v2 && npx tsx index.ts",
+    "anime:all": "concurrently -n anivexa,aniwatch,hianime -c yellow,blue,magenta \"npm run anime:anivexa\" \"npm run anime:aniwatch\" \"npm run anime:hianime\"",
+    "anime-api": "npm run anime:all"
   },
   "dependencies": {
     "@consumet/extensions": "^1.8.8",

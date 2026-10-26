@@ -17,8 +17,8 @@ export default function WatchPage({
   const { id } = use(params);
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [posterColor, setPosterColor] = useState<string>('#eab308');
-  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #eab308)');
+  const [posterColor, setPosterColor] = useState<string>('#ffffff');
+  const [posterGradient, setPosterGradient] = useState<string>('linear-gradient(135deg, #ffffff, #94a3b8)');
 
   useEffect(() => {
     if (!id) return;

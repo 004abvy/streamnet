@@ -223,6 +223,11 @@ function convertSrtToVtt(raw: string, offsetSec: number = 0): string {
 
   // If already WebVTT
   if (vtt.startsWith('WEBVTT')) {
+    // Guard against thumbnail/sprite WebVTT tracks with image coordinates (e.g. thumbnails/sprite_0.webp#xywh=0,0,160,90)
+    if (/#xywh=|\.webp#|\.jpg#|\.png#/i.test(vtt) || /thumbnails?\/sprite/i.test(vtt)) {
+      return 'WEBVTT\n\n';
+    }
+
     if (offsetSec !== 0) {
       return vtt.replace(/((?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s*-->\s*((?:\d{2}:)?\d{2}:\d{2}\.\d{3})/g, (_m, s, e) => {
         return `${shiftVttTime(s, offsetSec)} --> ${shiftVttTime(e, offsetSec)}`;
@@ -261,6 +266,18 @@ export async function GET(request: NextRequest) {
       try {
         decodedUrl = decodeURIComponent(rawUrl);
       } catch {}
+    }
+
+    // Fast reject for thumbnail / sprite tracks requested as subtitles
+    if (/thumbnail|sprite|#xywh|\.webp/i.test(decodedUrl)) {
+      return new NextResponse('WEBVTT\n\n', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/vtt; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
     }
 
     const customReferer = searchParams.get('referer');

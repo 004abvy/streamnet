@@ -13,7 +13,7 @@ const server = require('./routes/server.js');
 const src = require('./routes/src1.js');
 
 const inde = express();
-const port = 3005;
+const port = process.env.PORT || 4001;
 
 
 try {

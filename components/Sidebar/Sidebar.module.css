@@ -440,3 +440,11 @@
     display: none;
   }
 }
+
+:global(body.hide-sidebar) .sidebar,
+:global(body.hide-sidebar) .bottomBar {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}

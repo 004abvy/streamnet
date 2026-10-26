@@ -225,7 +225,7 @@ export function getMediaPosterUrl(item: any): string {
         return trimmed;
       }
       const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-      return `https://image.tmdb.org/t/p/w780${cleanPath}`;
+      return `https://image.tmdb.org/t/p/w500${cleanPath}`;
     }
   }
 

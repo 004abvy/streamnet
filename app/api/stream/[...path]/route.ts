@@ -151,20 +151,33 @@ export async function GET(
       let lastErr: any = null;
 
       // 1. Direct Fetch from serverless Node with fast timeout
-      for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const directCandidate = await fetch(decodedUrl, {
+          cache: 'no-store',
+          headers: proxyFetchHeaders,
+          signal: AbortSignal.timeout(3000),
+        });
+        response = directCandidate;
+      } catch (err: any) {
+        lastErr = err;
+      }
+
+      // If unwrapped URL failed or returned 5xx and we had a wrapped valhalla URL, test original rawUrl
+      if ((!response || !response.ok) && decodedUrl !== rawUrl) {
         try {
-          const directCandidate = await fetch(decodedUrl, {
+          const rawCandidate = await fetch(rawUrl, {
             cache: 'no-store',
-            headers: proxyFetchHeaders,
-            signal: AbortSignal.timeout(3500),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+              'Referer': 'https://rivestream.ru/',
+              'Origin': 'https://rivestream.ru',
+            },
+            signal: AbortSignal.timeout(3000),
           });
-          response = directCandidate;
-          if (directCandidate.ok) {
-            break;
+          if (rawCandidate.ok) {
+            response = rawCandidate;
           }
-        } catch (err: any) {
-          lastErr = err;
-        }
+        } catch {}
       }
 
       // 2. Cloudflare Worker edge proxy fallback if direct fetch wasn't OK
@@ -172,7 +185,7 @@ export async function GET(
         try {
           const workerCandidate = await fetch(targetWorkerUrl, {
             cache: 'no-store',
-            signal: AbortSignal.timeout(3500),
+            signal: AbortSignal.timeout(3000),
           });
           if (workerCandidate.ok) {
             response = workerCandidate;
@@ -182,13 +195,25 @@ export async function GET(
         }
       }
 
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, HEAD',
+        'Access-Control-Allow-Headers': '*',
+      };
+
       if (!response) {
-        const errDetails = lastErr ? `${lastErr.name}: ${lastErr.message} | cause: ${JSON.stringify(lastErr.cause || {})} | stack: ${lastErr.stack}` : 'network error';
-        return new NextResponse(`Proxy fetch failed: ${errDetails}`, { status: 502 });
+        const errDetails = lastErr ? `${lastErr.name}: ${lastErr.message}` : 'network error';
+        return new NextResponse(`Proxy fetch failed: ${errDetails}`, {
+          status: 502,
+          headers: corsHeaders,
+        });
       }
 
       if (!response.ok) {
-        return new NextResponse(`Stream Fetch Error (${response.status})`, { status: response.status });
+        return new NextResponse(`Stream Fetch Error (${response.status})`, {
+          status: response.status,
+          headers: corsHeaders,
+        });
       }
 
       const contentType = response.headers.get('content-type') || '';
@@ -280,23 +305,41 @@ export async function GET(
       if (isVtt) streamContentType = 'text/vtt; charset=utf-8';
       if (isExplicitMp4) streamContentType = 'video/mp4';
         
-        // Unwrap FlixCloud HD-2 image segments
+        // Unwrap disguised image segments (TikTok CDN PNGs, FlixCloud WebP, etc.)
         const flixImageSegmentXorKey = new Uint8Array([157, 42, 241, 71, 179, 142, 92, 112, 166, 25, 228, 59, 216, 98, 15, 197]);
         const body = new Uint8Array(arrayBuffer);
-        const isWebp = body.length > 12 && body[0] === 0x52 && body[1] === 0x49 && body[2] === 0x46 && body[3] === 0x46 && body[8] === 0x57 && body[9] === 0x45 && body[10] === 0x42 && body[11] === 0x50;
-        const isPng = body.length > 8 && body[0] === 0x89 && body[1] === 0x50 && body[2] === 0x4e && body[3] === 0x47 && body[4] === 0x0d && body[5] === 0x0a && body[6] === 0x1a && body[7] === 0x0a;
         
         let offset = 0;
         let needsXor = false;
-        if (isWebp) {
-          offset = 12;
-          needsXor = body[offset] !== 0x47;
-        } else if (isPng) {
-          offset = 8;
-          needsXor = body[offset] !== 0x47;
+
+        // 1. Direct MPEG-TS check: 0x47 at index 0
+        if (body.length > 0 && body[0] === 0x47) {
+          offset = 0;
+          needsXor = false;
+        } else {
+          // 2. Scan first 1024 bytes for 188-byte MPEG-TS packet sync pattern (0x47 ... 0x47 ... 0x47)
+          const scanLimit = Math.min(body.length - 376, 1024);
+          for (let i = 0; i < scanLimit; i++) {
+            if (body[i] === 0x47 && body[i + 188] === 0x47 && body[i + 376] === 0x47) {
+              offset = i;
+              needsXor = false;
+              break;
+            }
+          }
+
+          // 3. Fallback: Check if it's XOR encrypted with FlixCloud key
+          if (offset === 0 && body.length > 12) {
+            const isWebp = body[0] === 0x52 && body[1] === 0x49 && body[2] === 0x46 && body[3] === 0x46 && body[8] === 0x57 && body[9] === 0x45 && body[10] === 0x42 && body[11] === 0x50;
+            const isPng = body[0] === 0x89 && body[1] === 0x50 && body[2] === 0x4e && body[3] === 0x47;
+            const candidateOffset = isWebp ? 12 : (isPng ? 8 : 0);
+            if (candidateOffset > 0 && ((body[candidateOffset] ^ flixImageSegmentXorKey[0]) === 0x47)) {
+              offset = candidateOffset;
+              needsXor = true;
+            }
+          }
         }
         
-        if (offset > 0) {
+        if (offset > 0 || needsXor) {
           const out = new Uint8Array(body.buffer, body.byteOffset + offset);
           if (needsXor) {
             for (let i = 0; i < out.length; i++) {

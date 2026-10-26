@@ -134,7 +134,7 @@ export async function GET(
       try {
         const anivexaRes = await fetch(
           `${ANIVEXA_URL}/episodes/anikoto/reanime/animegg/${mediaId}`,
-          { signal: AbortSignal.timeout(15000) }
+          { signal: AbortSignal.timeout(28000) }
         );
         if (anivexaRes.ok) {
           const data = await anivexaRes.json();

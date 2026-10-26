@@ -38,10 +38,13 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     let isMounted = true;
 
     const loadColors = async () => {
+      const upcomingItems = items.filter(isUpcomingMedia);
+      if (upcomingItems.length === 0) return;
+
       const vibrantMap: Record<number, string> = {};
       const gradientMap: Record<number, string> = {};
 
-      const promises = items.map(async (item) => {
+      const promises = upcomingItems.map(async (item) => {
         const imgUrl = item.poster_path
           ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
           : item.backdrop_path
@@ -72,18 +75,19 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     };
   }, [items]);
 
-  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return [];
+  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
 
+  useEffect(() => {
     try {
       const stored = localStorage.getItem('user_bookmarks');
       const parsed = stored ? JSON.parse(stored) : [];
-      return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : [];
+      if (Array.isArray(parsed)) {
+        setBookmarkedIds(parsed.filter((id): id is number => typeof id === 'number'));
+      }
     } catch (error) {
       console.error('Failed to load bookmarks', error);
-      return [];
     }
-  });
+  }, []);
 
   if (isLoading) {
     return (
@@ -194,7 +198,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     const isTv = item.media_type === 'tv' || Boolean(item.name && !item.title);
     const href = isTv ? `/tv/${item.id}` : `/movie/${item.id}`;
     const poster = item.poster_path
-      ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+      ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
       : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
     const isUpcoming = isUpcomingMedia(item);
@@ -219,7 +223,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
               <span className={styles.rankFallbackNumber}>{rank}</span>
             </div>
           )}
-          <img src={poster} alt={displayTitle} className={styles.posterImg} loading="lazy" />
+          <img src={poster} alt={displayTitle} className={styles.posterImg} decoding="async" />
           <div className={styles.posterOverlay} />
 
           <button
@@ -238,11 +242,11 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
               <div
                 className={styles.ratingBadge}
                 style={{
-                  backgroundImage: itemGradients[item.id] || 'linear-gradient(135deg, #ffffff, #eab308)',
+                  backgroundImage: itemGradients[item.id] || 'linear-gradient(135deg, #ffffff, #94a3b8)',
                   color: '#000000',
                   fontWeight: 800,
                   border: 'none',
-                  boxShadow: `0 0 10px ${itemColors[item.id] ? itemColors[item.id] + '88' : 'rgba(234, 179, 8, 0.5)'}`
+                  boxShadow: `0 0 10px ${itemColors[item.id] ? itemColors[item.id] + '88' : 'rgba(255, 255, 255, 0.4)'}`
                 }}
               >
                 SOON
@@ -264,9 +268,9 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
     const detailsHref = isTv ? `/tv/${item.id}` : `/movie/${item.id}`;
     const watchHref = isTv ? `/watch/tv/${item.id}/1/1` : `/watch/${item.id}`;
     const backdrop = item.backdrop_path
-      ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+      ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}`
       : item.poster_path
-        ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
+        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
         : 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop';
     const isBookmarked = bookmarkedIds.includes(item.id);
     const isUpcoming = isUpcomingMedia(item);
@@ -286,7 +290,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
           transitionDuration={450}
           playOnce={false}
         >
-          <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} loading="lazy" />
+          <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} decoding="async" />
           <div className={styles.heroOverlay} />
 
           <button

@@ -468,7 +468,7 @@
 .userIcon {
   width: 15px;
   height: 15px;
-  color: #f59e0b;
+  color: #ffffff;
   flex-shrink: 0;
 }
 
@@ -732,8 +732,8 @@
 }
 
 .suggestionType {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 4px;
@@ -741,7 +741,7 @@
 }
 
 .suggestionRating {
-  color: #f59e0b;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -750,7 +750,7 @@
   text-align: center;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: #ffffff;
   background: #181824;
   cursor: pointer;
   transition: background 0.2s ease;
@@ -795,7 +795,7 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #f59e0b;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -808,10 +808,10 @@
 
 .userAvatarBtn:hover,
 .userAvatarBtnActive {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: #f59e0b;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.05);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
 }
 
 [data-theme="light"] .userAvatarBtn {
@@ -821,14 +821,14 @@
 
 [data-theme="light"] .userAvatarBtn:hover,
 [data-theme="light"] .userAvatarBtnActive {
-  background: #fef3c7;
-  border-color: #f59e0b;
+  background: #e2e8f0;
+  border-color: #94a3b8;
 }
 
 .userIcon {
   width: 17px;
   height: 17px;
-  color: #f59e0b;
+  color: #ffffff;
 }
 
 .userDropdownMenu {
@@ -866,9 +866,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: #f59e0b;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -994,9 +994,9 @@
 }
 
 .signupBtn {
-  background: #f59e0b;
+  background: #ffffff;
   color: #000000;
-  border: 1px solid #f59e0b;
+  border: 1px solid #ffffff;
   border-radius: 8px;
   padding: 0.4rem 0.85rem;
   font-size: clamp(0.8rem, 0.76rem + 0.15vw, 0.95rem);
@@ -1011,8 +1011,8 @@
 }
 
 .signupBtn:hover {
-  background: #d97706;
-  border-color: #d97706;
+  background: #e2e8f0;
+  border-color: #e2e8f0;
   transform: translateY(-1px);
 }
 
@@ -1039,9 +1039,9 @@
 
 .mobileSignupBtn {
   flex: 1;
-  background: #f59e0b;
+  background: #ffffff;
   color: #000000;
-  border: 1px solid #f59e0b;
+  border: 1px solid #ffffff;
   border-radius: 10px;
   padding: 0.65rem 1rem;
   font-size: 0.9rem;

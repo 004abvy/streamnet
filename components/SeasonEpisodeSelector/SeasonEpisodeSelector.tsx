@@ -35,21 +35,24 @@ export default function SeasonEpisodeSelector({
   currentEpisode = 1,
   onEpisodeSelect,
 }: SeasonEpisodeSelectorProps) {
-  const displaySeasons = useMemo(() => {
-    if (!seasons || seasons.length === 0) return [];
-    const valid = seasons.filter(s => s.season_number > 0 && s.episode_count > 0);
-    return valid.length > 0 ? valid : seasons;
-  }, [seasons]);
-
-  const [selectedSeason, setSelectedSeason] = useState<number>(
-    currentSeason || (displaySeasons[0]?.season_number ?? 1)
-  );
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const displaySeasons = useMemo(() => {
+    if (!seasons || seasons.length === 0) {
+      return [{ season_number: currentSeason || 1, name: `Season ${currentSeason || 1}`, episode_count: episodes.length || 0 }];
+    }
+    const valid = seasons.filter(s => s.season_number > 0 && (s.episode_count > 0 || (s.name && !s.name.toLowerCase().includes('special'))));
+    return valid.length > 0 ? valid : seasons.filter(s => s.season_number > 0);
+  }, [seasons, currentSeason, episodes.length]);
+
+  const [selectedSeason, setSelectedSeason] = useState<number>(
+    currentSeason || (displaySeasons[0]?.season_number ?? 1)
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -67,33 +70,41 @@ export default function SeasonEpisodeSelector({
     }
   }, [currentSeason]);
 
+  const seasonCache = useRef<Map<number, Episode[]>>(new Map());
+
   useEffect(() => {
     if (!tvId || !selectedSeason) return;
 
+    if (seasonCache.current.has(selectedSeason)) {
+      setEpisodes(seasonCache.current.get(selectedSeason)!);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     setLoading(true);
-
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
     fetch(`/api/tv/${tvId}/season/${selectedSeason}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (!isMounted) return;
+        let loadedEpisodes: Episode[] = [];
         if (data && data.episodes && data.episodes.length > 0) {
-          setEpisodes(data.episodes.map((episode: Episode) => ({
+          loadedEpisodes = data.episodes.map((episode: Episode) => ({
             ...episode,
             overview: episode.overview?.trim() || 'No episode description available.'
-          })));
+          }));
         } else {
           const matchedSeason = displaySeasons.find(s => s.season_number === selectedSeason);
           const count = matchedSeason?.episode_count || 10;
-          const fallbackEps: Episode[] = Array.from({ length: count }, (_, i) => ({
+          loadedEpisodes = Array.from({ length: count }, (_, i) => ({
             episode_number: i + 1,
             name: `Episode ${i + 1}`,
             overview: 'No overview available for this episode.',
           }));
-          setEpisodes(fallbackEps);
         }
+        seasonCache.current.set(selectedSeason, loadedEpisodes);
+        setEpisodes(loadedEpisodes);
         setLoading(false);
       })
       .catch((err) => {
@@ -106,6 +117,7 @@ export default function SeasonEpisodeSelector({
           name: `Episode ${i + 1}`,
           overview: 'No overview available for this episode.',
         }));
+        seasonCache.current.set(selectedSeason, fallbackEps);
         setEpisodes(fallbackEps);
         setLoading(false);
       });
@@ -113,7 +125,7 @@ export default function SeasonEpisodeSelector({
     return () => {
       isMounted = false;
     };
-  }, [tvId, selectedSeason]);
+  }, [tvId, selectedSeason, displaySeasons]);
 
   useEffect(() => {
     setSearchQuery('');
@@ -148,7 +160,7 @@ export default function SeasonEpisodeSelector({
             onClick={() => setIsOpen(!isOpen)}
           >
             {displaySeasons.find(s => s.season_number === selectedSeason)?.name || `Season ${selectedSeason}`} 
-            <span className={styles.episodeCountSpan}>({displaySeasons.find(s => s.season_number === selectedSeason)?.episode_count || 0} Episodes)</span>
+            <span className={styles.episodeCountSpan}>({displaySeasons.find(s => s.season_number === selectedSeason)?.episode_count || episodes.length || 0} Episodes)</span>
             <svg className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m6 9 6 6 6-6"/>
             </svg>

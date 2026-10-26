@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import VidstackPlayer, { DirectSourceItem, VidstackTrack } from "./VidstackPlayer";
 import { clearMediaSession, suppressMediaSession } from "../utils/mediaSessionManager";
 
@@ -591,38 +591,65 @@ export default function HlsPlayer({
   };
 
   // Build clean, deduplicated track list for Vidstack
-  const labelCounts: Record<string, number> = {};
-  let defaultSubtitleSelected = false;
+  const vidstackTracks = useMemo<VidstackTrack[]>(() => {
+    const labelCounts: Record<string, number> = {};
+    const seenUrls = new Set<string>();
+    let defaultSubtitleSelected = false;
 
-  const vidstackTracks: VidstackTrack[] = [];
-  for (const sub of subtitles) {
-    if (!sub || !sub.url) continue;
-    const rawLabel = sub.label || "English";
-    const rawLower = rawLabel.toLowerCase();
-    const isEnglish = rawLower.includes("english") || rawLower.includes("eng");
-    if (!isEnglish) continue; // Keep only English subtitles
+    const tracks: VidstackTrack[] = [];
+    for (const sub of subtitles) {
+      if (!sub || !sub.url) continue;
+      if (seenUrls.has(sub.url)) continue;
+      seenUrls.add(sub.url);
 
-    labelCounts[rawLabel] = (labelCounts[rawLabel] || 0) + 1;
-    const uniqueLabel =
-      labelCounts[rawLabel] > 1
-        ? `${rawLabel} (${labelCounts[rawLabel]})`
-        : rawLabel;
+      const rawKind = ((sub as any).kind || '').toLowerCase();
+      const rawUrl = (sub.url || '').toLowerCase();
+      const subLabel = (sub.label || '').toLowerCase();
 
-    let isDefault = false;
-    if (isEnglish && !defaultSubtitleSelected) {
-      isDefault = true;
-      defaultSubtitleSelected = true;
+      // Skip thumbnail sprite tracks
+      if (
+        rawKind === 'thumbnails' ||
+        rawKind === 'thumbnail' ||
+        rawKind === 'metadata' ||
+        rawKind === 'chapters' ||
+        rawUrl.includes('thumbnail') ||
+        rawUrl.includes('sprite') ||
+        rawUrl.includes('#xywh') ||
+        rawUrl.includes('/thumbnails/') ||
+        subLabel.includes('thumbnail') ||
+        subLabel.includes('sprite')
+      ) {
+        continue;
+      }
+
+      const rawLabel = sub.label || "English";
+      const rawLower = rawLabel.toLowerCase();
+      const isEnglish = rawLower.includes("english") || rawLower.includes("eng");
+      if (!isEnglish) continue; // Keep only English subtitles
+
+      labelCounts[rawLabel] = (labelCounts[rawLabel] || 0) + 1;
+      const uniqueLabel =
+        labelCounts[rawLabel] > 1
+          ? `${rawLabel} (${labelCounts[rawLabel]})`
+          : rawLabel;
+
+      let isDefault = false;
+      if (isEnglish && !defaultSubtitleSelected) {
+        isDefault = true;
+        defaultSubtitleSelected = true;
+      }
+
+      tracks.push({
+        src: sub.url,
+        label: uniqueLabel,
+        language: "en",
+        kind: "subtitles" as const,
+        default: isDefault,
+        type: "vtt",
+      });
     }
-
-    vidstackTracks.push({
-      src: sub.url,
-      label: uniqueLabel,
-      language: "en",
-      kind: "subtitles" as const,
-      default: isDefault,
-      type: "vtt",
-    });
-  }
+    return tracks;
+  }, [subtitles]);
 
   if (loading) {
     const formattedLoadingPoster = poster

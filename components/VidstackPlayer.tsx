@@ -1,8 +1,39 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
-import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, TextTrack, type AudioTrack, type MediaSrc } from '@vidstack/react';
+import { MediaPlayer, MediaProvider, Poster, Track, MediaPlayerInstance, isHLSProvider, TextTrack, TextTrackList, type AudioTrack, type MediaSrc } from '@vidstack/react';
 import { DefaultVideoLayout, defaultLayoutIcons } from '@vidstack/react/player/layouts/default';
+
+// Global patch to prevent duplicate subtitle/caption keys in Vidstack DefaultVideoLayout
+if (typeof window !== 'undefined' && TextTrackList?.prototype) {
+  const origAdd = TextTrackList.prototype.add;
+  if (!(origAdd as any).__dedupePatched) {
+    TextTrackList.prototype.add = function (init: any, trigger?: any) {
+      const track = init instanceof TextTrack ? init : new TextTrack(init);
+      const trackId = track.id || '';
+      const trackKey = `${trackId}:${track.kind}-${(track.label || '').toLowerCase()}`;
+
+      // Check for an existing track with identical ID or identical value key
+      const duplicate = (this as any).items?.find((t: any) => {
+        if (!t) return false;
+        if (trackId && t.id === trackId) return true;
+        const k = `${t.id || ''}:${t.kind}-${(t.label || '').toLowerCase()}`;
+        return k === trackKey;
+      });
+
+      if (duplicate) {
+        if (track.src && !duplicate.src) {
+          this.remove(duplicate);
+          return origAdd.call(this, track, trigger);
+        }
+        return this;
+      }
+
+      return origAdd.call(this, track, trigger);
+    };
+    (TextTrackList.prototype.add as any).__dedupePatched = true;
+  }
+}
 import { clearMediaSession, suppressMediaSession } from '../utils/mediaSessionManager';
 import { Clock, RotateCcw, X } from 'lucide-react';
 
@@ -87,6 +118,7 @@ export default function VidstackPlayer({
 }: VidstackPlayerProps) {
   const player = useRef<MediaPlayerInstance>(null);
   const [activeMediaSrc, setActiveMediaSrc] = useState<MediaSrc>(src);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState<boolean>(false);
   const hasResumedRef = useRef<MediaSrc | null>(null);
   const resumeSeekAppliedRef = useRef<boolean>(false);
 
@@ -101,11 +133,13 @@ export default function VidstackPlayer({
 
   useEffect(() => {
     setActiveMediaSrc(src);
+    setHasStartedPlaying(false);
     resumeSeekAppliedRef.current = false;
     hasResumedRef.current = null;
     if (player.current) {
       try {
         player.current.currentTime = 0;
+        player.current.textTracks?.clear?.();
       } catch {}
     }
   }, [src, episodeId, season, episode]);
@@ -260,6 +294,26 @@ export default function VidstackPlayer({
       const track = tracks[i];
       if (!track || !track.src) continue;
       if (failedTrackSrcs.has(track.src)) continue;
+
+      const rawSrc = (track.src || '').toLowerCase();
+      const rawKind = (track.kind || '').toLowerCase();
+      const trackLabel = (track.label || '').toLowerCase();
+
+      // Guard: Never render scrubber thumbnails/sprites or metadata as subtitle text tracks
+      if (
+        rawKind === 'thumbnails' ||
+        rawKind === 'thumbnail' ||
+        rawKind === 'metadata' ||
+        rawKind === 'chapters' ||
+        rawSrc.includes('thumbnail') ||
+        rawSrc.includes('sprite') ||
+        rawSrc.includes('#xywh') ||
+        rawSrc.includes('/thumbnails/') ||
+        trackLabel.includes('thumbnail') ||
+        trackLabel.includes('sprite')
+      ) {
+        continue;
+      }
 
       // Filter: Keep ONLY English subtitles in popup menu
       const rawLower = (track.label || '').toLowerCase();
@@ -530,8 +584,11 @@ export default function VidstackPlayer({
       <MediaPlayer
         ref={player}
         src={formattedMediaSrc}
-        poster={formattedPoster}
+        poster={playerType === 'anime' || hasStartedPlaying ? undefined : formattedPoster}
         autoPlay={autoPlay}
+        onPlay={() => {
+          setHasStartedPlaying(true);
+        }}
         lang={preferredLanguage === 'hi' ? 'hi' : 'en'}
         onError={(err: any) => {
           console.warn('[VidstackPlayer] Stream error encountered:', err?.detail || err, 'Advancing to next available stream source...');
@@ -604,6 +661,9 @@ export default function VidstackPlayer({
         }}
         onTimeUpdate={(detail) => {
           const currentTime = detail.currentTime;
+          if (currentTime > 0 && !hasStartedPlaying) {
+            setHasStartedPlaying(true);
+          }
           const dur = player.current?.duration || 0;
           if (tmdbId && typeof currentTime === 'number' && currentTime > 0) {
             const progressSaveKey = getProgressKey(tmdbId, mediaType, season, episode, episodeId);
@@ -631,7 +691,7 @@ export default function VidstackPlayer({
         crossOrigin="anonymous"
       >
         <MediaProvider>
-          {formattedPoster && (
+          {playerType !== 'anime' && !hasStartedPlaying && formattedPoster && (
             <Poster
               className="vds-poster absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 data-visible:opacity-100 pointer-events-none"
               src={formattedPoster}
@@ -650,7 +710,7 @@ export default function VidstackPlayer({
 
             return (
               <Track
-                key={`vds-track-${trackId}-${idx}`}
+                key={`vds-track-${track.src || trackId}-${trackId}-${idx}`}
                 id={trackId}
                 src={track.src}
                 kind={track.kind}
