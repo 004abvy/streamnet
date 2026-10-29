@@ -30,9 +30,12 @@ const CUSTOM_LOGOS: Record<string, string> = {
   '315': 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Hoichoi_Logo.svg'
 };
 
+let cachedProvidersList: any[] | null = null;
+const providerContentCache = new Map<string, any[]>();
+
 export default function ProvidersSection() {
-  const [providers, setProviders] = useState<any[]>([]);
-  const [activeProvider, setActiveProvider] = useState<any>(null);
+  const [providers, setProviders] = useState<any[]>(cachedProvidersList || []);
+  const [activeProvider, setActiveProvider] = useState<any>(cachedProvidersList?.[0] || null);
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
   const [content, setContent] = useState<any[]>([]);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -40,6 +43,7 @@ export default function ProvidersSection() {
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
+    if (cachedProvidersList) return;
     const controller = new AbortController();
 
     const fetchProviders = async () => {
@@ -71,6 +75,7 @@ export default function ProvidersSection() {
             })
             .sort((a: any, b: any) => a.display_priority - b.display_priority)
             .slice(0, 20);
+          cachedProvidersList = topProviders;
           setProviders(topProviders);
           if (topProviders.length > 0) {
             setActiveProvider(topProviders[0]);
@@ -126,6 +131,10 @@ export default function ProvidersSection() {
 
   useEffect(() => {
     if (!activeProvider) return;
+    const cacheKey = `${activeProvider.provider_id}_${mediaType}`;
+    if (providerContentCache.has(cacheKey)) {
+      setContent(providerContentCache.get(cacheKey)!);
+    }
     
     const fetchContent = async () => {
       try {
@@ -137,6 +146,7 @@ export default function ProvidersSection() {
             ...item,
             media_type: mediaType
           }));
+          providerContentCache.set(cacheKey, contentWithMediaType);
           setContent(contentWithMediaType);
         }
       } catch (err) {

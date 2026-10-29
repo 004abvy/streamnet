@@ -99,7 +99,7 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
           const linkHref = isTV ? `/tv/${movie.id}` : `/movie/${movie.id}`;
           
           return (
-            <Link href={linkHref} key={movie.id} className={`${styles.card} ${square ? styles.squareCard : ''}`}>
+            <Link href={linkHref} key={movie.id} prefetch={true} className={`${styles.card} ${square ? styles.squareCard : ''}`}>
               <GlareHover
                 width="100%"
                 height="100%"

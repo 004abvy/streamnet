@@ -36,6 +36,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full w-full antialiased`}
     >
+      <head>
+        <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
+        <link rel="preconnect" href="https://api.themoviedb.org" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+      </head>
       <body className="min-h-full w-full flex flex-col bg-[var(--background)] overflow-x-hidden">
         <SecurityShield />
         <ScrollToTopOnRefresh />

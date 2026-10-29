@@ -14,6 +14,14 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const cache = new Map<string, { timestamp: number; data: any }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+function cachedJsonResponse(data: any, maxAge: number = 300) {
+  return NextResponse.json(data, {
+    headers: {
+      'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${maxAge * 2}`,
+    },
+  });
+}
+
 async function fetchFromTMDB(endpoint: string, params: Record<string, any> = {}) {
   const cleanParams: Record<string, string> = {
     api_key: TMDB_API_KEY,
@@ -84,13 +92,13 @@ export async function GET(
       if (voteCount) params['vote_count.gte'] = voteCount;
 
       const data = await fetchFromTMDB(`/discover/${type}`, params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 2. /api/movies/trending
     if (pathStr === 'movies/trending') {
       const data = await fetchFromTMDB('/trending/movie/day', { language: 'en-US' });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 2.1 /api/movies/upcoming
@@ -103,13 +111,13 @@ export async function GET(
         sort_by: 'popularity.desc',
         'primary_release_date.gte': tomorrow
       });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 3. /api/tv/trending
     if (pathStr === 'tv/trending') {
       const data = await fetchFromTMDB('/trending/tv/day', { language: 'en-US' });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 3.01 /api/tv/upcoming
@@ -122,7 +130,7 @@ export async function GET(
         sort_by: 'popularity.desc',
         'first_air_date.gte': tomorrow
       });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 3.1 /api/search/movie
@@ -191,7 +199,7 @@ export async function GET(
       }
 
       const data = await fetchFromTMDB(endpoint, params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 5. /api/tv/discover
@@ -247,7 +255,7 @@ export async function GET(
       }
 
       const data = await fetchFromTMDB(endpoint, params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 6. /api/movies/:id
@@ -256,7 +264,7 @@ export async function GET(
       const data = await fetchFromTMDB(`/movie/${id}`, {
         append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids,release_dates'
       });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data, 600);
     }
 
     // 7. /api/tv/:id/season/:seasonNumber
@@ -266,13 +274,13 @@ export async function GET(
       const data = await fetchFromTMDB(`/tv/${id}/season/${seasonNumber}`, {
         language: 'en-US'
       });
-      return NextResponse.json({
+      return cachedJsonResponse({
         ...data,
         episodes: (data.episodes || []).map((episode: any) => ({
           ...episode,
           overview: episode.overview || ''
         }))
-      });
+      }, 600);
     }
 
     // 8. /api/tv/:id
@@ -281,7 +289,7 @@ export async function GET(
       const data = await fetchFromTMDB(`/tv/${id}`, {
         append_to_response: 'credits,videos,similar,recommendations,reviews,images,external_ids'
       });
-      return NextResponse.json(data);
+      return cachedJsonResponse(data, 600);
     }
 
     // 9. /api/discover/provider/:providerId
@@ -339,7 +347,7 @@ export async function GET(
       }
 
       const data = await fetchFromTMDB('/discover/tv', params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 11.1 /api/donghua
@@ -355,7 +363,7 @@ export async function GET(
       };
 
       const data = await fetchFromTMDB('/discover/tv', params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 11.2 /api/live-action
@@ -371,7 +379,7 @@ export async function GET(
       };
 
       const data = await fetchFromTMDB('/discover/tv', params);
-      return NextResponse.json(data);
+      return cachedJsonResponse(data);
     }
 
     // 12. /api/search

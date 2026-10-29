@@ -16,6 +16,9 @@ const INITIAL_GENRES = [
   { id: '10749', name: 'Romance', poster: 'https://image.tmdb.org/t/p/w780/9PFonQ921jhuTMqq2esxIRnegeP.jpg' },
 ];
 
+let cachedTvGenreList: typeof INITIAL_GENRES | null = null;
+const tvPagesCache = new Map<string, { results: any[]; totalPages: number }>();
+
 function TvContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,14 +28,15 @@ function TvContent() {
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
   const [shows, setShows] = useState<any[]>([]);
-  const [genreList, setGenreList] = useState(INITIAL_GENRES);
-  const [loadingGenres, setLoadingGenres] = useState(true);
+  const [genreList, setGenreList] = useState(cachedTvGenreList || INITIAL_GENRES);
+  const [loadingGenres, setLoadingGenres] = useState(!cachedTvGenreList);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [wishlistShows, setWishlistShows] = useState<any[]>([]);
 
   // Fetch live TMDB trending posters for TV genre cards with strict uniqueness
   useEffect(() => {
+    if (cachedTvGenreList) return;
     let isMounted = true;
     const fetchTvGenrePosters = async () => {
       try {
@@ -64,6 +68,7 @@ function TvContent() {
         }
 
         if (isMounted) {
+          cachedTvGenreList = updated;
           setGenreList(updated);
           setLoadingGenres(false);
         }
@@ -108,12 +113,18 @@ function TvContent() {
     }
 
     let isMounted = true;
-    setLoading(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-
     let url = `/api/tv/discover?page=${pageParam}&filter=${filterParam}`;
     if (genreParam) {
       url += `&genre=${genreParam}`;
+    }
+
+    if (tvPagesCache.has(url)) {
+      const cached = tvPagesCache.get(url)!;
+      setShows(cached.results);
+      setTotalPages(cached.totalPages);
+      setLoading(false);
+    } else {
+      setLoading(true);
     }
 
     fetch(url)
@@ -121,16 +132,18 @@ function TvContent() {
       .then((data) => {
         if (!isMounted) return;
         if (data && data.results && Array.isArray(data.results)) {
+          const total = Math.min(data.total_pages || 1, 500);
+          tvPagesCache.set(url, { results: data.results, totalPages: total });
           setShows(data.results);
-          setTotalPages(Math.min(data.total_pages || 1, 500));
-        } else {
+          setTotalPages(total);
+        } else if (!tvPagesCache.has(url)) {
           setShows([]);
         }
         setLoading(false);
       })
       .catch((err) => {
         console.warn("Failed to fetch tv shows:", err);
-        if (isMounted) {
+        if (isMounted && !tvPagesCache.has(url)) {
           setShows([]);
           setLoading(false);
         }

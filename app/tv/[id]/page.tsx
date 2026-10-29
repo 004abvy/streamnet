@@ -9,7 +9,7 @@ import Playeranime from '../../../components/Playeranime';
 import { saveWatchlist, saveContinueWatching, getResumeHref, updateWatchProgress, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
 import { getPosterGradient, getVibrantColor } from '../../../utils/colorHelper';
 import styles from '../../movie/[id]/movieDetails.module.css';
-import { Play, Bookmark, Calendar } from 'lucide-react';
+import { Play, Bookmark, Calendar, ArrowLeft } from 'lucide-react';
 
 export default function TVDetailsPage({
   params,
@@ -172,8 +172,26 @@ export default function TVDetailsPage({
 
   const vipPlayHref = `/watch/servers/${movie.id}?type=tv&season=${resumeSeason}&episode=${resumeEpisode}`;
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(isAnime ? '/anime' : '/tv');
+    }
+  };
+
   return (
     <main className={styles.container}>
+      {/* Floating Glass Back Button */}
+      <button
+        type="button"
+        onClick={handleBack}
+        className={styles.backButton}
+        aria-label="Go back"
+      >
+        <ArrowLeft size={16} strokeWidth={2.4} />
+        <span>Back</span>
+      </button>
       {showAnimePlayer && (
         <Playeranime 
           animeTitle={displayTitle} 

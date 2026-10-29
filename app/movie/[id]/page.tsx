@@ -9,7 +9,7 @@ import Playeranime from '../../../components/Playeranime';
 import { saveWatchlist, saveContinueWatching, getResumeHref, isUpcomingMedia, getFormattedReleaseDate } from '../../../utils/userStorage';
 import { getPosterGradient, getVibrantColor } from '../../../utils/colorHelper';
 import styles from './movieDetails.module.css';
-import { Play, Bookmark, Calendar, Film } from 'lucide-react';
+import { Play, Bookmark, Calendar, Film, ArrowLeft } from 'lucide-react';
 
 export default function MovieDetailsPage({
   params,
@@ -174,8 +174,26 @@ export default function MovieDetailsPage({
 
   const vipPlayHref = `/watch/servers/${movie.id}`;
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(isAnime ? '/anime' : '/movies');
+    }
+  };
+
   return (
     <main className={styles.container}>
+      {/* Floating Glass Back Button */}
+      <button
+        type="button"
+        onClick={handleBack}
+        className={styles.backButton}
+        aria-label="Go back"
+      >
+        <ArrowLeft size={16} strokeWidth={2.4} />
+        <span>Back</span>
+      </button>
       {showAnimePlayer && (
         <Playeranime 
           animeTitle={displayTitle} 

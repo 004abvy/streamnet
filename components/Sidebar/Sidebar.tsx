@@ -157,6 +157,7 @@ export default function Sidebar() {
                 <Link
                   key={item.label}
                   href={'/search'}
+                  prefetch={true}
                   className={itemClass}
                   title={item.label}
                 >
@@ -170,6 +171,7 @@ export default function Sidebar() {
               <Link
                 key={item.label}
                 href={item.link || '/'}
+                prefetch={true}
                 className={itemClass}
                 title={item.label}
               >
@@ -205,19 +207,19 @@ export default function Sidebar() {
 
       {/* Mobile Bottom Bar */}
       <nav className={styles.bottomBar}>
-        <Link href="/" className={styles.bottomBarLink}>
+        <Link href="/" prefetch={true} className={styles.bottomBarLink}>
           <Home color={getIconColor('/')} size={24} />
         </Link>
-        <Link href="/search" className={styles.bottomBarLink}>
+        <Link href="/search" prefetch={true} className={styles.bottomBarLink}>
           <Search size={24} color={getIconColor('/search')} />
         </Link>
-        <Link href="/movies" className={styles.bottomBarLink}>
+        <Link href="/movies" prefetch={true} className={styles.bottomBarLink}>
           <Film color={getIconColor('/movies')} size={24} />
         </Link>
-        <Link href="/tv" className={styles.bottomBarLink}>
+        <Link href="/tv" prefetch={true} className={styles.bottomBarLink}>
           <Monitor color={getIconColor('/tv')} size={24} />
         </Link>
-        <Link href="/saved" className={styles.bottomBarLink}>
+        <Link href="/saved" prefetch={true} className={styles.bottomBarLink}>
           <Library color={getIconColor('/saved')} size={24} />
         </Link>
         <button className={styles.bottomBarLink} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>

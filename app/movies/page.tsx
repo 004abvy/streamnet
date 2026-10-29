@@ -16,6 +16,9 @@ const INITIAL_GENRES = [
   { id: '10749', name: 'Romance', poster: 'https://image.tmdb.org/t/p/w780/9PFonQ921jhuTMqq2esxIRnegeP.jpg' },
 ];
 
+let cachedMovieGenreList: typeof INITIAL_GENRES | null = null;
+const moviePagesCache = new Map<string, { results: any[]; totalPages: number }>();
+
 function MoviesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,14 +28,15 @@ function MoviesContent() {
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
   const [movies, setMovies] = useState<any[]>([]);
-  const [genreList, setGenreList] = useState(INITIAL_GENRES);
-  const [loadingGenres, setLoadingGenres] = useState(true);
+  const [genreList, setGenreList] = useState(cachedMovieGenreList || INITIAL_GENRES);
+  const [loadingGenres, setLoadingGenres] = useState(!cachedMovieGenreList);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [wishlistMovies, setWishlistMovies] = useState<any[]>([]);
 
   // Fetch live TMDB trending posters for genre cards with strict uniqueness
   useEffect(() => {
+    if (cachedMovieGenreList) return;
     let isMounted = true;
     const fetchGenrePosters = async () => {
       try {
@@ -64,6 +68,7 @@ function MoviesContent() {
         }
 
         if (isMounted) {
+          cachedMovieGenreList = updated;
           setGenreList(updated);
           setLoadingGenres(false);
         }
@@ -108,12 +113,18 @@ function MoviesContent() {
     }
 
     let isMounted = true;
-    setLoading(true);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-
     let url = `/api/movies/discover?page=${pageParam}&filter=${filterParam}`;
     if (genreParam) {
       url += `&genre=${genreParam}`;
+    }
+
+    if (moviePagesCache.has(url)) {
+      const cached = moviePagesCache.get(url)!;
+      setMovies(cached.results);
+      setTotalPages(cached.totalPages);
+      setLoading(false);
+    } else {
+      setLoading(true);
     }
 
     fetch(url)
@@ -121,16 +132,18 @@ function MoviesContent() {
       .then((data) => {
         if (!isMounted) return;
         if (data && data.results && Array.isArray(data.results)) {
+          const total = Math.min(data.total_pages || 1, 500);
+          moviePagesCache.set(url, { results: data.results, totalPages: total });
           setMovies(data.results);
-          setTotalPages(Math.min(data.total_pages || 1, 500));
-        } else {
+          setTotalPages(total);
+        } else if (!moviePagesCache.has(url)) {
           setMovies([]);
         }
         setLoading(false);
       })
       .catch((err) => {
         console.warn("Failed to fetch movies:", err);
-        if (isMounted) {
+        if (isMounted && !moviePagesCache.has(url)) {
           setMovies([]);
           setLoading(false);
         }

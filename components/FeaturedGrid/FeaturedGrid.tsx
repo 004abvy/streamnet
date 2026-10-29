@@ -71,6 +71,7 @@ export default function FeaturedGrid({ title, movies }: FeaturedGridProps) {
                     <div className="flex flex-row items-center justify-center gap-3 sm:gap-4">
                       <Link
                         href={watchHref}
+                        prefetch={true}
                         className="inline-flex items-center justify-center whitespace-nowrap text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shadow-lg rounded-xl px-6 h-11 w-full max-w-[140px] sm:w-auto bg-white text-black hover:bg-gray-100 active:scale-95"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-play mr-2 fill-black"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
@@ -78,6 +79,7 @@ export default function FeaturedGrid({ title, movies }: FeaturedGridProps) {
                       </Link>
                       <Link
                         href={detailHref}
+                        prefetch={true}
                         className="inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 shadow-lg h-11 px-6 w-full max-w-[140px] sm:w-auto border border-white/25 bg-black/40 text-white hover:bg-black/70 backdrop-blur-md active:scale-95"
                       >
                         About

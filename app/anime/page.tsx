@@ -16,6 +16,9 @@ const INITIAL_GENRES = [
   { id: '10749', name: 'Romance', poster: 'https://image.tmdb.org/t/p/w780/9PFonQ921jhuTMqq2esxIRnegeP.jpg' },
 ];
 
+let cachedAnimeGenreList: typeof INITIAL_GENRES | null = null;
+const animePagesCache = new Map<string, { results: any[]; totalPages: number }>();
+
 function AnimeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,13 +28,14 @@ function AnimeContent() {
   const pageParam = parseInt(searchParams.get('page') || '1', 10);
 
   const [shows, setShows] = useState<any[]>([]);
-  const [genreList, setGenreList] = useState(INITIAL_GENRES);
-  const [loadingGenres, setLoadingGenres] = useState(true);
+  const [genreList, setGenreList] = useState(cachedAnimeGenreList || INITIAL_GENRES);
+  const [loadingGenres, setLoadingGenres] = useState(!cachedAnimeGenreList);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Fetch live TMDB trending posters for Anime genre cards with strict uniqueness
   useEffect(() => {
+    if (cachedAnimeGenreList) return;
     let isMounted = true;
     const fetchAnimeGenrePosters = async () => {
       try {
@@ -61,6 +65,7 @@ function AnimeContent() {
         }
 
         if (isMounted) {
+          cachedAnimeGenreList = updated;
           setGenreList(updated);
           setLoadingGenres(false);
         }
@@ -76,31 +81,40 @@ function AnimeContent() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
+    let url = `/api/anime?page=${pageParam}&filter=${filterParam}`;
+    if (genreParam) {
+      url += `&genre=${genreParam}`;
+    }
+
+    if (animePagesCache.has(url)) {
+      const cached = animePagesCache.get(url)!;
+      setShows(cached.results);
+      setTotalPages(cached.totalPages);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
 
     const fetchData = async () => {
       try {
-        let url = `/api/anime?page=${pageParam}&filter=${filterParam}`;
-        if (genreParam) {
-          url += `&genre=${genreParam}`;
-        }
-
         const res = await fetch(url);
         const data = await res.json();
 
         if (isMounted) {
           if (data && data.results) {
             const results = data.results.map((item: any) => ({ ...item, media_type: 'tv' }));
+            const total = Math.min(data.total_pages || 1, 500);
+            animePagesCache.set(url, { results, totalPages: total });
             setShows(results);
-            setTotalPages(Math.min(data.total_pages || 1, 500));
-          } else {
+            setTotalPages(total);
+          } else if (!animePagesCache.has(url)) {
             setShows([]);
           }
           setLoading(false);
         }
       } catch (err) {
         console.warn("Failed to fetch TMDB anime:", err);
-        if (isMounted) {
+        if (isMounted && !animePagesCache.has(url)) {
           setShows([]);
           setLoading(false);
         }

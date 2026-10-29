@@ -226,7 +226,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
           const progressPercent = movie.progress || (movie.currentTime && movie.duration ? Math.round((movie.currentTime / movie.duration) * 100) : 0);
           
           return (
-            <Link href={linkHref} key={movie.id} className={styles.card}>
+            <Link href={linkHref} key={movie.id} prefetch={true} className={styles.card}>
               <GlareHover
                 width="100%"
                 height="100%"
