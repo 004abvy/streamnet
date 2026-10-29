@@ -131,9 +131,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
         const fontFamilies = new Set<string>();
 
         for (const movie of visibleMovies) {
-          if (!movie.overview) continue;
-          
-          const fontPromise = getFontForMovie(movie.overview, movie.id);
+          const fontPromise = getFontForMovie(movie.overview || '', movie.id);
           const colorPromise = movie.backdrop_path 
             ? getPosterGradient(`https://image.tmdb.org/t/p/w300${movie.backdrop_path}`)
             : Promise.resolve('linear-gradient(135deg, #ffffff, #e0e0e0)');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Calendar, Clock } from 'lucide-react';
 import styles from './SeasonEpisodeSelector.module.css';
 
 interface Episode {
@@ -26,6 +27,55 @@ interface SeasonEpisodeSelectorProps {
   currentSeason?: number;
   currentEpisode?: number;
   onEpisodeSelect: (seasonNumber: number, episodeNumber: number) => void;
+}
+
+function getEpisodeReleaseStatus(airDate?: string): { isReleased: boolean; diffDays: number | null } {
+  if (!airDate) return { isReleased: false, diffDays: null };
+  const parts = airDate.split('-').map(Number);
+  if (parts.length !== 3) return { isReleased: false, diffDays: null };
+  const [year, month, day] = parts;
+  const airDateMidnight = new Date(year, month - 1, day, 0, 0, 0);
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const diffMs = airDateMidnight.getTime() - todayMidnight.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return { isReleased: diffDays <= 0, diffDays };
+}
+
+function formatAirDate(airDate: string): string {
+  try {
+    const parts = airDate.split('-').map(Number);
+    if (parts.length !== 3) return airDate;
+    const [year, month, day] = parts;
+    const d = new Date(year, month - 1, day);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  } catch {
+    return airDate;
+  }
+}
+
+function getCountdownText(airDate: string): string {
+  try {
+    const { diffDays } = getEpisodeReleaseStatus(airDate);
+    if (diffDays === null) return 'Coming Soon';
+    if (diffDays <= 0) return 'Premieres Today';
+    if (diffDays === 1) return 'Premieres Tomorrow';
+    if (diffDays < 7) return `Airs in ${diffDays} days`;
+    if (diffDays < 14) return `Airs in 1 week (${diffDays} days)`;
+    if (diffDays < 30) {
+      const weeks = Math.round(diffDays / 7);
+      return `Airs in ${weeks} weeks (${diffDays} days)`;
+    }
+    const months = Math.round(diffDays / 30);
+    return `Airs in ${months} mo (${diffDays} days)`;
+  } catch {
+    return 'Coming Soon';
+  }
 }
 
 export default function SeasonEpisodeSelector({
@@ -131,8 +181,46 @@ export default function SeasonEpisodeSelector({
     setSearchQuery('');
   }, [selectedSeason]);
 
+  // Separate released episodes from unreleased upcoming episodes
+  const { releasedEpisodes, unreleasedEpisodes, nextEpisode } = useMemo(() => {
+    if (!episodes || episodes.length === 0) {
+      return { releasedEpisodes: [], unreleasedEpisodes: [], nextEpisode: null };
+    }
+
+    const hasAnyAirDate = episodes.some(ep => Boolean(ep.air_date));
+    if (!hasAnyAirDate) {
+      return { releasedEpisodes: episodes, unreleasedEpisodes: [], nextEpisode: null };
+    }
+
+    const released: Episode[] = [];
+    const unreleased: Episode[] = [];
+
+    for (const ep of episodes) {
+      if (ep.air_date) {
+        const status = getEpisodeReleaseStatus(ep.air_date);
+        if (status.isReleased) {
+          released.push(ep);
+        } else {
+          unreleased.push(ep);
+        }
+      } else {
+        if (unreleased.length > 0 || (released.length > 0 && ep.episode_number > released[released.length - 1].episode_number)) {
+          unreleased.push(ep);
+        } else {
+          released.push(ep);
+        }
+      }
+    }
+
+    return {
+      releasedEpisodes: released,
+      unreleasedEpisodes: unreleased,
+      nextEpisode: unreleased.length > 0 ? unreleased[0] : null
+    };
+  }, [episodes]);
+
   const filteredAndSortedEpisodes = useMemo(() => {
-    let result = [...episodes];
+    let result = [...releasedEpisodes];
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       result = result.filter(ep => 
@@ -145,7 +233,7 @@ export default function SeasonEpisodeSelector({
       return b.episode_number - a.episode_number;
     });
     return result;
-  }, [episodes, searchQuery, sortOrder]);
+  }, [releasedEpisodes, searchQuery, sortOrder]);
 
   return (
     <div className={styles.container}>
@@ -160,7 +248,9 @@ export default function SeasonEpisodeSelector({
             onClick={() => setIsOpen(!isOpen)}
           >
             {displaySeasons.find(s => s.season_number === selectedSeason)?.name || `Season ${selectedSeason}`} 
-            <span className={styles.episodeCountSpan}>({displaySeasons.find(s => s.season_number === selectedSeason)?.episode_count || episodes.length || 0} Episodes)</span>
+            <span className={styles.episodeCountSpan}>
+              {releasedEpisodes.length} Released{unreleasedEpisodes.length > 0 ? ` • ${unreleasedEpisodes.length} Upcoming` : ''}
+            </span>
             <svg className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m6 9 6 6 6-6"/>
             </svg>
@@ -210,6 +300,77 @@ export default function SeasonEpisodeSelector({
         </button>
       </div>
 
+      {/* Next Upcoming Episode Spotlight Card */}
+      {!loading && nextEpisode && !searchQuery.trim() && (
+        <div className={styles.nextEpisodeCard}>
+          <div className={styles.nextEpisodeThumbnailWrapper}>
+            {nextEpisode.still_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w780${nextEpisode.still_path}`}
+                alt={nextEpisode.name || `Episode ${nextEpisode.episode_number}`}
+                className={styles.nextEpisodeThumbnail}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop';
+                }}
+              />
+            ) : (
+              <div className={styles.nextEpisodePlaceholder}>
+                <Clock size={28} />
+                <span className={styles.placeholderEpText}>EPISODE {nextEpisode.episode_number}</span>
+              </div>
+            )}
+            <div className={styles.nextEpisodeGradient} />
+            <div className={styles.nextEpisodeStatusBadge}>
+              <span className={styles.pulseDot} />
+              COMING SOON
+            </div>
+          </div>
+
+          <div className={styles.nextEpisodeInfo}>
+            <div className={styles.nextEpisodeHeaderRow}>
+              <div className={styles.nextEpisodePill}>
+                <Clock size={13} />
+                <span>Next Episode • Ep {nextEpisode.episode_number}</span>
+              </div>
+              {nextEpisode.air_date && (
+                <div className={styles.countdownPill}>
+                  <Calendar size={13} />
+                  <span>{getCountdownText(nextEpisode.air_date)}</span>
+                </div>
+              )}
+            </div>
+
+            <h4 className={styles.nextEpisodeTitle}>
+              {nextEpisode.episode_number}. {nextEpisode.name || `Episode ${nextEpisode.episode_number}`}
+            </h4>
+
+            {nextEpisode.air_date && (
+              <div className={styles.nextEpisodeAirDate}>
+                <span>Expected release:</span>
+                <strong>{formatAirDate(nextEpisode.air_date)}</strong>
+                <span className={styles.airTimeEstimate}>
+                  <Clock size={12} /> Broadcast Schedule
+                </span>
+              </div>
+            )}
+
+            <p className={styles.nextEpisodeOverview}>
+              {nextEpisode.overview && nextEpisode.overview.trim() !== ''
+                ? nextEpisode.overview
+                : 'Official episode synopsis and video stream will be unlocked upon broadcast release.'}
+            </p>
+
+            {unreleasedEpisodes.length > 1 && (
+              <div className={styles.moreUnreleasedNotice}>
+                <span>+{unreleasedEpisodes.length - 1} more scheduled episode{unreleasedEpisodes.length - 1 > 1 ? 's' : ''} coming later this season</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className={styles.episodeGrid} aria-label="Loading episodes">
           {[...Array(6)].map((_, i) => (
@@ -230,63 +391,70 @@ export default function SeasonEpisodeSelector({
       ) : (
         <div className={styles.episodeGrid}>
           {filteredAndSortedEpisodes.length === 0 ? (
-            <div className={styles.noEpisodesFound}>No episodes found matching "{searchQuery}"</div>
+            <div className={styles.noEpisodesFound}>
+              {searchQuery.trim() !== ''
+                ? `No episodes found matching "${searchQuery}"`
+                : unreleasedEpisodes.length > 0
+                  ? `No episodes have aired for Season ${selectedSeason} yet. Check the upcoming schedule above!`
+                  : 'No episodes available for this season.'}
+            </div>
           ) : (
             filteredAndSortedEpisodes.map((ep) => {
               const isCurrent = selectedSeason === currentSeason && ep.episode_number === currentEpisode;
-            const description = ep.overview?.trim() || 'No episode description available.';
-            const stillUrl = ep.still_path
-              ? `https://image.tmdb.org/t/p/w780${ep.still_path}`
-              : '/fallback-backdrop.jpg';
+              const description = ep.overview?.trim() || 'No episode description available.';
+              const stillUrl = ep.still_path
+                ? `https://image.tmdb.org/t/p/w780${ep.still_path}`
+                : '/fallback-backdrop.jpg';
 
-            return (
-              <div
-                key={ep.episode_number}
-                className={`${styles.episodeCard} ${isCurrent ? styles.activeEpisodeCard : ''}`}
-                onClick={() => onEpisodeSelect(selectedSeason, ep.episode_number)}
-              >
-                <div className={styles.thumbnailWrapper}>
-                  <img
-                    src={stillUrl}
-                    alt={ep.name}
-                    className={styles.thumbnail}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop';
-                    }}
-                  />
-                  <div className={styles.thumbnailGradient}></div>
-                  <div className={styles.epBadge}>
-                    E{ep.episode_number}
+              return (
+                <div
+                  key={ep.episode_number}
+                  className={`${styles.episodeCard} ${isCurrent ? styles.activeEpisodeCard : ''}`}
+                  onClick={() => onEpisodeSelect(selectedSeason, ep.episode_number)}
+                >
+                  <div className={styles.thumbnailWrapper}>
+                    <img
+                      src={stillUrl}
+                      alt={ep.name}
+                      className={styles.thumbnail}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500&auto=format&fit=crop';
+                      }}
+                    />
+                    <div className={styles.thumbnailGradient}></div>
+                    <div className={styles.epBadge}>
+                      E{ep.episode_number}
+                    </div>
+                    <div className={styles.playOverlay}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                    {isCurrent && (
+                      <div className={styles.nowPlayingBadge}>NOW PLAYING</div>
+                    )}
                   </div>
-                  <div className={styles.playOverlay}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
+
+                  <div className={styles.episodeInfo}>
+                    <div className={styles.episodeTitleRow}>
+                      <h4 className={styles.episodeTitle}>
+                        {ep.episode_number}. {ep.name}
+                      </h4>
+                    </div>
+                    <p className={styles.episodeOverview}>{description}</p>
                   </div>
-                  {isCurrent && (
-                    <div className={styles.nowPlayingBadge}>NOW PLAYING</div>
-                  )}
+
+                  <svg className={styles.downloadIcon} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 3v12" />
+                    <path d="m7 10 5 5 5-5" />
+                    <path d="M5 21h14" />
+                  </svg>
                 </div>
-
-                <div className={styles.episodeInfo}>
-                  <div className={styles.episodeTitleRow}>
-                    <h4 className={styles.episodeTitle}>
-                      {ep.episode_number}. {ep.name}
-                    </h4>
-                  </div>
-                  <p className={styles.episodeOverview}>{description}</p>
-                </div>
-
-                <svg className={styles.downloadIcon} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 3v12" />
-                  <path d="m7 10 5 5 5-5" />
-                  <path d="M5 21h14" />
-                </svg>
-              </div>
-            );
-          }))}
+              );
+            })
+          )}
         </div>
       )}
     </div>

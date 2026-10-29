@@ -48,31 +48,35 @@ export async function getVibrantColor(imageUrl: string): Promise<string> {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve('#ffffff');
+          return;
+        }
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const data = ctx.getImageData(0, 0, 1, 1).data;
+        
+        let r = data[0];
+        let g = data[1];
+        let b = data[2];
+        
+        // Boost vibrancy
+        const max = Math.max(r, g, b);
+        if (max < 180) {
+          const factor = 220 / Math.max(max, 1);
+          r = Math.min(255, r * factor);
+          g = Math.min(255, g * factor);
+          b = Math.min(255, b * factor);
+        }
+        
+        resolve(`rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`);
+      } catch {
         resolve('#ffffff');
-        return;
       }
-      ctx.drawImage(img, 0, 0, 1, 1);
-      const data = ctx.getImageData(0, 0, 1, 1).data;
-      
-      let r = data[0];
-      let g = data[1];
-      let b = data[2];
-      
-      // Boost vibrancy
-      const max = Math.max(r, g, b);
-      if (max < 180) {
-        const factor = 220 / Math.max(max, 1);
-        r = Math.min(255, r * factor);
-        g = Math.min(255, g * factor);
-        b = Math.min(255, b * factor);
-      }
-      
-      resolve(`rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`);
     };
     img.onerror = () => {
       resolve('#ffffff');
@@ -86,42 +90,46 @@ export async function getPosterGradient(imageUrl: string): Promise<string> {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      // Use 2x2 grid to sample Top-Left, Top-Right, Bottom-Left, Bottom-Right
-      canvas.width = 2; 
-      canvas.height = 2;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
-        return;
-      }
-      ctx.drawImage(img, 0, 0, 2, 2);
-      const data = ctx.getImageData(0, 2, 2, 2).data;
-
-      const boostVibrancy = (i: number) => {
-        let r = data[i];
-        let g = data[i+1];
-        let b = data[i+2];
-        const max = Math.max(r, g, b);
-        
-        // Enhance brightness but preserve the original hue (no artificial baseline that washes out colors)
-        if (max < 160) {
-           const factor = 220 / Math.max(max, 1);
-           r = Math.min(255, r * factor);
-           g = Math.min(255, g * factor);
-           b = Math.min(255, b * factor);
+      try {
+        const canvas = document.createElement('canvas');
+        // Use 2x2 grid to sample Top-Left, Top-Right, Bottom-Left, Bottom-Right
+        canvas.width = 2; 
+        canvas.height = 2;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
+          return;
         }
-        
-        return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
-      };
+        ctx.drawImage(img, 0, 0, 2, 2);
+        const data = ctx.getImageData(0, 0, 2, 2).data;
 
-      const tl = boostVibrancy(0);  // Top Left (0,0)
-      const tr = boostVibrancy(4);  // Top Right (1,0)
-      const bl = boostVibrancy(8);  // Bottom Left (0,1)
-      const br = boostVibrancy(12); // Bottom Right (1,1)
+        const boostVibrancy = (i: number) => {
+          let r = data[i];
+          let g = data[i+1];
+          let b = data[i+2];
+          const max = Math.max(r, g, b);
+          
+          // Enhance brightness but preserve the original hue (no artificial baseline that washes out colors)
+          if (max < 160) {
+             const factor = 220 / Math.max(max, 1);
+             r = Math.min(255, r * factor);
+             g = Math.min(255, g * factor);
+             b = Math.min(255, b * factor);
+          }
+          
+          return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+        };
 
-      // Vibrant 4-stop gradient
-      resolve(`linear-gradient(135deg, ${tl} 0%, ${tr} 33%, ${bl} 66%, ${br} 100%)`);
+        const tl = boostVibrancy(0);  // Top Left (0,0)
+        const tr = boostVibrancy(4);  // Top Right (1,0)
+        const bl = boostVibrancy(8);  // Bottom Left (0,1)
+        const br = boostVibrancy(12); // Bottom Right (1,1)
+
+        // Vibrant 4-stop gradient
+        resolve(`linear-gradient(135deg, ${tl} 0%, ${tr} 33%, ${bl} 66%, ${br} 100%)`);
+      } catch (err) {
+        resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
+      }
     };
     img.onerror = () => resolve('linear-gradient(135deg, #ffffff, #94a3b8)');
     img.src = imageUrl;
