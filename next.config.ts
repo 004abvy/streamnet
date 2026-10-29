@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/omss/:path*',
-        destination: 'http://localhost:4000/v1/:path*', // Proxy to local OMSS backend
+        destination: `${process.env.OMSS_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/v1/:path*`,
       },
     ];
   },
