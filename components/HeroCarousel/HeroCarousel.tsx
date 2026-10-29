@@ -343,7 +343,7 @@ export default function HeroCarousel({ movies, isLoading }: HeroCarouselProps) {
                       src={desktopBackdrop || mobilePoster}
                       alt={movie.title || movie.name || 'Hero'}
                       className={styles.backdrop}
-                      loading={index === 0 ? "eager" : "lazy"}
+                      loading="eager"
                       decoding="async"
                     />
                   </picture>

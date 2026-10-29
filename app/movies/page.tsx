@@ -282,7 +282,8 @@ function MoviesContent() {
                 src={g.poster}
                 alt={g.name}
                 className={styles.genreCardImg}
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.src = 'https://image.tmdb.org/t/p/w780/or06FN3Dka5tukK1e9sl16pB3iy.jpg';
                 }}

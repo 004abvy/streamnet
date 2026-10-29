@@ -139,7 +139,6 @@ export default function VidstackPlayer({
     if (player.current) {
       try {
         player.current.currentTime = 0;
-        player.current.textTracks?.clear?.();
       } catch {}
     }
   }, [src, episodeId, season, episode]);
@@ -431,14 +430,11 @@ export default function VidstackPlayer({
 
       if (savedSub === 'off') return;
 
-      const isAnyShowing = trackList.some((t) => t && t.mode === 'showing');
-      if (isAnyShowing && !savedSub) return;
-
       let target: TextTrack | undefined;
       if (savedSub) {
         target = trackList.find((t) => t && t.label === savedSub);
       }
-      if (!target && !isAnyShowing) {
+      if (!target) {
         target =
           trackList.find((t) => t && (t as any).default) ||
           trackList.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||

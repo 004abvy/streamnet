@@ -46,7 +46,7 @@ export function parseM3u8Playlist(baseUrl: string, manifestText: string): Sniffe
         items.push({
           id: `audio-${lang}-${Math.random().toString(36).substring(2, 7)}`,
           type: 'audio',
-          label: `🎵 ${label}`,
+          label: label,
           url: fullUrl,
           language: lang,
           mimeType: 'audio/aac',
@@ -65,7 +65,7 @@ export function parseM3u8Playlist(baseUrl: string, manifestText: string): Sniffe
         items.push({
           id: `sub-${Math.random().toString(36).substring(2, 7)}`,
           type: 'subtitle',
-          label: `💬 ${nameMatch ? nameMatch[1] : 'Subtitles'}`,
+          label: nameMatch ? nameMatch[1] : 'Subtitles',
           url: fullUrl,
           language: langMatch ? langMatch[1] : 'en',
           mimeType: 'text/vtt',
@@ -88,7 +88,7 @@ export function parseM3u8Playlist(baseUrl: string, manifestText: string): Sniffe
         items.push({
           id: `video-${resLabel}-${Math.random().toString(36).substring(2, 7)}`,
           type: 'video',
-          label: `📹 Video Stream (${resLabel})`,
+          label: `Video Stream (${resLabel})`,
           url: fullUrl,
           resolution: resLabel,
           bandwidth: currentBandwidth,
@@ -124,7 +124,7 @@ export function initMediaSniffer(onMediaFound: (items: SniffedMediaItem[]) => vo
           {
             id: `audio-direct-${Date.now()}`,
             type: 'audio',
-            label: lower.endsWith('.mp3') ? '🎵 Direct MP3 Audio Track' : '🎵 Direct AAC Audio Track',
+            label: lower.endsWith('.mp3') ? 'Direct MP3 Audio Track' : 'Direct AAC Audio Track',
             url,
             mimeType: 'audio/mpeg',
           },
@@ -135,7 +135,7 @@ export function initMediaSniffer(onMediaFound: (items: SniffedMediaItem[]) => vo
           {
             id: `sub-direct-${Date.now()}`,
             type: 'subtitle',
-            label: '💬 Subtitle File (.vtt)',
+            label: 'Subtitle File (.vtt)',
             url,
             mimeType: 'text/vtt',
           },
@@ -183,7 +183,7 @@ export function initMediaSniffer(onMediaFound: (items: SniffedMediaItem[]) => vo
                 {
                   id: `audio-perf-${Date.now()}`,
                   type: 'audio',
-                  label: '🎵 Extracted Audio Stream',
+                  label: 'Extracted Audio Stream',
                   url,
                   mimeType: 'audio/aac',
                 },
@@ -239,7 +239,7 @@ export async function resolve1DmMediaInfo(
           items.push({
             id: `nxsha-lang-${lang.code}-${tmdbId}`,
             type: 'audio',
-            label: `🎵 Nxsha Audio Track: ${lang.name} ${lang.flag}`,
+            label: `Nxsha Audio Track: ${lang.name}`,
             url: lang.url,
             language: lang.code,
             mimeType: 'audio/aac',
@@ -256,7 +256,7 @@ export async function resolve1DmMediaInfo(
     items.push({
       id: `m3u8-yapgrid-${tmdbId}`,
       type: 'video',
-      label: '📹 YapGrid 4K Ad-Free Master Stream',
+      label: 'YapGrid 4K Ad-Free Master Stream',
       url: `https://yapgrid.com/embed/movie/${tmdbId}?autoplay=1&server=x`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
@@ -264,7 +264,7 @@ export async function resolve1DmMediaInfo(
     items.push({
       id: `m3u8-cinesrc-${tmdbId}`,
       type: 'video',
-      label: '📹 CineSrc 4K Master Playlist (.m3u8)',
+      label: 'CineSrc 4K Master Playlist (.m3u8)',
       url: `https://cinesrc.st/embed/movie/${tmdbId}?color=%23f59e0b&autoskip=true`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
@@ -273,7 +273,7 @@ export async function resolve1DmMediaInfo(
     items.push({
       id: `m3u8-yapgrid-tv-${tmdbId}`,
       type: 'video',
-      label: `📹 YapGrid 4K Episode Master (S${season || 1} E${episode || 1})`,
+      label: `YapGrid 4K Episode Master (S${season || 1} E${episode || 1})`,
       url: `https://yapgrid.com/embed/tv/${tmdbId}/${season || 1}/${episode || 1}?autoplay=1&server=x`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',
@@ -281,7 +281,7 @@ export async function resolve1DmMediaInfo(
     items.push({
       id: `m3u8-cinesrc-tv-${tmdbId}`,
       type: 'video',
-      label: `📹 CineSrc 4K Episode Master (S${season || 1} E${episode || 1})`,
+      label: `CineSrc 4K Episode Master (S${season || 1} E${episode || 1})`,
       url: `https://cinesrc.st/embed/tv/${tmdbId}?s=${season || 1}&e=${episode || 1}&color=%23f59e0b`,
       resolution: '4K',
       mimeType: 'application/x-mpegURL',

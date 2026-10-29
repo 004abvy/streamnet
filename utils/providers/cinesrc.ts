@@ -3,7 +3,7 @@ import { ProviderAdapter } from './types';
 export const cinesrcAdapter: ProviderAdapter = {
   id: 'cinesrc',
   name: 'CineSrc 4K',
-  flag: '⚡',
+  flag: '',
   badge: 'Auto-Skip',
   description: 'Fast CDN • Auto-Next Episodes',
   capabilities: {

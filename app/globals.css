@@ -32,6 +32,7 @@
 html {
   max-width: 100vw;
   overflow-x: hidden;
+  scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -55,6 +56,32 @@ video, canvas {
   -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+/* Netflix-grade persistent image cache and zero-latency smooth compositing */
+img {
+  content-visibility: visible !important;
+  image-rendering: auto;
+  -webkit-user-drag: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* GPU composite scroll layers */
+[class*="carousel"],
+[class*="scrollTrack"],
+[class*="track"],
+[class*="posterWrapper"],
+[class*="episodeGrid"],
+[class*="genreList"],
+[class*="grid"] {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Smooth kinetic scrolling containers */

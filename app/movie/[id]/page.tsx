@@ -197,6 +197,8 @@ export default function MovieDetailsPage({
           src={`https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path}`}
           alt={displayTitle}
           className={styles.heroImg}
+          loading="eager"
+          decoding="async"
         />
         <div className={styles.heroOverlay} />
       </div>
@@ -330,6 +332,8 @@ export default function MovieDetailsPage({
                         src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
                         alt={actor.name}
                         className={styles.actorAvatar}
+                        loading="eager"
+                        decoding="async"
                       />
                     ) : (
                       <div className={styles.actorAvatar} style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -376,6 +380,8 @@ export default function MovieDetailsPage({
                 src={`https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`}
                 alt="Watch Trailer"
                 className={styles.trailerImg}
+                loading="eager"
+                decoding="async"
               />
               <div className={styles.trailerOverlay}>
                 <div className={styles.playCircle}>

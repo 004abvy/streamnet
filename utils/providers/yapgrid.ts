@@ -3,7 +3,7 @@ import { ProviderAdapter } from './types';
 export const yapgridAdapter: ProviderAdapter = {
   id: 'yapgrid',
   name: 'YapGrid 4K',
-  flag: '💎',
+  flag: '',
   badge: 'Ad-Free',
   description: 'Clean Ad-Free VIP • In-Player Subtitle Translation',
   capabilities: {

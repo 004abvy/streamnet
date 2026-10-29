@@ -723,16 +723,18 @@ a, button {
    6. LOW-RAM, SMART TV & HARDWARE PERFORMANCE ACCELERATION ENGINE
    =================================================================== */
 
-/* A. Virtual Layout Isolation & Rendering Deferral */
-/* Skips expensive style, layout, and painting for offscreen sections until needed */
+/* A. Persistent Netflix-Grade Offscreen Cache & Zero-Lag Rendering */
+/* Keeps all sections, carousels, and poster images permanently loaded in GPU memory */
 [class*="GenreExplorerSection_section"],
 [class*="TrendingSection_container"],
 [class*="ProvidersSection_section"],
 [class*="ProvidersSection_container"],
 [class*="PosterGrid_container"],
-[class*="Footer_footer"] {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 450px;
+[class*="Footer_footer"],
+section,
+article {
+  content-visibility: visible !important;
+  contain: none !important;
 }
 
 /* B. Hardware Layer Promotion (GPU Compositing instead of CPU repaint) */
@@ -750,19 +752,25 @@ a, button {
   perspective: 1000px;
 }
 
-/* C. Card & Poster Paint Containment */
+/* C. Card & Poster Layout Stability (Zero Paint Eviction) */
 [class*="PosterGrid_card"],
 [class*="PosterCarousel_card"],
 [class*="TrendingSection_posterCard"] {
-  contain: layout style paint;
+  contain: none !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-/* D. Smooth Scrolling on TV & Touch */
+/* D. Ultra-Smooth 60/120fps Scrolling on TV, Mobile & Desktop */
 [class*="PosterCarousel_carousel"],
 [class*="TrendingSection_scrollTrack"],
 [class*="GenreExplorerSection_genresList"] {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  will-change: scroll-position;
 }
 
 /* E. Low-Cost Shaders on TV & Low-Power Devices */
@@ -780,8 +788,13 @@ a, button {
 
 /* F. Image Memory & Texture Optimization */
 img {
+  content-visibility: visible !important;
   image-rendering: auto;
   -webkit-user-drag: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* G. Pause continuous decorative animations during battery save or reduced motion */

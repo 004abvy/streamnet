@@ -3,7 +3,7 @@ import { ProviderAdapter } from './types';
 export const movieboxAdapter: ProviderAdapter = {
   id: 'moviebox',
   name: 'MovieBox Direct',
-  flag: '🍿',
+  flag: '',
   badge: 'Direct MP4/HLS',
   description: 'High-speed MovieBox Stream • Direct Playback',
   capabilities: {

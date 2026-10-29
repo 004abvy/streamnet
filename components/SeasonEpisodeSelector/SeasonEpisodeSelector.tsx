@@ -306,9 +306,11 @@ export default function SeasonEpisodeSelector({
           <div className={styles.nextEpisodeThumbnailWrapper}>
             {nextEpisode.still_path ? (
               <img
-                src={`https://image.tmdb.org/t/p/w780${nextEpisode.still_path}`}
+                src={`https://image.tmdb.org/t/p/w500${nextEpisode.still_path}`}
                 alt={nextEpisode.name || `Episode ${nextEpisode.episode_number}`}
                 className={styles.nextEpisodeThumbnail}
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
@@ -317,8 +319,7 @@ export default function SeasonEpisodeSelector({
               />
             ) : (
               <div className={styles.nextEpisodePlaceholder}>
-                <Clock size={28} />
-                <span className={styles.placeholderEpText}>EPISODE {nextEpisode.episode_number}</span>
+                <span className={styles.placeholderEpText}>EP {nextEpisode.episode_number}</span>
               </div>
             )}
             <div className={styles.nextEpisodeGradient} />
@@ -331,12 +332,10 @@ export default function SeasonEpisodeSelector({
           <div className={styles.nextEpisodeInfo}>
             <div className={styles.nextEpisodeHeaderRow}>
               <div className={styles.nextEpisodePill}>
-                <Clock size={13} />
-                <span>Next Episode • Ep {nextEpisode.episode_number}</span>
+                <span>Next Ep {nextEpisode.episode_number}</span>
               </div>
               {nextEpisode.air_date && (
                 <div className={styles.countdownPill}>
-                  <Calendar size={13} />
                   <span>{getCountdownText(nextEpisode.air_date)}</span>
                 </div>
               )}
@@ -350,9 +349,7 @@ export default function SeasonEpisodeSelector({
               <div className={styles.nextEpisodeAirDate}>
                 <span>Expected release:</span>
                 <strong>{formatAirDate(nextEpisode.air_date)}</strong>
-                <span className={styles.airTimeEstimate}>
-                  <Clock size={12} /> Broadcast Schedule
-                </span>
+                <span className={styles.airTimeEstimate}>Scheduled</span>
               </div>
             )}
 
@@ -403,7 +400,7 @@ export default function SeasonEpisodeSelector({
               const isCurrent = selectedSeason === currentSeason && ep.episode_number === currentEpisode;
               const description = ep.overview?.trim() || 'No episode description available.';
               const stillUrl = ep.still_path
-                ? `https://image.tmdb.org/t/p/w780${ep.still_path}`
+                ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
                 : '/fallback-backdrop.jpg';
 
               return (
@@ -417,6 +414,8 @@ export default function SeasonEpisodeSelector({
                       src={stillUrl}
                       alt={ep.name}
                       className={styles.thumbnail}
+                      loading="eager"
+                      decoding="async"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;

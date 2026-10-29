@@ -244,6 +244,7 @@ export default function PosterCarousel({ title, movies, viewAllLink, onClear, on
                   src={getMediaPosterUrl(movie)}
                   alt={displayTitle}
                   className={styles.poster}
+                  loading="eager"
                   decoding="async"
                   onError={(e) => {
                     const target = e.currentTarget;

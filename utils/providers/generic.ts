@@ -4,7 +4,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidrock',
     name: 'VidRock 4K',
-    flag: '💎',
+    flag: '',
     badge: 'Fast',
     description: 'Ultra HD Direct Stream',
     capabilities: {
@@ -28,7 +28,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidsrc-me',
     name: 'VidSrc Global',
-    flag: '🌐',
+    flag: '',
     badge: 'Stable',
     description: 'Global Cloud Network',
     capabilities: {
@@ -51,7 +51,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidsrc-in',
     name: 'VidSrc India',
-    flag: '🇮🇳',
+    flag: '',
     badge: 'Fast Route',
     description: 'Low-latency Regional CDN',
     capabilities: {
@@ -74,7 +74,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidcore',
     name: 'VidCore Direct',
-    flag: '⚡',
+    flag: '',
     badge: 'Direct',
     description: 'Fast Buffer Pipeline',
     capabilities: {
@@ -97,7 +97,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidfast',
     name: 'VidFast Backup',
-    flag: '⚡',
+    flag: '',
     badge: 'Backup',
     description: 'Alternative Fast Mirror',
     capabilities: {
@@ -120,7 +120,7 @@ export const genericAdapters: ProviderAdapter[] = [
   {
     id: 'vidsrc-io',
     name: 'VidSrc.io Backup',
-    flag: '🌐',
+    flag: '',
     badge: 'Mirror',
     description: 'Alternative Global Mirror',
     capabilities: {

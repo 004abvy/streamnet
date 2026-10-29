@@ -184,7 +184,8 @@ export default function ContinueWatchingPage() {
                           src={getMediaPosterUrl(item)}
                           alt={title}
                           className={styles.poster}
-                          loading="lazy"
+                          loading="eager"
+                          decoding="async"
                           onError={(e) => {
                             const target = e.currentTarget;
                             if (item.backdrop_path && !target.src.includes(item.backdrop_path)) {

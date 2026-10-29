@@ -232,7 +232,8 @@ function AnimeContent() {
                 src={g.poster}
                 alt={g.name}
                 className={styles.genreCardImg}
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.src = 'https://image.tmdb.org/t/p/w780/vChB4vCoS3I4v3O7aK2O1U2e2s8.jpg';
                 }}

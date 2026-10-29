@@ -243,7 +243,7 @@ export default function NativeHlsPlayer({
             }}
             title="Toggle Mobile Zoom-to-Fill"
           >
-            {isZoomed ? '🔍 Zoomed' : '📐 Fit'}
+            {isZoomed ? 'Zoomed' : 'Fit'}
           </button>
           {qualities.length > 0 && (
             <label className={styles.playerOption}>

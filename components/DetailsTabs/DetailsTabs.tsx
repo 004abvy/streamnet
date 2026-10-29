@@ -119,6 +119,8 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
                       src={actor.profile_path ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` : 'https://via.placeholder.com/200x300?text=No+Image'} 
                       alt={actor.name}
                       className={styles.creditImg}
+                      loading="eager"
+                      decoding="async"
                     />
                     <div className={styles.creditMeta}>
                       <div className={styles.creditName}>{actor.name}</div>
@@ -163,6 +165,8 @@ export default function DetailsTabs({ movie }: DetailsTabsProps) {
                     src={`https://image.tmdb.org/t/p/w500${img.file_path}`} 
                     alt="Backdrop"
                     className={styles.imageItem}
+                    loading="eager"
+                    decoding="async"
                   />
                 ))}
               </div>

@@ -3,7 +3,7 @@ import { ProviderAdapter } from './types';
 export const nxshaAdapter: ProviderAdapter = {
   id: 'nxsha',
   name: 'Nxsha Cinema',
-  flag: '🚀',
+  flag: '',
   badge: 'High Bitrate',
   description: 'Direct 4K Cinema Stream',
   capabilities: {

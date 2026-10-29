@@ -165,7 +165,8 @@ export default function ProvidersSection() {
             src={activeBackdrop}
             alt={shortName}
             className={styles.providerBackdropImg}
-            loading="lazy"
+            loading="eager"
+            decoding="async"
           />
           <div className={styles.providerBackdropOverlay} />
         </div>

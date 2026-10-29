@@ -117,7 +117,8 @@ export default function PosterGrid({ title, movies, gridColumns, square = false,
                   src={movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop'}
                   alt={displayTitle}
                   className={styles.poster}
-                  loading="lazy"
+                  loading="eager"
+                  decoding="async"
                 />
                 <div className={styles.overlay}></div>
 

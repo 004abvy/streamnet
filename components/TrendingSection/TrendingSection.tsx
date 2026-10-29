@@ -223,7 +223,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
               <span className={styles.rankFallbackNumber}>{rank}</span>
             </div>
           )}
-          <img src={poster} alt={displayTitle} className={styles.posterImg} decoding="async" />
+          <img src={poster} alt={displayTitle} className={styles.posterImg} loading="eager" decoding="async" />
           <div className={styles.posterOverlay} />
 
           <button
@@ -290,7 +290,7 @@ export default function TrendingSection({ title, items, viewAllLink, isLoading }
           transitionDuration={450}
           playOnce={false}
         >
-          <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} decoding="async" />
+          <img src={backdrop} alt={displayTitle} className={styles.heroBackdrop} loading="eager" decoding="async" />
           <div className={styles.heroOverlay} />
 
           <button

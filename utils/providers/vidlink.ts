@@ -3,7 +3,7 @@ import { ProviderAdapter } from './types';
 export const vidlinkAdapter: ProviderAdapter = {
   id: 'vidlink',
   name: 'VidLink Ultra',
-  flag: '✨',
+  flag: '',
   badge: 'Recommended',
   description: 'Ad-Free VIP • Multi-Audio & Subtitles',
   capabilities: {

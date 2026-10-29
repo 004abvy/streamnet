@@ -754,7 +754,7 @@ export async function GET(
                         code,
                         name,
                         nativeName: `${name} Real Audio Stream (.m3u8)`,
-                        flag: code === 'hi' || code === 'ta' || code === 'te' || code === 'ml' || code === 'kn' ? '🇮🇳' : '🌐',
+                        flag: '',
                         url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(audioUri)}`,
                       });
                     }
@@ -810,7 +810,7 @@ export async function GET(
             mediaItems.push({
               id: `video-master-${id}`,
               type: 'video',
-              label: '📹 Master Stream Playlist (.m3u8)',
+              label: 'Master Stream Playlist (.m3u8)',
               url: proxiedMaster,
               resolution: '1080p',
               mimeType: 'application/x-mpegURL',
@@ -837,7 +837,7 @@ export async function GET(
                       mediaItems.push({
                         id: `audio-${lang}-${idx}`,
                         type: 'audio',
-                        label: `🎵 ${label}`,
+                        label: label,
                         url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(fullAudioUrl)}`,
                         language: lang,
                         mimeType: 'audio/aac',
@@ -855,7 +855,7 @@ export async function GET(
                       mediaItems.push({
                         id: `video-${resLabel}-${idx}`,
                         type: 'video',
-                        label: `📹 Stream Variant (${resLabel})`,
+                        label: `Stream Variant (${resLabel})`,
                         url: `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(variantUrl)}`,
                         resolution: resLabel,
                         mimeType: 'application/x-mpegURL',
@@ -874,7 +874,7 @@ export async function GET(
                 mediaItems.push({
                   id: `sub-${idx}`,
                   type: 'subtitle',
-                  label: `💬 Subtitles (${sub.label || sub.language || 'en'})`,
+                  label: `Subtitles (${sub.label || sub.language || 'en'})`,
                   url: subUrl.startsWith('http') ? `${baseUrl}/api/stream/proxy?url=${encodeURIComponent(subUrl)}` : subUrl,
                   language: sub.language || 'en',
                   mimeType: 'text/vtt',

@@ -282,7 +282,8 @@ function TvContent() {
                 src={g.poster}
                 alt={g.name}
                 className={styles.genreCardImg}
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.src = 'https://image.tmdb.org/t/p/w780/ggFHVNu6YYI5L9pCfOacjizRGt.jpg';
                 }}

@@ -301,7 +301,8 @@ const Masonry: React.FC<MasonryProps> = ({
                 src={item.img}
                 alt={item.title || 'Collection'}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px' }}
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.src = 'https://image.tmdb.org/t/p/w780/or06FN3Dka5tukK1e9sl16pB3iy.jpg';
                 }}

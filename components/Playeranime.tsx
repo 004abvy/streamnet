@@ -14,6 +14,8 @@ interface PlayeranimeProps {
   animeTitle: string;
   tmdbId?: string | number;
   type?: "tv" | "movie";
+  initialSeason?: number;
+  initialEpisode?: number;
   posterPath?: string;
   backdropPath?: string;
   onClose: () => void;
@@ -98,6 +100,8 @@ export default function Playeranime({
   animeTitle,
   tmdbId,
   type = "tv",
+  initialSeason = 1,
+  initialEpisode = 1,
   posterPath,
   backdropPath,
   onClose,
@@ -136,8 +140,8 @@ export default function Playeranime({
   const [tmdbBackdrop, setTmdbBackdrop] = useState<string | null>(null);
   const [tmdbSeasons, setTmdbSeasons] = useState<any[]>([]);
 
-  const [currentSeason, setCurrentSeason] = useState<number>(1);
-  const [currentEpisode, setCurrentEpisode] = useState<number>(1);
+  const [currentSeason, setCurrentSeason] = useState<number>(initialSeason || 1);
+  const [currentEpisode, setCurrentEpisode] = useState<number>(initialEpisode || 1);
 
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
@@ -264,6 +268,8 @@ export default function Playeranime({
 
   const handleEpisodeSelect = (seasonNum: number, episodeNum: number) => {
     if (seasonNum === currentSeason && episodeNum === currentEpisode) return;
+    setSubtitles([]);
+    setThumbnailsTrack(undefined);
     setCurrentSeason(seasonNum);
     setCurrentEpisode(episodeNum);
     if (tmdbId) {
@@ -798,13 +804,13 @@ export default function Playeranime({
           }
         }
 
+        if (requestId !== fetchRequestIdRef.current) return;
+
         if (discoveredThumb) {
           setThumbnailsTrack(discoveredThumb);
         }
 
-        if (nativeSubs.length > 0) {
-          setSubtitles(nativeSubs);
-        }
+        setSubtitles(nativeSubs);
 
         const directHls =
           streamData?.stream_url ||
@@ -813,8 +819,6 @@ export default function Playeranime({
           streamData?.streams?.find(
             (s: any) => s.type === "hls" || s.url?.includes(".m3u8")
           )?.url;
-
-        if (requestId !== fetchRequestIdRef.current) return;
 
         if (directHls) {
           const referer =

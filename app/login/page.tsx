@@ -353,7 +353,7 @@ export default function LoginPage() {
                   </div>
                   {passwordError && (
                     <div className={styles.fieldError}>
-                      <span>⚠️ Password incorrect</span>
+                      <span>Password incorrect</span>
                       <button
                         type="button"
                         onClick={() => {
