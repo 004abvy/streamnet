@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  validateSafeExternalUrl,
+  checkRateLimit,
+  getClientIp,
+  isSuspiciousScraper,
+  sanitizeErrorMessage,
+} from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,6 +26,26 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
+  const userAgent = request.headers.get('user-agent') || '';
+  if (isSuspiciousScraper(userAgent)) {
+    return new NextResponse('Forbidden: Automated scraper / security tool blocked', {
+      status: 403,
+      headers: { 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
+
+  const clientIp = getClientIp(request);
+  const rateCheck = checkRateLimit(`stream_proxy_${clientIp}`, 240, 60000);
+  if (!rateCheck.allowed) {
+    return new NextResponse('Too Many Requests: Rate limit exceeded', {
+      status: 429,
+      headers: {
+        'Retry-After': '30',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
   try {
     const { path } = await context.params;
     const subPath = path.join('/');
@@ -69,6 +96,18 @@ export async function GET(
             }
           }
         } catch {}
+      }
+
+      // SSRF & Protocol Validation
+      const validation = validateSafeExternalUrl(decodedUrl);
+      if (!validation.safe) {
+        return new NextResponse(`Forbidden: ${validation.reason || 'Invalid or untrusted target URL'}`, {
+          status: 403,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        });
       }
 
       const isExplicitMp4 = decodedUrl.toLowerCase().includes('.mp4') && !decodedUrl.toLowerCase().includes('.m3u8');
@@ -377,6 +416,7 @@ export async function GET(
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
+    console.error('[stream API error]:', err);
+    return NextResponse.json({ error: sanitizeErrorMessage(err, 'Stream service error') }, { status: 500 });
   }
 }

@@ -995,6 +995,12 @@ export default function Playeranime({
         lower.includes("chinese") ||
         lower.includes("korean");
 
+      const isHindi =
+        lower.includes('hindi') ||
+        lower.includes('हिन्दी') ||
+        langLower === 'hi' ||
+        langLower.startsWith('hi-');
+
       const isEng =
         !isNonEng &&
         (lower.includes("english") ||
@@ -1003,7 +1009,7 @@ export default function Playeranime({
           langLower.startsWith("en-") ||
           langLower === "eng");
 
-      if (!isEng) continue; // Keep only English subtitles
+      if (!isEng && !isHindi) continue; // Keep English and Hindi subtitles
 
       if (seenSrcs.has(track.src)) continue;
       seenSrcs.add(track.src);
@@ -1020,7 +1026,7 @@ export default function Playeranime({
         .replace(/\.srt|\.vtt|\.ass/gi, "")
         .trim();
 
-      if (!rawLabel) rawLabel = "English";
+      if (!rawLabel) rawLabel = isHindi ? "Hindi" : "English";
 
       const count = seenLabels.get(lower) || 0;
       seenLabels.set(lower, count + 1);
@@ -1030,7 +1036,7 @@ export default function Playeranime({
       tracksList.push({
         src: track.src,
         label,
-        language: track.language || (isEng ? "en" : "en"),
+        language: track.language || (isHindi ? "hi" : "en"),
         kind: "subtitles",
         default: track.default ?? false,
         type: "vtt",
@@ -1046,6 +1052,7 @@ export default function Playeranime({
       if (l.includes("funimation") || l.includes("hidive")) return 90;
       if (l.includes("full") || l.includes("original") || l.includes("orignal")) return 85;
       if (l.includes("english") && !l.includes("(")) return 80;
+      if (l.includes("hindi") || l.includes("हिन्दी")) return 75;
       if (l.includes("english") || l.includes("eng")) return 70;
       return 10;
     }
@@ -1109,8 +1116,13 @@ export default function Playeranime({
     return streamDuration < 1920;
   }, [type, streamDuration, expectedRuntime]);
 
+  const VIP_PASSKEY = process.env.NEXT_PUBLIC_VIP_PASSKEY || "123";
+
   const handleConvertToVip = () => {
-    if (sessionStorage.getItem("vip_auth") === "123") {
+    if (
+      sessionStorage.getItem("vip_auth") === VIP_PASSKEY ||
+      localStorage.getItem("vip_auth") === VIP_PASSKEY
+    ) {
       if (tmdbId) {
         router.push(
           type === "movie"
@@ -1519,15 +1531,15 @@ export default function Playeranime({
 
             <h3 className="text-base sm:text-lg font-black text-white mb-1 tracking-tight">Enter VIP Passkey</h3>
             <p className="text-xs text-neutral-400 mb-4 px-2">
-              Enter <span className="text-white font-bold font-mono px-1.5 py-0.5 bg-white/10 rounded border border-white/20">123</span> to unlock dedicated 4K VIP Cinema servers.
+              Enter <span className="text-white font-bold font-mono px-1.5 py-0.5 bg-white/10 rounded border border-white/20">{VIP_PASSKEY}</span> to unlock dedicated 4K VIP Cinema servers.
             </p>
 
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (vipInputCode.trim() === "123") {
-                  sessionStorage.setItem("vip_auth", "123");
-                  localStorage.setItem("vip_auth", "123");
+                if (vipInputCode.trim() === VIP_PASSKEY) {
+                  sessionStorage.setItem("vip_auth", VIP_PASSKEY);
+                  localStorage.setItem("vip_auth", VIP_PASSKEY);
                   setShowVipModal(false);
                   if (type === "movie") {
                     router.push(`/watch/servers/${tmdbId}?type=movie`);
@@ -1537,7 +1549,7 @@ export default function Playeranime({
                     );
                   }
                 } else {
-                  setVipError("Invalid VIP Code. Please enter 123.");
+                  setVipError(`Invalid VIP Code. Please enter ${VIP_PASSKEY}.`);
                 }
               }}
               className="w-full flex flex-col gap-3"

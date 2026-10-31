@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isSuspiciousScraper } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -110,6 +111,23 @@ const aggregationCache = new Map<string, { timestamp: number; data: any }>();
 const CACHE_TTL = 60 * 1000;
 
 export async function GET(request: NextRequest) {
+  const userAgent = request.headers.get('user-agent') || '';
+  if (isSuspiciousScraper(userAgent)) {
+    return NextResponse.json(
+      { error: 'Forbidden: Automated scraper blocked' },
+      { status: 403, headers: { 'X-Content-Type-Options': 'nosniff' } }
+    );
+  }
+
+  const clientIp = getClientIp(request);
+  const rateCheck = checkRateLimit(`direct_agg_${clientIp}`, 60, 60000);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: 'Too Many Requests: Rate limit exceeded' },
+      { status: 429, headers: { 'Retry-After': '30', 'X-Content-Type-Options': 'nosniff' } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const type = (searchParams.get('type') as 'movie' | 'tv') || 'movie';

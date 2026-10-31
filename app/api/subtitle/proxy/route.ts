@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import zlib from 'zlib';
+import {
+  validateSafeExternalUrl,
+  checkRateLimit,
+  getClientIp,
+  isSuspiciousScraper,
+  sanitizeErrorMessage,
+} from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -249,6 +256,26 @@ function convertSrtToVtt(raw: string, offsetSec: number = 0): string {
 }
 
 export async function GET(request: NextRequest) {
+  const userAgent = request.headers.get('user-agent') || '';
+  if (isSuspiciousScraper(userAgent)) {
+    return new NextResponse('Forbidden: Automated scraper / security tool blocked', {
+      status: 403,
+      headers: { 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
+
+  const clientIp = getClientIp(request);
+  const rateCheck = checkRateLimit(`subtitle_proxy_${clientIp}`, 120, 60000);
+  if (!rateCheck.allowed) {
+    return new NextResponse('Too Many Requests: Rate limit exceeded', {
+      status: 429,
+      headers: {
+        'Retry-After': '30',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const rawUrl = searchParams.get('url');
@@ -266,6 +293,18 @@ export async function GET(request: NextRequest) {
       try {
         decodedUrl = decodeURIComponent(rawUrl);
       } catch {}
+    }
+
+    // SSRF & Protocol Validation
+    const validation = validateSafeExternalUrl(decodedUrl);
+    if (!validation.safe) {
+      return new NextResponse(`Forbidden: ${validation.reason || 'Untrusted target URL'}`, {
+        status: 403,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
     }
 
     // Fast reject for thumbnail / sprite tracks requested as subtitles

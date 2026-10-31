@@ -25,10 +25,13 @@ import { VidZeeProvider } from './vidzee/vidzee';
 export type { ResolvedStream } from './types';
 
 function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout of ${ms}ms exceeded`)), ms))
-  ]);
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`Timeout of ${ms}ms exceeded`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 async function runOmssProvider(

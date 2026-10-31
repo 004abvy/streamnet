@@ -340,6 +340,12 @@ export default function VidstackPlayer({
         rawLower.includes('chinese') ||
         rawLower.includes('korean');
 
+      const isHindi =
+        rawLower.includes('hindi') ||
+        rawLower.includes('हिन्दी') ||
+        langLower === 'hi' ||
+        langLower.startsWith('hi-');
+
       const isEnglish =
         !isNonEng &&
         (rawLower.includes('english') ||
@@ -348,7 +354,7 @@ export default function VidstackPlayer({
           langLower.startsWith('en-') ||
           langLower === 'eng');
 
-      if (!isEnglish) {
+      if (!isEnglish && !isHindi) {
         continue;
       }
 
@@ -356,7 +362,7 @@ export default function VidstackPlayer({
       seenSrcs.add(track.src);
 
       // Clean raw label
-      let rawLabel = (track.label || 'English').trim();
+      let rawLabel = (track.label || (isHindi ? 'Hindi' : 'English')).trim();
       // Remove any trailing counter suffixes if already attached
       rawLabel = rawLabel
         .replace(/\s+\d+$/, '')
@@ -370,7 +376,7 @@ export default function VidstackPlayer({
         })
         .trim();
 
-      if (!rawLabel) rawLabel = 'English';
+      if (!rawLabel) rawLabel = isHindi ? 'Hindi' : 'English';
 
       const lower = rawLabel.toLowerCase();
       const count = seenLabels.get(lower) || 0;
@@ -381,7 +387,7 @@ export default function VidstackPlayer({
       result.push({
         ...track,
         label,
-        language: track.language || (lower.includes('english') ? 'en' : 'en'),
+        language: track.language || (isHindi ? 'hi' : 'en'),
         type: 'vtt',
       });
     }
@@ -389,12 +395,14 @@ export default function VidstackPlayer({
     function getTrackPriority(label: string): number {
       const l = (label || '').toLowerCase();
       if (l.includes('signs') || l.includes('songs') || l.includes('episode name')) return -10;
+      if (preferredLanguage === 'hi' && (l.includes('hindi') || l.includes('हिन्दी'))) return 130;
       if (l.includes('aniwatch') || l.includes('hianime') || l.includes('megacloud') || l.includes('rapidcloud')) return 120;
       if (l.includes('netflix')) return 100;
       if (l.includes('crunchyroll')) return 95;
       if (l.includes('funimation') || l.includes('hidive')) return 90;
       if (l.includes('full') || l.includes('original') || l.includes('orignal')) return 85;
       if (l.includes('english') && !l.includes('(')) return 80;
+      if (l.includes('hindi') || l.includes('हिन्दी')) return 75;
       if (l.includes('english') || l.includes('eng')) return 70;
       return 10;
     }

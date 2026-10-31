@@ -1,11 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  validateSafeExternalUrl,
+  checkRateLimit,
+  getClientIp,
+  isSuspiciousScraper,
+  sanitizeErrorMessage,
+} from '@/lib/security';
 
 export async function GET(req: NextRequest) {
+  const userAgent = req.headers.get('user-agent') || '';
+  if (isSuspiciousScraper(userAgent)) {
+    return new NextResponse('Forbidden: Automated scraper / security tool blocked', {
+      status: 403,
+      headers: { 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
+
+  const clientIp = getClientIp(req);
+  const rateCheck = checkRateLimit(`proxy_${clientIp}`, 240, 60000);
+  if (!rateCheck.allowed) {
+    return new NextResponse('Too Many Requests: Rate limit exceeded', {
+      status: 429,
+      headers: {
+        'Retry-After': '30',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
   const url = req.nextUrl.searchParams.get('url');
   const referer = req.nextUrl.searchParams.get('referer') || '';
   const origin = req.nextUrl.searchParams.get('origin') || '';
 
   if (!url) return new NextResponse('Missing URL', { status: 400 });
+
+  // 1. SSRF & Protocol Validation
+  const validation = validateSafeExternalUrl(url);
+  if (!validation.safe || !validation.url) {
+    return new NextResponse(`Forbidden: ${validation.reason || 'Invalid or untrusted target URL'}`, {
+      status: 403,
+      headers: { 'X-Content-Type-Options': 'nosniff' },
+    });
+  }
+
+  // Also validate referer if provided
+  if (referer) {
+    const refValidation = validateSafeExternalUrl(referer);
+    if (!refValidation.safe) {
+      return new NextResponse('Forbidden: Invalid referer URL', { status: 403 });
+    }
+  }
 
   try {
     const headers: Record<string, string> = {
@@ -77,13 +121,28 @@ export async function GET(req: NextRequest) {
         headers: {
           'Content-Type': 'application/vnd.apple.mpegurl',
           'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'no-store'
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
         }
       });
     }
 
-    // If it's HTML, we might need to inject adblock scripts for providers like MegaPlay
+    // If it's HTML, strictly verify the domain to prevent universal XSS / arbitrary phishing on app origin
     if (contentType.includes('text/html')) {
+      const allowedHtmlDomains = ['megaplay.buzz', 'megacloud.tv', 'rabbitstream.net', 'rapid-cloud.co', 'vixcloud.co'];
+      const targetHost = validation.url.hostname.toLowerCase();
+      const isAllowedHtmlHost = allowedHtmlDomains.some(d => targetHost === d || targetHost.endsWith('.' + d));
+
+      if (!isAllowedHtmlHost) {
+        return new NextResponse('HTML proxying is restricted to verified video embed providers.', {
+          status: 403,
+          headers: {
+            'Content-Type': 'text/plain',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        });
+      }
+
       let html = await response.text();
       
       // Inject base tag so relative URLs work, and an adblock script to disable popups
@@ -208,9 +267,10 @@ export async function GET(req: NextRequest) {
       
       return new NextResponse(html, {
         headers: {
-          'Content-Type': 'text/html',
+          'Content-Type': 'text/html; charset=utf-8',
           'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'no-store'
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
         }
       });
     }
@@ -228,12 +288,16 @@ export async function GET(req: NextRequest) {
       headers: {
         'Content-Type': finalContentType,
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=86400'
+        'Cache-Control': 'public, max-age=86400',
+        'X-Content-Type-Options': 'nosniff',
       }
     });
 
   } catch (error: any) {
     console.error("Proxy error:", error);
-    return new NextResponse(error.message, { status: 500 });
+    return new NextResponse(sanitizeErrorMessage(error, 'Proxy streaming error'), {
+      status: 500,
+      headers: { 'X-Content-Type-Options': 'nosniff' },
+    });
   }
 }

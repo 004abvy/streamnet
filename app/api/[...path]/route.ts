@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateSafeExternalUrl } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -568,6 +569,19 @@ export async function GET(
       if (!rawUrl) return new NextResponse('Missing URL', { status: 400 });
 
       const decodedUrl = decodeURIComponent(rawUrl);
+
+      // SSRF & Protocol Validation
+      const validation = validateSafeExternalUrl(decodedUrl);
+      if (!validation.safe) {
+        return new NextResponse(`Forbidden: ${validation.reason || 'Invalid or untrusted target URL'}`, {
+          status: 403,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        });
+      }
+
       const isManifest = searchParams.get('manifest') === '1' || decodedUrl.includes('.m3u8');
       let upstreamHeaders: Record<string, string> = {};
       try {
