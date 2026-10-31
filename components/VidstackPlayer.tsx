@@ -22,7 +22,7 @@ if (typeof window !== 'undefined' && TextTrackList?.prototype) {
       });
 
       if (duplicate) {
-        if (track.src && !duplicate.src) {
+        if (track.src && (!duplicate.src || duplicate.src !== track.src)) {
           this.remove(duplicate);
           return origAdd.call(this, track, trigger);
         }
@@ -89,6 +89,7 @@ export interface VidstackPlayerProps {
   server?: string;
   audioType?: string;
   onTimeProgress?: (currentTime: number, duration: number) => void;
+  waitForSubtitles?: boolean;
 }
 
 export default function VidstackPlayer({
@@ -115,12 +116,18 @@ export default function VidstackPlayer({
   server,
   audioType,
   onTimeProgress,
+  waitForSubtitles,
 }: VidstackPlayerProps) {
   const player = useRef<MediaPlayerInstance>(null);
   const [activeMediaSrc, setActiveMediaSrc] = useState<MediaSrc>(src);
   const [hasStartedPlaying, setHasStartedPlaying] = useState<boolean>(false);
   const hasResumedRef = useRef<MediaSrc | null>(null);
   const resumeSeekAppliedRef = useRef<boolean>(false);
+
+  const shouldWaitForSubs = waitForSubtitles ?? (tracks.length > 0 && audioType !== 'dub');
+  const [isVideoReady, setIsVideoReady] = useState<boolean>(!shouldWaitForSubs);
+  const [isSubReady, setIsSubReady] = useState<boolean>(!shouldWaitForSubs);
+  const [isStreamStarted, setIsStreamStarted] = useState<boolean>(false);
 
   const formattedPoster = useMemo(() => {
     if (!poster || typeof poster !== 'string') return undefined;
@@ -136,12 +143,16 @@ export default function VidstackPlayer({
     setHasStartedPlaying(false);
     resumeSeekAppliedRef.current = false;
     hasResumedRef.current = null;
+    const needsWait = waitForSubtitles ?? (tracks.length > 0 && audioType !== 'dub');
+    setIsVideoReady(!needsWait);
+    setIsSubReady(!needsWait);
+    setIsStreamStarted(false);
     if (player.current) {
       try {
         player.current.currentTime = 0;
       } catch {}
     }
-  }, [src, episodeId, season, episode]);
+  }, [src, episodeId, season, episode, waitForSubtitles, audioType, tracks.length]);
 
   // Suppress MediaSession API metadata to prevent iOS Dynamic Island & Lockscreen/Widget persistence
   useEffect(() => {
@@ -416,65 +427,124 @@ export default function VidstackPlayer({
 
 
 
-  // Dynamic subtitle auto-activation when tracks change asynchronously
+  // Safety timeout: never block playback for more than 3.2s if subtitle fails or network is slow
   useEffect(() => {
-    if (!player.current || uniqueTracks.length === 0) return;
+    if (!shouldWaitForSubs) return;
+    const timeoutId = setTimeout(() => {
+      setIsSubReady(true);
+    }, 3200);
+    return () => clearTimeout(timeoutId);
+  }, [shouldWaitForSubs, src]);
 
-    const activateSubtitle = () => {
-      if (!player.current) return;
-      const textTracks = player.current.textTracks;
-      if (!textTracks || textTracks.length === 0) return;
+  const activateSubtitle = (textTracks?: TextTrackList | null): boolean => {
+    const list = textTracks || player.current?.textTracks;
+    if (!list) return false;
 
-      const trackList = Array.from(textTracks).filter(Boolean) as TextTrack[];
-      const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
+    const trackArray = Array.from(list).filter(Boolean) as TextTrack[];
+    const subTracks = trackArray.filter(
+      (t) => t && (t.kind === 'subtitles' || t.kind === 'captions')
+    );
+    if (subTracks.length === 0) return false;
 
-      if (savedSub === 'off') return;
+    const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
+    const isAnimeSub = playerType === 'anime' && audioType === 'sub';
+    if (savedSub === 'off' && !isAnimeSub) return false;
 
-      let target: TextTrack | undefined;
-      if (savedSub) {
-        target = trackList.find((t) => t && t.label === savedSub);
-      }
-      if (!target) {
-        target =
-          trackList.find((t) => t && (t as any).default) ||
-          trackList.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
-          trackList.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
-          trackList.find((t) => t.label?.toLowerCase().includes('netflix')) ||
-          trackList.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
-          trackList.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
-          trackList.find(
-            (t) =>
-              t &&
-              (t.label.toLowerCase().includes('english') ||
-                t.language?.startsWith('en')),
-          ) ||
-          trackList[0];
-      }
+    let target: TextTrack | undefined;
+    if (savedSub && savedSub !== 'off') {
+      target = subTracks.find((t) => t && t.label === savedSub);
+    }
+    if (!target) {
+      target =
+        subTracks.find((t) => t && (t as any).default) ||
+        subTracks.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
+        subTracks.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
+        subTracks.find((t) => t.label?.toLowerCase().includes('netflix')) ||
+        subTracks.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
+        subTracks.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
+        subTracks.find(
+          (t) =>
+            t &&
+            (t.label.toLowerCase().includes('english') ||
+              t.language?.startsWith('en')),
+        ) ||
+        subTracks[0];
+    }
 
-      if (target && target.mode !== 'showing') {
-        for (const t of trackList) {
-          if (!t) continue;
-          if (t === target) {
-            t.mode = 'showing';
-          } else if (t.mode === 'showing') {
-            t.mode = 'disabled';
-          }
+    if (target) {
+      for (const t of subTracks) {
+        if (t === target) {
+          if (t.mode !== 'showing') t.mode = 'showing';
+        } else {
+          if (t.mode === 'showing') t.mode = 'disabled';
         }
       }
+      return true;
+    }
+    return false;
+  };
+
+  // Dynamic subtitle auto-activation when tracks change or are added asynchronously
+  useEffect(() => {
+    const attachTrackListeners = () => {
+      if (!player.current) return;
+      const textTracks = player.current.textTracks;
+      if (!textTracks) return;
+
+      const onTracksUpdated = () => {
+        const activated = activateSubtitle(textTracks);
+        if (activated) {
+          setIsSubReady(true);
+        }
+      };
+
+      textTracks.addEventListener('add', onTracksUpdated);
+      textTracks.addEventListener('mode-change', onTracksUpdated);
+      textTracks.addEventListener('remove', onTracksUpdated);
+
+      onTracksUpdated();
+
+      return () => {
+        textTracks.removeEventListener('add', onTracksUpdated);
+        textTracks.removeEventListener('mode-change', onTracksUpdated);
+        textTracks.removeEventListener('remove', onTracksUpdated);
+      };
     };
 
-    const timer1 = setTimeout(activateSubtitle, 100);
-    const timer2 = setTimeout(activateSubtitle, 400);
-    const timer3 = setTimeout(activateSubtitle, 1000);
-    const timer4 = setTimeout(activateSubtitle, 2200);
+    const cleanup = attachTrackListeners();
+
+    const timer1 = setTimeout(() => {
+      if (activateSubtitle()) setIsSubReady(true);
+    }, 100);
+    const timer2 = setTimeout(() => {
+      if (activateSubtitle()) setIsSubReady(true);
+    }, 400);
+    const timer3 = setTimeout(() => {
+      if (activateSubtitle()) setIsSubReady(true);
+    }, 1000);
+    const timer4 = setTimeout(() => {
+      if (activateSubtitle()) setIsSubReady(true);
+    }, 2200);
 
     return () => {
+      cleanup?.();
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
       clearTimeout(timer4);
     };
-  }, [uniqueTracks, tmdbId]);
+  }, [uniqueTracks, tmdbId, src, playerType, audioType]);
+
+  // Start stream when both video and subtitles are loaded
+  useEffect(() => {
+    if (isVideoReady && isSubReady && !isStreamStarted) {
+      setIsStreamStarted(true);
+      if (player.current && autoPlay) {
+        activateSubtitle(player.current.textTracks);
+        player.current.play().catch(() => {});
+      }
+    }
+  }, [isVideoReady, isSubReady, isStreamStarted, autoPlay]);
 
   // Restore saved progress directly on media element
   const applyResumeSeek = () => {
@@ -543,36 +613,24 @@ export default function VidstackPlayer({
       // Restore saved subtitle preference or force English/Default
       if (textTracks.length > 0) {
         const savedSub = tmdbId ? localStorage.getItem(`streamnet_sub_${tmdbId}`) : null;
+        const isAnimeSub = playerType === 'anime' && audioType === 'sub';
 
-        if (savedSub === 'off') {
+        if (savedSub === 'off' && !isAnimeSub) {
           // User explicitly toggled subtitles off
         } else {
-          const isAnyShowing = textTracks.some((t) => t && t.mode === 'showing');
-          if (!isAnyShowing) {
-            let targetSub: TextTrack | undefined;
-            if (savedSub) {
-              targetSub = textTracks.find((t) => t && t.label === savedSub);
-            }
-            if (!targetSub) {
-              targetSub =
-                textTracks.find((t) => t && (t as any).default) ||
-                textTracks.find(
-                  (t) =>
-                    t &&
-                    (t.label.toLowerCase().includes('english') ||
-                      t.language?.startsWith('en')),
-                ) ||
-                textTracks[0];
-            }
-
-            if (targetSub && targetSub.mode !== 'showing') {
-              targetSub.mode = 'showing';
+          const isAnySubShowing = textTracks.some(
+            (t) => t && (t.kind === 'subtitles' || t.kind === 'captions') && t.mode === 'showing'
+          );
+          if (!isAnySubShowing) {
+            const activated = activateSubtitle(player.current?.textTracks);
+            if (activated) {
+              setIsSubReady(true);
             }
           }
         }
       }
     });
-  }, [src, preferredLanguage, tmdbId, mediaType, season, episode, episodeId]);
+  }, [src, preferredLanguage, tmdbId, mediaType, season, episode, episodeId, playerType, audioType]);
 
   return (
     <div className={`relative w-full rounded-xl overflow-hidden shadow-2xl bg-black ${className || 'aspect-video'}`}>
@@ -581,7 +639,7 @@ export default function VidstackPlayer({
         ref={player}
         src={formattedMediaSrc}
         poster={playerType === 'anime' || hasStartedPlaying ? undefined : formattedPoster}
-        autoPlay={autoPlay}
+        autoPlay={shouldWaitForSubs ? false : autoPlay}
         onPlay={() => {
           setHasStartedPlaying(true);
         }}
@@ -618,6 +676,7 @@ export default function VidstackPlayer({
 
           // Direct seek on ready for HLS stability
           applyResumeSeek();
+          setIsVideoReady(true);
         }}
         className="w-full h-full text-white font-sans"
         playsInline
@@ -648,9 +707,10 @@ export default function VidstackPlayer({
           try {
             const trackList = (Array.isArray(tracks) ? tracks : Array.prototype.slice.call(tracks)) as TextTrack[];
             if (trackList.length > 0) {
-              const showing = trackList.find((t) => t.mode === 'showing');
+              const showing = trackList.find((t) => (t.kind === 'subtitles' || t.kind === 'captions') && t.mode === 'showing');
               if (showing) {
                 localStorage.setItem(`streamnet_sub_${tmdbId}`, showing.label);
+                setIsSubReady(true);
               }
             }
           } catch {}
@@ -702,7 +762,7 @@ export default function VidstackPlayer({
                 : `${track.language || 'en'}-${idx + 1}`;
             const trackId = `track-${idx}-${(track.label || 'sub')
               .toLowerCase()
-              .replace(/[^a-z0-9]/g, '-')}`;
+              .replace(/[^a-z0-9]/g, '-')}-${season || 1}-${episode || 1}`;
 
             return (
               <Track
@@ -725,6 +785,23 @@ export default function VidstackPlayer({
           noModal={true}
         />
       </MediaPlayer>
+
+      {/* Stream & Subtitle Synchronization Loading Overlay */}
+      {shouldWaitForSubs && (!isVideoReady || !isSubReady) && (
+        <div className="absolute inset-0 z-40 bg-neutral-950/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3.5 transition-all duration-300 pointer-events-none">
+          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white animate-spin flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+            <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+          </div>
+          <div className="flex flex-col items-center gap-1 text-center">
+            <span className="text-xs font-bold tracking-wider uppercase text-white">
+              {!isVideoReady ? 'Buffering Stream...' : 'Synchronizing Subtitles...'}
+            </span>
+            <span className="text-[10px] text-neutral-400 font-medium">
+              Starting stream when both video and subtitles are loaded
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

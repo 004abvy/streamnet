@@ -209,10 +209,10 @@ export default function Playeranime({
         }
       }
 
-      let initSeason = 1;
-      let initEp = 1;
-      if (paramSeason) initSeason = parseInt(paramSeason, 10) || 1;
-      if (paramEp) initEp = parseInt(paramEp, 10) || 1;
+      let initSeason = initialSeason || 1;
+      let initEp = initialEpisode || 1;
+      if (paramSeason) initSeason = parseInt(paramSeason, 10) || initSeason;
+      if (paramEp) initEp = parseInt(paramEp, 10) || initEp;
 
       const stored = localStorage.getItem("continueWatching");
       if (stored) {
@@ -223,11 +223,11 @@ export default function Playeranime({
         );
 
         if (match) {
-          if (!paramSeason && (match.season || match.last_season)) {
-            initSeason = match.season || match.last_season || 1;
+          if (!paramSeason && (!initialSeason || initialSeason === 1) && (match.season || match.last_season)) {
+            initSeason = match.season || match.last_season || initSeason;
           }
-          if (!paramEp && (match.episode || match.last_episode)) {
-            initEp = match.episode || match.last_episode || 1;
+          if (!paramEp && (!initialEpisode || initialEpisode === 1) && (match.episode || match.last_episode)) {
+            initEp = match.episode || match.last_episode || initEp;
           }
           if (match.audioType === "dub" || match.audioType === "sub") {
             setAudioType(match.audioType);
@@ -242,7 +242,7 @@ export default function Playeranime({
       setCurrentSeason(initSeason);
       setCurrentEpisode(initEp);
     } catch {}
-  }, [tmdbId, animeTitle]);
+  }, [tmdbId, animeTitle, initialSeason, initialEpisode]);
 
   const handleSelectAnimeSource = (source: AnimeSource) => {
     setActiveSource(source);
@@ -804,6 +804,51 @@ export default function Playeranime({
           }
         }
 
+        // 7. Subtitle Fallback: If no native English subtitles were found from stream data, query subtitle search API
+        if (nativeSubs.length === 0 && animeTitle) {
+          try {
+            const cleanQuery = animeTitle.replace(/[^a-zA-Z0-9\s]/g, " ").trim();
+            const subApiRes = await fetch(
+              `/api/subtitle/anime?query=${encodeURIComponent(cleanQuery)}&season=${currentSeason}&episode=${currentEpisode}&tmdbId=${tmdbId || ""}&lang=en`,
+              { signal: abortController.signal }
+            );
+            if (subApiRes.ok) {
+              const subJson = await subApiRes.json();
+              if (subJson.subtitles && Array.isArray(subJson.subtitles) && subJson.subtitles.length > 0) {
+                for (const s of subJson.subtitles) {
+                  const sUrl = s.url;
+                  if (!sUrl) continue;
+                  const finalSrc = sUrl.startsWith("/api/subtitle/proxy")
+                    ? sUrl
+                    : `/api/subtitle/proxy?url=${encodeURIComponent(sUrl)}`;
+                  nativeSubs.push({
+                    src: finalSrc,
+                    label: s.label || "English",
+                    kind: "subtitles",
+                    language: "en",
+                    default: s.isDefault ?? true,
+                    type: s.format === "srt" ? "srt" : "vtt",
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[Playeranime] Subtitle fallback search failed:", e);
+          }
+        }
+
+        if (requestId !== fetchRequestIdRef.current) return;
+
+        // 8. Pre-load default English subtitle VTT so both stream and subtitles are ready simultaneously
+        if (nativeSubs.length > 0) {
+          const defaultSub = nativeSubs.find((s) => s.default) || nativeSubs[0];
+          if (defaultSub?.src) {
+            try {
+              await fetch(defaultSub.src, { signal: abortController.signal });
+            } catch {}
+          }
+        }
+
         if (requestId !== fetchRequestIdRef.current) return;
 
         if (discoveredThumb) {
@@ -921,10 +966,8 @@ export default function Playeranime({
     activeHianimeServer,
     audioType,
     selectedProvider,
-    anilistId,
     tmdbId,
     animeTitle,
-    animeDataVersion,
     priorCount,
   ]);
 
@@ -1281,6 +1324,7 @@ export default function Playeranime({
                       tracks={vidstackTracks}
                       thumbnails={thumbnailsTrack}
                       autoPlay={true}
+                      waitForSubtitles={audioType !== 'dub'}
                       onDurationChange={(dur) => {
                         if (dur > 0) setStreamDuration(dur);
                       }}
