@@ -1336,7 +1336,6 @@ export default function Playeranime({
                       tracks={vidstackTracks}
                       thumbnails={thumbnailsTrack}
                       autoPlay={true}
-                      waitForSubtitles={audioType !== 'dub'}
                       onDurationChange={(dur) => {
                         if (dur > 0) setStreamDuration(dur);
                       }}

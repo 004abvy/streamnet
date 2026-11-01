@@ -89,7 +89,6 @@ export interface VidstackPlayerProps {
   server?: string;
   audioType?: string;
   onTimeProgress?: (currentTime: number, duration: number) => void;
-  waitForSubtitles?: boolean;
 }
 
 export default function VidstackPlayer({
@@ -116,18 +115,12 @@ export default function VidstackPlayer({
   server,
   audioType,
   onTimeProgress,
-  waitForSubtitles,
 }: VidstackPlayerProps) {
   const player = useRef<MediaPlayerInstance>(null);
   const [activeMediaSrc, setActiveMediaSrc] = useState<MediaSrc>(src);
   const [hasStartedPlaying, setHasStartedPlaying] = useState<boolean>(false);
   const hasResumedRef = useRef<MediaSrc | null>(null);
   const resumeSeekAppliedRef = useRef<boolean>(false);
-
-  const shouldWaitForSubs = waitForSubtitles ?? (tracks.length > 0 && audioType !== 'dub');
-  const [isVideoReady, setIsVideoReady] = useState<boolean>(!shouldWaitForSubs);
-  const [isSubReady, setIsSubReady] = useState<boolean>(!shouldWaitForSubs);
-  const [isStreamStarted, setIsStreamStarted] = useState<boolean>(false);
 
   const formattedPoster = useMemo(() => {
     if (!poster || typeof poster !== 'string') return undefined;
@@ -143,16 +136,12 @@ export default function VidstackPlayer({
     setHasStartedPlaying(false);
     resumeSeekAppliedRef.current = false;
     hasResumedRef.current = null;
-    const needsWait = waitForSubtitles ?? (tracks.length > 0 && audioType !== 'dub');
-    setIsVideoReady(!needsWait);
-    setIsSubReady(!needsWait);
-    setIsStreamStarted(false);
     if (player.current) {
       try {
         player.current.currentTime = 0;
       } catch {}
     }
-  }, [src, episodeId, season, episode, waitForSubtitles, audioType, tracks.length]);
+  }, [src, episodeId, season, episode]);
 
   // Suppress MediaSession API metadata to prevent iOS Dynamic Island & Lockscreen/Widget persistence
   useEffect(() => {
@@ -433,17 +422,6 @@ export default function VidstackPlayer({
     return result;
   }, [tracks, failedTrackSrcs]);
 
-
-
-  // Safety timeout: never block playback for more than 3.2s if subtitle fails or network is slow
-  useEffect(() => {
-    if (!shouldWaitForSubs) return;
-    const timeoutId = setTimeout(() => {
-      setIsSubReady(true);
-    }, 3200);
-    return () => clearTimeout(timeoutId);
-  }, [shouldWaitForSubs, src]);
-
   const activateSubtitle = (textTracks?: TextTrackList | null): boolean => {
     const list = textTracks || player.current?.textTracks;
     if (!list) return false;
@@ -519,10 +497,7 @@ export default function VidstackPlayer({
       if (!textTracks) return;
 
       const onTracksUpdated = () => {
-        const activated = activateSubtitle(textTracks);
-        if (activated) {
-          setIsSubReady(true);
-        }
+        activateSubtitle(textTracks);
       };
 
       textTracks.addEventListener('add', onTracksUpdated);
@@ -541,16 +516,16 @@ export default function VidstackPlayer({
     const cleanup = attachTrackListeners();
 
     const timer1 = setTimeout(() => {
-      if (activateSubtitle()) setIsSubReady(true);
+      activateSubtitle();
     }, 100);
     const timer2 = setTimeout(() => {
-      if (activateSubtitle()) setIsSubReady(true);
+      activateSubtitle();
     }, 400);
     const timer3 = setTimeout(() => {
-      if (activateSubtitle()) setIsSubReady(true);
+      activateSubtitle();
     }, 1000);
     const timer4 = setTimeout(() => {
-      if (activateSubtitle()) setIsSubReady(true);
+      activateSubtitle();
     }, 2200);
 
     return () => {
@@ -561,17 +536,6 @@ export default function VidstackPlayer({
       clearTimeout(timer4);
     };
   }, [uniqueTracks, tmdbId, src, playerType, audioType]);
-
-  // Start stream when both video and subtitles are loaded
-  useEffect(() => {
-    if (isVideoReady && isSubReady && !isStreamStarted) {
-      setIsStreamStarted(true);
-      if (player.current && autoPlay) {
-        activateSubtitle(player.current.textTracks);
-        player.current.play().catch(() => {});
-      }
-    }
-  }, [isVideoReady, isSubReady, isStreamStarted, autoPlay]);
 
   // Restore saved progress directly on media element
   const applyResumeSeek = () => {
@@ -649,10 +613,7 @@ export default function VidstackPlayer({
             (t) => t && (t.kind === 'subtitles' || t.kind === 'captions') && t.mode === 'showing'
           );
           if (!isAnySubShowing) {
-            const activated = activateSubtitle(player.current?.textTracks);
-            if (activated) {
-              setIsSubReady(true);
-            }
+            activateSubtitle(player.current?.textTracks);
           }
         }
       }
@@ -666,7 +627,7 @@ export default function VidstackPlayer({
         ref={player}
         src={formattedMediaSrc}
         poster={playerType === 'anime' || hasStartedPlaying ? undefined : formattedPoster}
-        autoPlay={shouldWaitForSubs ? false : autoPlay}
+        autoPlay={autoPlay}
         onPlay={() => {
           setHasStartedPlaying(true);
         }}
@@ -703,7 +664,6 @@ export default function VidstackPlayer({
 
           // Direct seek on ready for HLS stability
           applyResumeSeek();
-          setIsVideoReady(true);
         }}
         className="w-full h-full text-white font-sans"
         playsInline
@@ -737,7 +697,6 @@ export default function VidstackPlayer({
               const showing = trackList.find((t) => (t.kind === 'subtitles' || t.kind === 'captions') && t.mode === 'showing');
               if (showing) {
                 localStorage.setItem(`streamnet_sub_${tmdbId}`, showing.label);
-                setIsSubReady(true);
               }
             }
           } catch {}
@@ -813,23 +772,6 @@ export default function VidstackPlayer({
           smallLayoutWhen={({ width, height }) => width < 768 || height < 480}
         />
       </MediaPlayer>
-
-      {/* Stream & Subtitle Synchronization Loading Overlay */}
-      {shouldWaitForSubs && (!isVideoReady || !isSubReady) && (
-        <div className="absolute inset-0 z-40 bg-neutral-950/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3.5 transition-all duration-300 pointer-events-none">
-          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white animate-spin flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.2)]">
-            <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-          </div>
-          <div className="flex flex-col items-center gap-1 text-center">
-            <span className="text-xs font-bold tracking-wider uppercase text-white">
-              {!isVideoReady ? 'Buffering Stream...' : 'Synchronizing Subtitles...'}
-            </span>
-            <span className="text-[10px] text-neutral-400 font-medium">
-              Starting stream when both video and subtitles are loaded
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
