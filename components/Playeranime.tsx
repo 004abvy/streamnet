@@ -1052,8 +1052,8 @@ export default function Playeranime({
       if (l.includes("funimation") || l.includes("hidive")) return 90;
       if (l.includes("full") || l.includes("original") || l.includes("orignal")) return 85;
       if (l.includes("english") && !l.includes("(")) return 80;
-      if (l.includes("hindi") || l.includes("हिन्दी")) return 75;
       if (l.includes("english") || l.includes("eng")) return 70;
+      if (l.includes("hindi") || l.includes("हिन्दी")) return 40;
       return 10;
     }
 

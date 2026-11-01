@@ -400,7 +400,7 @@ body {
 [data-media-player] .vds-menu-items[data-root],
 media-menu-items[data-root],
 .vds-menu-items[data-root] {
-  /* Dynamic Positioning with CSS Custom Properties and Fallbacks */
+  /* Dynamic Positioning with CSS Custom Properties and Fallbacks (Desktop Default) */
   position: absolute !important;
   bottom: var(--vds-menu-bottom, 54px) !important;
   right: var(--vds-menu-right, 12px) !important;
@@ -421,7 +421,7 @@ media-menu-items[data-root],
   border-radius: var(--vds-menu-radius, 14px) !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.15) !important;
   padding: var(--vds-menu-pad, 6px) !important;
-  z-index: 99999 !important;
+  z-index: 2147483647 !important;
   transform-origin: bottom right !important;
   box-sizing: border-box !important;
 
@@ -431,6 +431,35 @@ media-menu-items[data-root],
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch !important;
   touch-action: pan-y !important;
+}
+
+/* Mobile Modal Bottom-Sheet (when Vidstack activates touch/small layout modal without placement) */
+.vds-menu-items[data-root]:not([data-placement]),
+media-menu-items[data-root]:not([data-placement]),
+.vds-video-layout .vds-menu-items[data-root]:not([data-placement]) {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  min-width: 100% !important;
+  max-height: min(72vh, 480px) !important;
+  max-height: min(72dvh, 480px) !important;
+  border-radius: 20px 20px 0 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(13, 13, 18, 0.98) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.15) !important;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 12px)) 14px !important;
+  transform-origin: bottom center !important;
+  z-index: 2147483647 !important;
+  margin: 0 !important;
 }
 
 /* 2. SUBMENUS (Flow naturally INSIDE the root popup container - never as a 2nd popup) */
@@ -811,107 +840,166 @@ media-radio[data-checked] .vds-icon,
 }
 
 /* ==========================================================================
-   RESPONSIVE BREAKPOINTS FOR SERVER 1 SETTINGS POPUP
+   RESPONSIVE BREAKPOINTS FOR VIDSTACK SETTINGS POPUP (ANIME & MOVIE PLAYERS)
    ========================================================================== */
 
-/* 1. Mobile Compact Phones (< 480px, e.g. iPhone SE, 12 mini, Galaxy portrait) */
-@media (max-width: 480px) {
+/* 1. Mobile Portrait Screens (<= 768px): Sleek Scalable Bottom-Sheet */
+@media (max-width: 768px) {
   .vds-video-layout .vds-menu-items[data-root],
   [data-media-player] .vds-menu-items[data-root],
   media-menu-items[data-root],
   .vds-menu-items[data-root] {
-    --vds-menu-bottom: 44px;
-    --vds-menu-right: 8px;
-    --vds-menu-width: 250px;
-    --vds-menu-min-w: 200px;
-    --vds-menu-max-h: 210px;
-    border-radius: 12px !important;
-    padding: 4px !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 100% !important;
+    max-height: min(72vh, 480px) !important;
+    max-height: min(72dvh, 480px) !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    background: rgba(13, 13, 18, 0.98) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.15) !important;
+    padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 12px)) 14px !important;
+    transform-origin: bottom center !important;
+    z-index: 2147483647 !important;
+    margin: 0 !important;
   }
+
+  /* Handle indicator pill at top of mobile bottom-sheet */
+  .vds-menu-items[data-root]::before {
+    content: '' !important;
+    display: block !important;
+    width: 38px !important;
+    height: 4px !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+    border-radius: 4px !important;
+    margin: 0 auto 10px auto !important;
+    flex-shrink: 0 !important;
+  }
+
   .vds-menu-item {
-    padding: 6px 9px !important;
-    min-height: 30px !important;
+    padding: 9px 12px !important;
+    min-height: 40px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+  }
+
+  .vds-radio {
+    --vds-radio-pad: 9px 12px 9px 34px;
+    --vds-radio-icon-left: 11px;
+    min-height: 38px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+  }
+
+  .vds-menu-item-hint,
+  [data-part="hint"],
+  .vds-radio-hint {
     font-size: 11.5px !important;
+  }
+
+  .vds-menu-slider-item {
+    padding: 9px 12px !important;
+  }
+
+  .vds-menu-slider-title {
+    font-size: 12px !important;
+  }
+
+  /* Sticky Submenu Header inside mobile sheet */
+  .vds-menu-items .vds-menu-item[aria-expanded='true'],
+  .vds-menu-header,
+  [data-part="header"] {
+    top: -12px !important;
+    margin: -12px -14px 10px -14px !important;
+    width: calc(100% + 28px) !important;
+    padding: 10px 14px !important;
+    border-radius: 20px 20px 0 0 !important;
+    font-size: 13.5px !important;
+    min-height: 42px !important;
+  }
+}
+
+/* 2. Mobile Landscape Viewports (Phones in Landscape: height <= 500px) */
+@media (max-height: 500px) and (orientation: landscape) {
+  .vds-video-layout .vds-menu-items[data-root],
+  [data-media-player] .vds-menu-items[data-root],
+  media-menu-items[data-root],
+  .vds-menu-items[data-root] {
+    position: fixed !important;
+    bottom: 10px !important;
+    right: 12px !important;
+    left: auto !important;
+    top: auto !important;
+    width: min(340px, 85vw) !important;
+    max-width: calc(100vw - 24px) !important;
+    min-width: 240px !important;
+    max-height: min(88vh, 320px) !important;
+    max-height: min(88dvh, 320px) !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    background: rgba(14, 14, 20, 0.98) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.95), 0 0 1px rgba(255, 255, 255, 0.15) !important;
+    padding: 8px 10px !important;
+    z-index: 2147483647 !important;
+    margin: 0 !important;
+    transform-origin: bottom right !important;
+  }
+
+  .vds-menu-items[data-root]::before {
+    display: none !important;
+  }
+
+  .vds-menu-item {
+    padding: 6px 10px !important;
+    min-height: 32px !important;
+    font-size: 12px !important;
     border-radius: 6px !important;
   }
+
   .vds-radio {
-    --vds-radio-pad: 6px 9px 6px 30px;
+    --vds-radio-pad: 6px 10px 6px 30px;
     --vds-radio-icon-left: 10px;
     min-height: 30px !important;
     font-size: 11.5px !important;
     border-radius: 6px !important;
   }
+
   .vds-menu-item-hint,
   [data-part="hint"],
   .vds-radio-hint {
     font-size: 10.5px !important;
   }
+
   .vds-menu-slider-item {
-    padding: 6px 9px !important;
+    padding: 6px 10px !important;
   }
+
   .vds-menu-slider-title {
-    font-size: 10.5px !important;
-  }
-}
-
-/* 2. Mobile Standard & Small Tablets (481px to 768px portrait) */
-@media (min-width: 481px) and (max-width: 768px) {
-  .vds-video-layout .vds-menu-items[data-root],
-  [data-media-player] .vds-menu-items[data-root],
-  media-menu-items[data-root],
-  .vds-menu-items[data-root] {
-    --vds-menu-bottom: 48px;
-    --vds-menu-right: 10px;
-    --vds-menu-width: 280px;
-    --vds-menu-min-w: 220px;
-    --vds-menu-max-h: 280px;
-    border-radius: 12px !important;
-    padding: 5px !important;
-  }
-  .vds-menu-item {
-    padding: 7px 10px !important;
-    min-height: 34px !important;
-    font-size: 12.5px !important;
-  }
-  .vds-radio {
-    --vds-radio-pad: 7px 10px 7px 34px;
-    --vds-radio-icon-left: 12px;
-    min-height: 34px !important;
-    font-size: 12.5px !important;
-  }
-}
-
-/* 3. Mobile Landscape Viewports (Phones in Landscape: height <= 480px) */
-@media (max-height: 480px) and (orientation: landscape) {
-  .vds-video-layout .vds-menu-items[data-root],
-  [data-media-player] .vds-menu-items[data-root],
-  media-menu-items[data-root],
-  .vds-menu-items[data-root] {
-    --vds-menu-bottom: 42px;
-    --vds-menu-right: 10px;
-    --vds-menu-width: 260px;
-    --vds-menu-min-w: 210px;
-    --vds-menu-max-h: 210px;
-    border-radius: 10px !important;
-    padding: 4px !important;
-  }
-  .vds-menu-item {
-    padding: 5px 8px !important;
-    min-height: 28px !important;
     font-size: 11px !important;
-    border-radius: 6px !important;
   }
-  .vds-radio {
-    --vds-radio-pad: 5px 8px 5px 28px;
-    --vds-radio-icon-left: 9px;
-    min-height: 28px !important;
-    font-size: 11px !important;
-    border-radius: 6px !important;
-  }
-  .vds-menu-item-hint,
-  [data-part="hint"],
-  .vds-radio-hint {
-    font-size: 10px !important;
+
+  .vds-menu-items .vds-menu-item[aria-expanded='true'],
+  .vds-menu-header,
+  [data-part="header"] {
+    top: -8px !important;
+    margin: -8px -10px 8px -10px !important;
+    width: calc(100% + 20px) !important;
+    padding: 8px 12px !important;
+    border-radius: 14px 14px 0 0 !important;
+    font-size: 12.5px !important;
+    min-height: 34px !important;
   }
 }
 

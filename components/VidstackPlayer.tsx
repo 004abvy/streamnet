@@ -395,15 +395,15 @@ export default function VidstackPlayer({
     function getTrackPriority(label: string): number {
       const l = (label || '').toLowerCase();
       if (l.includes('signs') || l.includes('songs') || l.includes('episode name')) return -10;
-      if (preferredLanguage === 'hi' && (l.includes('hindi') || l.includes('हिन्दी'))) return 130;
+      if (playerType !== 'anime' && preferredLanguage === 'hi' && (l.includes('hindi') || l.includes('हिन्दी'))) return 130;
       if (l.includes('aniwatch') || l.includes('hianime') || l.includes('megacloud') || l.includes('rapidcloud')) return 120;
       if (l.includes('netflix')) return 100;
       if (l.includes('crunchyroll')) return 95;
       if (l.includes('funimation') || l.includes('hidive')) return 90;
       if (l.includes('full') || l.includes('original') || l.includes('orignal')) return 85;
       if (l.includes('english') && !l.includes('(')) return 80;
-      if (l.includes('hindi') || l.includes('हिन्दी')) return 75;
       if (l.includes('english') || l.includes('eng')) return 70;
+      if (l.includes('hindi') || l.includes('हिन्दी')) return 40;
       return 10;
     }
 
@@ -463,20 +463,39 @@ export default function VidstackPlayer({
       target = subTracks.find((t) => t && t.label === savedSub);
     }
     if (!target) {
-      target =
-        subTracks.find((t) => t && (t as any).default) ||
-        subTracks.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
-        subTracks.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
-        subTracks.find((t) => t.label?.toLowerCase().includes('netflix')) ||
-        subTracks.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
-        subTracks.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
-        subTracks.find(
-          (t) =>
-            t &&
-            (t.label.toLowerCase().includes('english') ||
-              t.language?.startsWith('en')),
-        ) ||
-        subTracks[0];
+      if (playerType === 'anime') {
+        target =
+          subTracks.find((t) => t && (t as any).default && (t.label?.toLowerCase().includes('english') || t.language?.startsWith('en'))) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('hianime')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('netflix')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
+          subTracks.find(
+            (t) =>
+              t &&
+              (t.label.toLowerCase().includes('english') ||
+                t.language?.startsWith('en')),
+          ) ||
+          subTracks.find((t) => t && (t as any).default) ||
+          subTracks[0];
+      } else {
+        target =
+          subTracks.find((t) => t && (t as any).default) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('aniwatch')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('megacloud')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('netflix')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('crunchyroll')) ||
+          subTracks.find((t) => t.label?.toLowerCase().includes('english') && !t.label.includes('(')) ||
+          subTracks.find(
+            (t) =>
+              t &&
+              (t.label.toLowerCase().includes('english') ||
+                t.language?.startsWith('en')),
+          ) ||
+          subTracks[0];
+      }
     }
 
     if (target) {
@@ -790,7 +809,8 @@ export default function VidstackPlayer({
         <DefaultVideoLayout
           thumbnails={thumbnails}
           icons={defaultLayoutIcons}
-          noModal={true}
+          noModal={false}
+          smallLayoutWhen={({ width, height }) => width < 768 || height < 480}
         />
       </MediaPlayer>
 
